@@ -384,7 +384,8 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
         "n_exponent_source": n_source,
         "loss_model": dict(
             {k: loss[k] for k in ("source", "building_type", "clutter_db_per_m",
-                                  "grade_n", "grade_clutter")},
+                                  "grade_n", "grade_clutter", "clutter_source",
+                                  "system_type")},
             **({"clutter_map": {"cell_m": loss["clutter_map"]["cell_m"],
                                 "cols": loss["clutter_map"]["cols"],
                                 "rows": loss["clutter_map"]["rows"],

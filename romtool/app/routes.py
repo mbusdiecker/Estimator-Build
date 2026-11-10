@@ -155,6 +155,16 @@ def _check_building_type(value):
     return value
 
 
+def _check_system_type(value):
+    """None/'' clears; otherwise the id must be listed in config system_types."""
+    if value in (None, ""):
+        return None
+    known = load_config().get("system_types") or []
+    _require(value in known, "unknown system_type '%s' (known: %s)"
+             % (value, ", ".join(known)))
+    return value
+
+
 def _check_outline(value):
     """None/[] clears; otherwise a list of >= 3 [x, y] number pairs."""
     if not value:
@@ -248,6 +258,8 @@ def create_project(payload: dict = Body(default_factory=dict)):
     }
     if payload.get("building_type"):
         model["building_type"] = _check_building_type(payload["building_type"])
+    if payload.get("system_type"):
+        model["system_type"] = _check_system_type(payload["system_type"])
     proj = db.create_project(name, model)
     return _public_project(proj)
 
@@ -275,6 +287,12 @@ def patch_project(pid: int, payload: dict = Body(...)):
             model.pop("building_type", None)
         else:
             model["building_type"] = bt
+    if "system_type" in payload:
+        st = _check_system_type(payload["system_type"])
+        if st is None:
+            model.pop("system_type", None)
+        else:
+            model["system_type"] = st
     if "config_overrides" in payload:
         model["config_overrides"] = payload["config_overrides"] or {}
     proj = _save(pid, model.get("name", proj["name"]), model)
@@ -1496,6 +1514,8 @@ def create_floor(pid: int, payload: dict = Body(...)):
     }
     if payload.get("building_type"):
         floor["building_type"] = _check_building_type(payload["building_type"])
+    if payload.get("system_type"):
+        floor["system_type"] = _check_system_type(payload["system_type"])
     if payload.get("outline"):
         floor["outline"] = _check_outline(payload["outline"])
     model.setdefault("floors", []).append(floor)
@@ -1519,6 +1539,12 @@ def patch_floor(pid: int, fid: str, payload: dict = Body(...)):
             floor.pop("building_type", None)
         else:
             floor["building_type"] = bt
+    if "system_type" in payload:
+        st = _check_system_type(payload["system_type"])
+        if st is None:
+            floor.pop("system_type", None)
+        else:
+            floor["system_type"] = st
     if "outline" in payload:
         ol = _check_outline(payload["outline"])
         if ol is None:

@@ -42,7 +42,7 @@ from array import array
 from . import config as cfgmod
 from .cascade import remote_max_out_dbm, solve_cascade
 from .clutter_map import ClutterField, ClutterMapError
-from .lossmodel import LossModelError, resolve_loss_model
+from .lossmodel import LossModelError, resolve_loss_model, system_types
 from .physics import scale_wall_loss_db
 from .geometry import build_wall_index, ray_wall_crossings
 
@@ -181,7 +181,8 @@ class _Grid:
 class _Band:
     """Per-band propagation constants for the grid floor."""
 
-    def __init__(self, model, config, floor, band_id, env, ppm, field=None):
+    def __init__(self, model, config, floor, band_id, env, ppm, field=None,
+                 system_type=None):
         try:
             band = cfgmod.get_band(config, band_id)
         except KeyError:
@@ -191,7 +192,8 @@ class _Band:
         self.f = float(band["freq_mhz"])
         self.const20 = 20.0 * math.log10(self.f)
         try:
-            self.loss = resolve_loss_model(model, config, floor, band, env)
+            self.loss = resolve_loss_model(model, config, floor, band, env,
+                                           system_type=system_type)
         except LossModelError as exc:
             raise AutoplaceError(str(exc))
         self.n = self.loss["n"]
@@ -621,7 +623,12 @@ def _parse_request(model, config, floor, request):
     remotes = _parse_remotes(config, ap, req.get("remotes"), req.get("feed_element_id"))
     taps = _parse_taps(config, ap, req.get("taps"), ways, max(cap, 2))
     branch_hw = _parse_branch_losses(config, req.get("branch_losses"), len(ids))
+    st = req.get("system_type") or None
+    if st is not None and st not in system_types(config):
+        raise AutoplaceError("unknown system_type '%s' (known: %s)"
+                             % (st, ", ".join(system_types(config)) or "none"))
     return {
+        "system_type": st,
         "ap": ap, "bands": ids, "antenna_id": antenna_id,
         "threshold_dbm": thr, "coverage_target_pct": pct, "nfpa": nfpa,
         "rsrp_offset_db": rsrp_offset, "verify_max": verify_max,
@@ -1440,7 +1447,8 @@ def autoplace_floor(model, config, floor_id, request):
             field = ClutterField(cmap, config, ppm)
         except ClutterMapError as exc:
             raise AutoplaceError(str(exc))
-    bands = {bid: _Band(model, config, floor, bid, env, ppm, field) for bid in p["bands"]}
+    bands = {bid: _Band(model, config, floor, bid, env, ppm, field,
+                        system_type=p["system_type"]) for bid in p["bands"]}
     from .predict import _model_validity_warnings  # same validity note as predict
     for bid in p["bands"]:
         _model_validity_warnings(config, bands[bid].band, warnings)
@@ -1725,6 +1733,8 @@ def autoplace_floor(model, config, floor_id, request):
 
     loss_info = {bid: {"source": bands[bid].loss["source"],
                        "building_type": bands[bid].loss["building_type"],
+                       "clutter_source": bands[bid].loss["clutter_source"],
+                       "system_type": bands[bid].loss["system_type"],
                        "n": bands[bid].n,
                        "clutter_db_per_m": (0.0 if bands[bid].field is not None
                                             else bands[bid].clutter),

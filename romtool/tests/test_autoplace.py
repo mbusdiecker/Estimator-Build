@@ -57,7 +57,8 @@ def positions(res):
 
 def test_building_type_config_has_grades_and_references(cfg):
     types = cfg["building_types"]
-    assert set(types) == {"office", "hospital", "warehouse_open", "school_campus",
+    assert set(types) == {"office", "office_open", "office_standard", "office_dense",
+                          "hospital", "warehouse_open", "school_campus",
                           "hotel_residential", "parking_garage", "stadium_venue",
                           "retail_mall"}
     for tid, t in types.items():
@@ -116,6 +117,97 @@ def test_unknown_building_type_rejected(cfg):
         resolve_loss_model(m, cfg, m["floors"][0], _band(cfg), "office")
     with pytest.raises(AutoplaceError):
         autoplace_floor(m, cfg, "f1", request())
+
+
+def test_office_subtypes_select_their_clutter(cfg):
+    band = _band(cfg)
+    expected = {  # building type: (N, clutter dB/m, clutter grade)
+        "office": (30.0, 0.3, "C"),
+        "office_open": (30.0, 0.1, "E"),
+        "office_standard": (30.0, 0.3, "C"),
+        "office_dense": (30.0, 0.6, "E"),
+    }
+    for bt, (n, clutter, grade) in expected.items():
+        m = make_model(100, 100, building_type=bt)
+        lm = resolve_loss_model(m, cfg, m["floors"][0], band, "office")
+        assert (lm["source"], lm["building_type"]) == ("building_type", bt)
+        assert (lm["n"], lm["clutter_db_per_m"], lm["grade_clutter"]) == (n, clutter, grade), bt
+        assert lm["grade_n"] == "P" and lm["clutter_source"] == "building_type", bt
+    # open and dense start from the clutter_map classes; standard keeps the office value
+    classes = cfg["clutter_map"]["classes"]
+    bts = cfg["building_types"]
+    assert bts["office_open"]["clutter_db_per_m"] == classes["open"]["db_per_m"]
+    assert bts["office_dense"]["clutter_db_per_m"] == classes["dense_rooms"]["db_per_m"]
+    assert bts["office_standard"]["clutter_ref"] == bts["office"]["clutter_ref"]
+
+
+SYS_CFG = {"building_types": {"office": {
+    "clutter_by_system": {"das": 0.5, "dran": 0.9},
+    "clutter_by_system_grade": "E",
+    "clutter_by_system_ref": "test value only, not calibrated"}}}
+
+
+def test_system_type_precedence_request_over_floor_over_project(cfg):
+    c = with_overrides(cfg, SYS_CFG)
+    band = _band(c)
+    m = make_model(100, 100, building_type="office")
+    m["system_type"] = "das"
+    lm = resolve_loss_model(m, c, m["floors"][0], band, "office")
+    assert (lm["clutter_db_per_m"], lm["clutter_source"], lm["system_type"]) == (
+        0.5, "building_type_system", "das")
+    assert lm["grade_clutter"] == "E"
+
+    m["floors"][0]["system_type"] = "dran"          # floor beats project
+    lm = resolve_loss_model(m, c, m["floors"][0], band, "office")
+    assert (lm["clutter_db_per_m"], lm["system_type"]) == (0.9, "dran")
+
+    # request beats floor
+    lm = resolve_loss_model(m, c, m["floors"][0], band, "office", system_type="das")
+    assert (lm["clutter_db_per_m"], lm["system_type"]) == (0.5, "das")
+
+
+def test_system_type_falls_back_when_building_type_has_no_value(cfg):
+    c = with_overrides(cfg, SYS_CFG)
+    band = _band(c)
+    m = make_model(100, 100, building_type="office")
+    m["system_type"] = "bda"                        # office has no bda value
+    lm = resolve_loss_model(m, c, m["floors"][0], band, "office")
+    assert (lm["clutter_db_per_m"], lm["clutter_source"]) == (0.3, "building_type")
+    assert lm["grade_clutter"] == "C"
+
+    m = make_model(100, 100, building_type="retail_mall")   # no clutter_by_system block
+    m["system_type"] = "das"
+    lm = resolve_loss_model(m, c, m["floors"][0], band, "office")
+    assert (lm["clutter_db_per_m"], lm["clutter_source"]) == (0.0, "building_type")
+
+
+def test_unknown_system_type_rejected(cfg):
+    m = make_model(100, 100, building_type="office")
+    m["system_type"] = "wifi"
+    with pytest.raises(LossModelError):
+        resolve_loss_model(m, cfg, m["floors"][0], _band(cfg), "office")
+    with pytest.raises(AutoplaceError):
+        autoplace_floor(make_model(100, 100, building_type="office"), cfg, "f1",
+                        request(system_type="wifi"))
+
+
+def test_system_type_absent_keeps_building_type_clutter(cfg):
+    c = with_overrides(cfg, SYS_CFG)
+    m = make_model(100, 100, building_type="office")
+    lm = resolve_loss_model(m, c, m["floors"][0], _band(c), "office")
+    base = resolve_loss_model(m, cfg, m["floors"][0], _band(cfg), "office")
+    assert (lm["clutter_db_per_m"], lm["clutter_source"], lm["system_type"]) == (
+        0.3, "building_type", None)
+    assert lm["clutter_db_per_m"] == base["clutter_db_per_m"]
+
+
+def test_autoplace_request_system_type_reaches_loss_model(cfg):
+    c = with_overrides(cfg, SYS_CFG)
+    res = autoplace_floor(make_model(100, 100, building_type="office"), c, "f1",
+                          request(system_type="das"))
+    info = res["loss_model"]["B2_1900"]
+    assert (info["clutter_db_per_m"], info["clutter_source"], info["system_type"]) == (
+        0.5, "building_type_system", "das")
 
 
 def _one_antenna_model(building_type=None, walls=None):
@@ -369,3 +461,23 @@ def test_api_autoplace_then_bom_and_predict(client):
                        json={"bands": ["NOPE"]}).status_code == 422
     assert client.post("/projects/%d/floors/nope/autoplace" % pid,
                        json=body).status_code == 404
+
+
+def test_api_system_type_validation(client):
+    r = client.post("/projects", json={"name": "SYS test", "system_type": "das"})
+    assert r.status_code == 200, r.text
+    assert r.json()["model"]["system_type"] == "das"
+    pid = r.json()["id"]
+    assert client.patch("/projects/%d" % pid, json={"system_type": "wifi"}).status_code == 422
+    fid = client.post("/projects/%d/floors" % pid,
+                      json={"name": "L1", "ppm": 10, "w_px": 100, "h_px": 100}).json()["floor"]["id"]
+    assert client.patch("/projects/%d/floors/%s" % (pid, fid),
+                        json={"system_type": "wifi"}).status_code == 422
+    assert client.patch("/projects/%d/floors/%s" % (pid, fid),
+                        json={"system_type": "dran"}).json()["floor"]["system_type"] == "dran"
+    assert client.patch("/projects/%d/floors/%s" % (pid, fid),
+                        json={"system_type": None}).status_code == 200
+    body = {"bands": ["B2_1900"], "threshold_dbm": THR, "source": SRC,
+            "repeater": REP, "step_px": 4, "system_type": "wifi"}
+    assert client.post("/projects/%d/floors/%s/autoplace" % (pid, fid),
+                       json=body).status_code == 422

@@ -503,9 +503,9 @@ plus a complete bid package:
 
 **Building-type default loss.** Set `building_type` on a project or floor
 (floor wins; `POST/PATCH /projects`, `POST/PATCH .../floors`). Allowed ids are
-the keys of `building_types` in `config/default.json`: office, hospital,
-warehouse_open, school_campus, hotel_residential, parking_garage,
-stadium_venue, retail_mall. When a floor has no walls drawn, predict and
+the keys of `building_types` in `config/default.json`: office, office_open,
+office_standard, office_dense, hospital, warehouse_open, school_campus,
+hotel_residential, parking_garage, stadium_venue, retail_mall. When a floor has no walls drawn, predict and
 autoplace use that type's N and optional `clutter_db_per_m`:
 `PL = 20log10(f) + N*log10(d) + clutter*d - 28`. With walls drawn, or no
 building type, behavior is unchanged (environment N plus wall crossings).
@@ -515,9 +515,29 @@ the same numbers as `environments`; re-check against the edition you cite).
 Grade E is an estimate with no published coefficient, set to an analog and
 flagged for calibration: hospital 30 and school_campus 30 (office analog),
 warehouse_open, parking_garage and stadium_venue 22 (commercial analog).
-`clutter_db_per_m` is 0.0 for every type (grade E, not calibrated). A band can
-override N per building type with `n_exponent_overrides.<building_type>`.
+`clutter_db_per_m` is calibrated (grade C) for office, hotel_residential,
+hospital and warehouse_open; the other types are 0.0 or grade E estimates. A
+band can override N per building type with `n_exponent_overrides.<building_type>`.
 `predict` returns `loss_model` showing which source applied.
+
+**Office subtypes.** `office` stays the generic type and the fallback when the
+layout is unknown. Pick a subtype that matches the layout: `office_open` for
+open plan (atria, halls, open furniture; clutter 0.1 dB/m, grade E),
+`office_standard` for a standard corporate layout (0.3 dB/m, the calibrated
+office value, grade C), and `office_dense` for dense private offices, cubes or
+labs (0.6 dB/m, grade E). All three use the office N (30, grade P). The open and
+dense clutter values are starting points taken from the `clutter_map` classes
+and are not calibrated.
+
+**System type.** `system_type` is one of `das`, `dran` or `bda` (the list is
+`system_types` in config). Set it on the project, on a floor (the floor wins
+over the project) or in the autoplace request (the request wins over both).
+When the building type has a `clutter_by_system` value for that system, the
+loss model uses it in place of `clutter_db_per_m` and reports
+`clutter_source: building_type_system`. Otherwise the building type's own
+clutter applies. No building type has `clutter_by_system` values yet, so the
+setting changes nothing until calibration adds them. An unknown system type
+returns 422 from the project, floor and autoplace endpoints.
 
 **Autoplace.** `POST /projects/{pid}/floors/{fid}/autoplace` with
 `bands` (required), `antenna_id`, `threshold_dbm` and `coverage_target_pct`
