@@ -966,3 +966,23 @@ def test_pdf_plan_renders_at_the_floor_width():
     w, h, gray = decode_image(doc.tobytes(), floor_w_px=600)
     assert (w, h) == (600, 300)            # zoomed so the image width equals the floor width
     assert gray[20 * w + 200] < 128 and gray[100 * w + 300] > 200   # on the top line (y 10 pt = 20 px) / blank
+
+
+# ======================================================== walls bound placement
+
+def test_walls_without_outline_bound_auto_antennas(cfg):
+    """A floor with walls and no outline places antennas inside the walls'
+    bounding box (0.5 m inset), not on the canvas rectangle."""
+    x0, y0, x1, y1 = 100, 100, 420, 300
+    walls = [
+        {"id": "w1", "x1": x0, "y1": y0, "x2": x1, "y2": y0, "material": "drywall"},
+        {"id": "w2", "x1": x1, "y1": y0, "x2": x1, "y2": y1, "material": "drywall"},
+        {"id": "w3", "x1": x1, "y1": y1, "x2": x0, "y2": y1, "material": "drywall"},
+        {"id": "w4", "x1": x0, "y1": y1, "x2": x0, "y2": y0, "material": "drywall"},
+    ]
+    m = make_model(600, 400, walls=walls)
+    res = autoplace_floor(m, cfg, "f1", request())
+    ants = els(m, "antenna")
+    assert len(ants) >= 1 and len(ants) == len(res["antennas"])
+    for a in ants:
+        assert x0 <= a["x"] <= x1 and y0 <= a["y"] <= y1, (a["x"], a["y"])
