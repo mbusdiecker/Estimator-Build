@@ -546,6 +546,9 @@ Limits:
   for 20 MHz).
 - The default N values are generic; no-wall coverage radii are long and the
   count is only as good as the calibration against closed jobs.
+- A floor with walls and no outline is placed inside the walls' bounding box,
+  inset 0.5 m. Floors without walls keep the canvas rectangle. An outline on the
+  request or the floor overrides both.
 - Planning runs on at most 6000 points; verification on at most
   `verify_max_points` (100,000) and is coarsened beyond that (reported).
   Predict's own KPI stays canvas-wide, so `outline` only affects autoplace.
@@ -714,9 +717,10 @@ Limits:
   about 10,800 px tall, so use the SVG for large trees.
 - Critical areas are not drawn. Edge and equipment labels are not collision
   checked, so labels on a dense floor can overlap.
-- The example drawings in `romtool/examples/` come from a 2-floor office with
-  remotes. Taps were requested but did not win the tap stage at 5 or 6 antennas
-  per floor.
+- The example drawings in `romtool/examples/` come from a 2-floor office on a
+  96 m x 74 m plate, autoplaced with remotes and taps requested at -63 dBm
+  (B2_1900 and B12_700). Each floor picks one coupler stage (7 and 10 antennas).
+  The 12 dB tap does not win at these counts.
 
 ## Non-goals (per SPEC)
 
