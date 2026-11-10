@@ -552,12 +552,128 @@ Limits:
 - One head-end per call. Use `feed_element_id` to hang a floor off an existing
   repeater/splitter port; otherwise each floor gets its own source and repeater.
 - Drawn walls make it much slower (ray tests per point and antenna).
-- Cable lengths are Manhattan distance plus 3 m per run (grade E). Port
+- Cable lengths are Manhattan distance plus 3 m per run (grade E); each run stores its L-shaped route (see the extensions section). Port
   power below 0 dBm is reported, not fixed (no second head-end or sectors).
 - Measured on a 960 x 960 px plate at 10 px/m (9,216 m2, about 99,000 sq ft),
   two bands, 27 antennas: 1.6 s with default verification; 18 s with
   `verify_max_points=0` at step 1 (921,600 points). Plain predict on that
   floor takes about 29 s per band at step 1.
+
+## Autoplace extensions: remotes, taps, branch losses, routes, clutter map
+
+Each feature is a request option on `POST /projects/{pid}/floors/{fid}/autoplace`
+and is off unless asked for, except route geometry, which is always written.
+A request that sets none of them returns the same layout and numbers as before.
+Every new numeric default carries a grade in `config/default.json` (E = estimate,
+no published figure; C = company calibrated; G = guide; P = published). None of
+the new values is graded P or G.
+
+**Remote units** (`remotes: true`, a count, or `{count, max_count,
+max_dl_out_dbm, max_dl_out_dbm_per_band, dl_gain_db, fiber_cable_id}`).
+Instead of one repeater feeding the whole floor, the floor is split into zones.
+Each zone has a remote unit (new element type `remote`, config `remote`)
+placed at the load centre of its antennas (centroid, or the nearest antenna
+when an outline excludes it) and its own splitter tree. Zones come from the
+recursive bisection already used for splitter clustering. One head-end (source
+plus repeater, at the corner rule or `headend {x_px, y_px}`) feeds each remote
+over a `fiber_sm` run with an L-shaped route; fiber loss is not in the RF
+cascade (the loss anchors are 0). A remote outputs `min(in + dl_gain_db,
+max_dl_out_dbm)` per band, like the repeater; `max_dl_out_dbm_per_band` sets a
+cap per band. The count is the smallest whose antenna ports all meet
+`min_antenna_port_dbm` on every band, searched from 1 to `max_remotes`
+(config, 16). A fixed `count` skips the search. When no count closes, the
+count with the best worst port (smallest within 0.25 dB) is kept and a warning
+says so. The response has `remotes` (count, locations in px and m, antennas per
+remote, fiber length per remote and total, output per band, `budget_closed`).
+The BOM lists remotes and fiber footage with fiber connectors. New values (all
+E): `remote.dl_gain_db` 0, `remote.max_dl_out_dbm` 30, `remote.ports` 1,
+`autoplace.max_remotes` 16. Limits: head-end port power is passed to every
+remote unchanged (no optical split or fiber loss), bands are capped
+independently, the remote count cannot be combined with `feed_element_id`, and
+rflink labor drafts do not price remotes or fiber.
+
+**Taps and couplers** (`taps: true` or `{min_gain_db}`). The tree may use the tap
+and coupler parts in config `parts` (selected by `part_id` in the cascade and
+BOM). A small dynamic program over the antenna count compares, per tree, the
+equal-splitter tree the builder makes today with a stage where a coupler's
+coupled port feeds a few antennas and its through port passes most of the power
+to the rest (a trunk tapping off antennas as it runs). The tap stage is used
+only when it lowers the worst per-antenna device loss by `tap_min_gain_db`
+(config, 0.5 dB, E) or ties it and lowers the spread by that much; otherwise
+the equal tree is kept. The antenna tapped first is the one nearest the feed,
+so the trunk runs past antennas in order. Selection uses device losses only;
+cable loss is added by the cascade. The response reports splitter, tapper and
+coupler counts (`elements_added`), parts used, and the device worst loss and
+spread against equal splitters (`taps`). With the shipped parts (10 dB coupler,
+12 dB tap) taps start to win around 10 antennas per tree: for 10 antennas the
+worst device loss drops from 13.0 to 11.6 dB. Limits: two part values only,
+the choice ignores cable length and geometry, and a through-fed antenna gets a
+hotter port (capped at the antenna maximum).
+
+**Branch losses** (`branch_losses: true` or `{connectors, jumpers, diplexers,
+connector_loss_db, jumper_loss_db, diplexer_loss_db}`). Fixed loss between the
+end of the last run and the antenna port, from config `branch_hardware`:
+connector 0.1 dB x 2, jumper 0.3 dB x 1, diplexer 0.5 dB x 1 when more than one
+band shares the antenna (all E, none sourced). The sum is written on each auto
+antenna as `branch_loss_db`; the cascade subtracts it before the port cap, shows
+it in the node and antenna rows (`branch_loss_db`, `port_uncapped_dbm`), and the
+below-0-dBm check and `cascade.min_antenna_port_dbm` use the port after it. The
+BOM adds connectors, jumpers and diplexers. Limit: one allowance for every
+antenna; it is not frequency dependent.
+
+**Route geometry** (always on). Each auto run stores `route`, a list of [x, y]
+px points: one L-shaped path with one bend, the first leg along the floor's
+long axis (`routing.trunk_axis` in the response), so runs that share a trunk
+direction overlap. `length_m` is the sum of the segment lengths over `ppm`
+plus `slack_m_per_run`, so drawing and length agree. Lengths are the same as
+the earlier Manhattan rule. The co-located donor feeder has no route.
+
+**Clutter map** (`romtool/clutter_map.py`). `POST
+/projects/{pid}/floors/{fid}/clutter-map` takes a plan image (multipart `file`;
+without one, the floor's own image) at the floor's scale (`ppm`), lays a square
+grid (`cell_m`, default 3 m), scores each square and stores `floor.clutter_map`.
+`GET` returns it, `PATCH` sets or clears manual overrides (`{"set": [{"row",
+"col"} or {"x_m","y_m"} or {"rect_m": [x0,y0,x1,y1]}, "class": id or "auto"],
+"clear": [...], "clear_all": true}`), `DELETE` removes it. A rebuild keeps
+overrides when the grid is unchanged. Scoring: dark pixels (gray below 128);
+only straight runs of at least 0.9 m count as wall, which drops text and
+diagonal hatching; wall crossings per metre (each wall run on a scan line is one
+crossing, so thickness does not matter), averaged over both axes and a 3 x 3
+window of squares; classes by threshold: exterior (empty squares reaching the
+grid edge, or outside `floor.outline`), core (55 percent ink or more), dense
+rooms (0.20 crossings per metre or more), light office (0.05 or more), open.
+Class dB/m, all grade E and derived from the calibrated building types: open 0.1
+(a third of office), light office 0.3 (office, C), dense rooms 0.6 (hospital,
+C), core 1.0 (warehouse_open, the highest calibrated value), exterior 0. They are
+starting values and are not calibrated per class. Thresholds are tuning values
+set on synthetic plans (grade E).
+
+With a map and no walls drawn, predict and autoplace replace the uniform
+building-type clutter term by the sum over squares of dB/m times the length of
+the straight antenna-to-point line inside each square. The building type (or
+environment) still sets N. Walls drawn win as before and the map is then
+ignored (`loss_model.source` says which applied). Without a map nothing changes.
+Both call the same `ClutterField`: exact grid traversal at the square corners,
+then `base x distance + bilinear residual` in between, where base is the dB/m of
+the antenna's own square (a uniform map is exact). Measured error against exact
+traversal on a banded plan: mean 0.1 dB, max about 1.7 dB within 30 m of the
+antenna. Placement uses the map mean for the seed lattice, so dense areas are
+filled by the greedy step.
+
+Image support: PNG is decoded with the standard library only (gray, gray+alpha,
+RGB, RGBA, palette, 1 to 16 bit, not interlaced). JPEG needs Pillow and PDF needs
+PyMuPDF, both imported only inside the clutter module; without them a 422 says
+what to install (`uv run --with pillow --with pymupdf ...`). A PDF page is
+rendered at the floor's pixel width. Limits: up to about 8 megapixels (the
+decoder is pure Python), hatched or open-outline cores need manual override,
+hatching drawn as long straight lines scores as walls, and the plan must be
+the same extent as the floor canvas (a mismatch in aspect ratio is warned).
+
+Measured on a 960 x 960 px plate at 10 px/m (9,216 m2, about 99,000 sq ft),
+bands B2_1900 and B12_700, threshold -72 dBm (composite domain), step 4: 37
+antennas in 3.4 s plain; 12.3 s with a clutter map (33 antennas, map build 0.1
+s); remotes with taps and branch losses 3.1 s. Verification at step 1 on that
+floor still takes tens of seconds (`verify_max_points=0`).
 
 ## Non-goals (per SPEC)
 
