@@ -61,7 +61,8 @@ function floor() { return S.project && S.project.model.floors.find((f) => f.id =
 function layout() {
   const f = floor();
   const w = f ? f.w_px : 200, h = f ? f.h_px : 150;
-  S.zoom = Math.max(0.5, Math.min(14, Math.min((cv.width - 60) / w, (cv.height - 60) / h)));
+  // fit the whole floor; the floor of 0.02 lets imported plan sheets (thousands of px) fit the canvas
+  S.zoom = Math.max(0.02, Math.min(14, Math.min((cv.width - 60) / w, (cv.height - 60) / h)));
   return { w, h, ox: (cv.width - w * S.zoom) / 2, oy: (cv.height - h * S.zoom) / 2 };
 }
 const toScr = (x, y) => { const L = layout(); return [L.ox + x * S.zoom, L.oy + y * S.zoom]; };
