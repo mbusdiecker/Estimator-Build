@@ -770,7 +770,16 @@ the outline, so manual edits are lost. Steps:
    side is ink when 10 percent of its pixels are dark.
 2. Specks and frames: ink components smaller than `min_feature_m` (0.6 m) in
    both directions are dropped (text, symbols, ticks). A component spanning 85
-   percent of the page in both directions is dropped as a sheet border.
+   percent of the page in both directions is dropped as a sheet border
+   (`frame_frac`).
+   Frame peeling (up to `frame_peel_max` 3 rounds): a closed ink ring spanning
+   at least `frame_min_span` (50 percent) of the page in both directions is a
+   sheet frame when content lies inside it and at least `frame_blank_frac`
+   (50 percent) of its inside ring cells have no other ink within
+   `frame_margin_frac` (3 percent of the short side, at least 2 gap distances).
+   Furniture and columns count as content, specks included. Peeled rings are
+   removed and the flood fill runs again, so a double border peels in two rounds.
+   The result reports `frames_peeled`.
 3. Gap close: ink is dilated by `gap_m` (1.0 m), so door and window gaps up to
    about 2 m close.
 4. Flood fill from the image border. Everything not reached is footprint, so
@@ -810,6 +819,9 @@ the floor has walls.
 - Scale from area is only as good as the outline it is measured from.
 - The work grid is at most 800 cells a side, so the trace is accurate to about
   one work cell, which is about 1/800 of the image's larger side.
+- Peeling needs the frame to be a ring of its own. A frame whose ink touches
+  the building's exterior (a rectangle drawn against the building) forms one
+  connected component with it and is not peeled. Use a manual outline there.
 - Pure-Python decoding and tracing take several seconds on a full-size page.
 - Floors with a clutter map keep the old map after a new plan. Run the
   clutter-map endpoint again.

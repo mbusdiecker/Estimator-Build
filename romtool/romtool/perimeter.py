@@ -49,6 +49,10 @@ DEFAULTS = {
     "ink_fraction": 0.1,
     "min_feature_m": 0.6,
     "frame_frac": 0.85,
+    "frame_min_span": 0.5,
+    "frame_margin_frac": 0.03,
+    "frame_blank_frac": 0.5,
+    "frame_peel_max": 3,
     "gap_m": 1.0,
     "gap_frac_unknown": 0.03,
     "keep_regions": 1,
@@ -83,6 +87,7 @@ def perimeter_params(config, **over):
     p["dark_threshold"] = int(p["dark_threshold"])
     p["work_max_side"] = int(p["work_max_side"])
     p["keep_regions"] = int(p["keep_regions"])
+    p["frame_peel_max"] = int(p["frame_peel_max"])
     if not 1 <= p["dark_threshold"] <= 254:
         raise PerimeterError("dark_threshold must be 1..254")
     if not 50 <= p["work_max_side"] <= 4000:
@@ -93,6 +98,10 @@ def perimeter_params(config, **over):
         raise PerimeterError("gap_m and min_feature_m must be >= 0 and simplify_m > 0")
     if not 0.2 <= p["frame_frac"] <= 1.0:
         raise PerimeterError("frame_frac must be 0.2..1")
+    if not 0.2 <= p["frame_min_span"] <= 1.0 or not 0 < p["frame_margin_frac"] <= 0.5:
+        raise PerimeterError("frame_min_span must be 0.2..1 and frame_margin_frac 0..0.5")
+    if not 0 < p["frame_blank_frac"] <= 1 or p["frame_peel_max"] < 0:
+        raise PerimeterError("frame_blank_frac must be in (0, 1] and frame_peel_max >= 0")
     if p["keep_regions"] < 1:
         raise PerimeterError("keep_regions must be at least 1")
     if not 0 < p["region_min_frac"] <= 1 or not 0 < p["max_footprint_frac"] <= 1:
@@ -207,18 +216,25 @@ def _filter_ink(ink, W, H, min_feat_cells, frame_frac):
     """Drop specks (bbox below min_feat_cells in both directions) and sheet frames."""
     lab, sizes, boxes = _label(ink, W, H, eight=True)
     keep_ids = set()
+    frame_ids = set()
     frames = specks = 0
     for L in range(1, len(sizes)):
         x0, y0, x1, y1 = boxes[L]
         bw, bh = x1 - x0 + 1, y1 - y0 + 1
         if bw >= frame_frac * W and bh >= frame_frac * H:
             frames += 1
+            frame_ids.add(L)
         elif max(bw, bh) < min_feat_cells:
             specks += 1
         else:
             keep_ids.add(L)
     keep = bytearray(1 if L in keep_ids else 0 for L in lab)
-    return keep, frames, specks
+    content = bytearray(ink)
+    for L in frame_ids:
+        for i in range(W * H):
+            if lab[i] == L:
+                content[i] = 0
+    return keep, frames, specks, content
 
 
 def _flood_outside(grown, W, H):
@@ -428,6 +444,52 @@ def _hull(points):
     return lower[:-1] + upper[:-1]
 
 
+def _peel_round(keep_ink, content, W, H, d_cells, p):
+    """Ink rings that look like a sheet frame. A candidate is a closed ring whose
+    bounding box spans at least frame_min_span of the grid in both directions. It
+    is a frame when enclosed content exists and at least frame_blank_frac of its
+    ring cells have no other ink within d_cells on the inside. Other large rings
+    count as ink, so a double border is peeled one ring per round (inner first).
+    The margin test counts all content (specks included, so furniture-sized
+    blocks count), but not sheet-border lines. A building with rooms or furniture
+    against its walls fails the margin test.
+    Returns the ring masks to remove."""
+    lab, sizes, boxes = _label(keep_ink, W, H, eight=True)
+    n = W * H
+    found = []
+    for L in range(1, len(sizes)):
+        x0, y0, x1, y1 = boxes[L]
+        if (x1 - x0 + 1) < p["frame_min_span"] * W or (y1 - y0 + 1) < p["frame_min_span"] * H:
+            continue
+        ring = bytearray(1 if lab[i] == L else 0 for i in range(n))
+        inside = _invert(_flood_outside(ring, W, H))
+        others = bytearray(1 if (content[i] and not ring[i] and inside[i]) else 0
+                           for i in range(n))
+        if not any(others):
+            continue
+        bad = _dilate(others, W, H, d_cells)
+        ring_cells = blank = 0
+        for i in range(n):
+            if not ring[i]:
+                continue
+            x, y = i % W, i // W
+            on_inside = False
+            for dx, dy in _N4:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < W and 0 <= ny < H:
+                    j = ny * W + nx
+                    if inside[j] and not ring[j]:
+                        on_inside = True
+                        break
+            if on_inside:
+                ring_cells += 1
+                if not bad[i]:
+                    blank += 1
+        if ring_cells and blank >= p["frame_blank_frac"] * ring_cells:
+            found.append(ring)
+    return found
+
+
 # ------------------------------------------------------------------ tracing
 
 def trace_outline(gray, iw, ih, ppm=None, config=None, **options):
@@ -462,11 +524,28 @@ def trace_outline(gray, iw, ih, ppm=None, config=None, **options):
         simplify_px = max(1.0, 0.5 * gap_cells * s)
 
     ink = _ink_grid(gray, iw, ih, s, W, H, p["dark_threshold"], p["ink_fraction"])
-    keep_ink, frames, specks = _filter_ink(ink, W, H, min_feat, p["frame_frac"])
+    keep_ink, frames, specks, content = _filter_ink(ink, W, H, min_feat, p["frame_frac"])
     if frames:
         warnings.append("ignored %d sheet-border line(s) spanning the page" % frames)
-    grown = _dilate(keep_ink, W, H, gap_cells)
-    reached = _flood_outside(grown, W, H)
+    d_cells = max(int(round(p["frame_margin_frac"] * min(W, H))), 2 * gap_cells)
+    peeled = rounds = 0
+    while True:
+        grown = _dilate(keep_ink, W, H, gap_cells)
+        reached = _flood_outside(grown, W, H)
+        if rounds >= p["frame_peel_max"]:
+            break
+        found = _peel_round(keep_ink, content, W, H, d_cells, p)
+        if not found:
+            break
+        for mask in found:
+            for i in range(W * H):
+                if mask[i]:
+                    keep_ink[i] = 0
+                    content[i] = 0
+        peeled += len(found)
+        rounds += 1
+    if peeled:
+        warnings.append("peeled %d sheet frame ring(s) by their blank margin" % peeled)
     foot = _invert(reached)
     if sum(foot) == 0:
         raise PerimeterError("no building footprint found: the plan has no closed outline")
@@ -514,6 +593,7 @@ def trace_outline(gray, iw, ih, ppm=None, config=None, **options):
         "work": {"scale": s, "cols": W, "rows": H, "gap_cells": gap_cells,
                  "gap_m": (gap_cells * s / ppm) if ppm else None,
                  "specks_dropped": specks, "frames_dropped": frames,
+                 "frames_peeled": peeled,
                  "regions_kept": [sizes[L] for L in kept], "raw_vertices": len(raw)},
         "params": p,
     }

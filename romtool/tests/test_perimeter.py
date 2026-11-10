@@ -150,6 +150,75 @@ def test_open_exterior_does_not_trace_the_building(cfg):
     assert res["area_px"] < 0.5 * AREA_PX
 
 
+def frame_rect(g, w, x0, y0, x1, y1, t=2):
+    """A thin rectangular ring with its outer face at [x0, x1) x [y0, y1)."""
+    fill(g, w, x0, y0, x1, y0 + t)
+    fill(g, w, x0, y1 - t, x1, y1)
+    fill(g, w, x0, y0, x0 + t, y1)
+    fill(g, w, x1 - t, y0, x1, y1)
+
+
+def test_double_sheet_frame_with_title_text_and_notch_is_peeled(cfg):
+    """Building (L-shaped, notch 8 m x 6 m in the south-east corner) inside a double
+    sheet frame, with title-block text outside the frame. Span rule off so the
+    peel rule does the work."""
+    CW, CH = 500, 380
+    g = blank(CW, CH)
+    frame_rect(g, CW, 10, 10, 490, 370)            # outer border
+    frame_rect(g, CW, 17, 17, 483, 363)            # inner border
+    box_walls(g, CW, 60, 60, 380, 240)             # building, east arm
+    box_walls(g, CW, 60, 60, 300, 300)             # building, south arm (notch at 300..380 x 240..300)
+    for row in range(3):                           # title text below the frame
+        for i in range(10):
+            fill(g, CW, 300 + i * 4, 374 + row * 2, 303 + i * 4, 379)
+    res = trace_outline(bytes(g), CW, CH, 10.0, cfg, frame_frac=0.99)
+    assert res["work"]["frames_peeled"] == 2
+    assert any("peeled 2" in w for w in res["warnings"])
+    want = 320 * 180 + 240 * 60                    # L with the notch, 72000 px2
+    assert close(res["area_px"], want, 0.03)
+    assert len(res["outline"]) == 6
+    assert (300.0, 240.0) in [tuple(p) for p in res["outline"]]   # notch corner kept
+
+
+def test_building_with_furniture_against_its_walls_is_not_peeled(cfg):
+    """Furniture right against all four walls (blocks 6 px inside each wall, every
+    14 px), with and without a continuous ring 2 px inside the walls. Nothing may
+    peel, and the trace is the building itself."""
+    for ring in (False, True):
+        g = building()
+        if ring:
+            fill(g, W, X0 + 2, Y0 + 2, X1 - 2, Y0 + 4, 0)
+            fill(g, W, X0 + 2, Y1 - 4, X1 - 2, Y1 - 2, 0)
+            fill(g, W, X0 + 2, Y0 + 2, X0 + 4, Y1 - 2, 0)
+            fill(g, W, X1 - 4, Y0 + 2, X1 - 2, Y1 - 2, 0)
+        for x in range(X0 + 10, X1 - 10, 14):
+            fill(g, W, x, Y0 + 6, x + 4, Y0 + 10, 0)
+            fill(g, W, x, Y1 - 10, x + 4, Y1 - 6, 0)
+        for y in range(Y0 + 10, Y1 - 10, 14):
+            fill(g, W, X0 + 6, y, X0 + 10, y + 4, 0)
+            fill(g, W, X1 - 10, y, X1 - 6, y + 4, 0)
+        res = trace_outline(bytes(g), W, H, 10.0, cfg, frame_frac=0.99)
+        assert res["work"]["frames_peeled"] == 0, ring
+        assert close(res["area_px"], AREA_PX, 0.03), ring
+
+
+def test_span_rule_and_peel_rule_are_separate(cfg):
+    """One frame, rectangular building. The span rule drops the frame when frame_frac
+    allows it; with peeling off (frame_peel_max 0) the frame stays unless the span
+    rule drops it; with the span rule off the peel rule removes it."""
+    CW, CH = 400, 300
+    g = box_walls(blank(CW, CH), CW, 50, 50, 350, 250)
+    frame_rect(g, CW, 6, 6, 394, 294)
+    span = trace_outline(bytes(g), CW, CH, 10.0, cfg, frame_peel_max=0)
+    assert span["work"]["frames_dropped"] == 1 and span["work"]["frames_peeled"] == 0
+    assert close(span["area_px"], AREA_PX, 0.03)
+    with pytest.raises(PerimeterError):             # frame kept: footprint is the whole page
+        trace_outline(bytes(g), CW, CH, 10.0, cfg, frame_frac=0.99, frame_peel_max=0)
+    peel = trace_outline(bytes(g), CW, CH, 10.0, cfg, frame_frac=0.99)
+    assert peel["work"]["frames_peeled"] == 1 and peel["work"]["frames_dropped"] == 0
+    assert close(peel["area_px"], AREA_PX, 0.03)
+
+
 def test_perimeter_params_are_validated(cfg):
     assert perimeter_params(cfg)["gap_m"] == 1.0
     with pytest.raises(PerimeterError):
