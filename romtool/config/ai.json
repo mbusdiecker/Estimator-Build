@@ -1,0 +1,16 @@
+{
+  "version": "0.7.0",
+  "comment": "AI gateway config (phase E4, v0.7.0). Gateway-agnostic OpenAI-chat-style completion: POST {base_url}/chat/completions with {model, messages, temperature, max_tokens}; Authorization Bearer from the env var named by api_key_env. When the config file is missing, api_key_env is unset/empty, the gateway times out / refuses / answers non-200, the endpoints degrade to HTTP 503 {\"detail\": \"ai gateway unreachable\", \"schema\": {...}} with the documented schema for that endpoint. NO test may call paid APIs - tests mock romtool/ai.py's gateway transport.",
+  "base_url": "http://ai-gateway.internal/v1",
+  "model": "gateway-default",
+  "api_key_env": "ROMTOOL_AI_KEY",
+  "timeout_seconds": 30,
+  "temperature": 0.2,
+  "max_tokens": 1600,
+  "prompts": {
+    "system": "You are the estimating assistant inside ROMtool, an in-building wireless (DAS/ERCES) estimator. Answer with STRICT JSON only - no markdown fences, no prose outside the JSON.",
+    "rfp_scan_instruction": "Extract the requirements/scope matrix for this RFP excerpt. Output JSON with exactly these keys: requirements (list of {id, category, text, source_excerpt}), scope_matrix (list of {requirement_id, in_scope (boolean), catalog_zones (list of ROMtool zone prefixes like E, G, H), note}), gaps (list of {id, text, reason} for requirements the RFP leaves ambiguous or unstated that an estimator must clarify), assumptions (list of strings).",
+    "scenario_suggest_instruction": "From this estimate recap suggest 2-4 what-if scenario overlays an estimator would want to price. Output JSON with exactly key: suggestions (list of {name, rationale, overlay, impact_hint}). Valid overlay keys: access_overrides ({location_id: access method}), factor_overrides (deep-merged estimating config overrides), qty_overrides ({location_id: {catalog_id: qty}}), quote_swap ({line_key: {quote_id: id}}). Ground the rationale in the recap: zone shares, quality mix, crew loading, escalation.",
+    "bid_memo_instruction": "Write a bid memo from this recap + assumption register for the owner's sign-off. Output JSON with exactly these keys: memo (narrative markdown/plain string), highlights (list of strings: the numbers a reviewer must see). State every norm-grade vs assumption-grade caveat plainly; never present Class 3 ROM numbers as firm bids."
+  }
+}

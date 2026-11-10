@@ -1,0 +1,20 @@
+# Code only (Matt, 2026-11-10). Everything is ignored except the allow-list below.
+# Never commit job files, budgets, cost data, price books, drafts, Qwen caches or databases.
+*
+!*/
+!.gitignore
+!*.py
+!*.ps1
+!romtool/**
+# job and working data
+demo/25-00151/
+demo/*.json
+data/
+cache/
+drafts/
+reviews/
+romtool/**/*.sqlite
+romtool/**/*.db
+romtool/dist/
+__pycache__/
+.venv/

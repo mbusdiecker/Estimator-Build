@@ -1,0 +1,47 @@
+{
+  "version": "0.5.0",
+  "comment": "Estimate governance + procurement constants (phase E2). The estimate state machine, register statuses/transitions, default actor and quote date-math knobs live here; nothing is hard-coded in romtool/governance.py. binding math: binding_until is INCLUSIVE (a quote stays binding through that date, expires strictly after).",
+  "default_actor": "api",
+  "estimate_states": ["draft", "review", "approved", "sent", "superseded"],
+  "estimate_state_transitions": {
+    "draft": ["review"],
+    "review": ["approved", "draft"],
+    "approved": ["sent", "superseded"],
+    "sent": ["superseded"],
+    "superseded": []
+  },
+  "estimate_state_comments": {
+    "review->draft": "sent back for re-pricing (rejected in review)",
+    "approved->superseded": "withdrawn without sending; supersedes in place",
+    "sent->superseded": "bid replaced after issue"
+  },
+  "states_allowing_revision": ["draft", "review"],
+  "states_allowing_editor_changes": ["draft", "review", "approved"],
+  "states_allowing_delete": ["draft", "review", "superseded"],
+  "revision_note": "PATCH /estimates/{id} creates revision N+1 only while state is in states_allowing_revision; approved/sent/superseded estimates are frozen (409).",
+  "assumption_statuses": ["open", "verified", "closed"],
+  "assumption_status_transitions": {
+    "open": ["verified"],
+    "verified": ["closed", "open"],
+    "closed": []
+  },
+  "assumption_note": "open -> verified (norm confirmed against source/quote), verified -> closed (close-out accepted), verified -> open (verification rejected, reopened). Skipped steps are rejected with 409.",
+  "default_assumption_owner": "Senior Project Estimator",
+  "auto_assumption_source_quality": "E",
+  "auto_assumption_note": "On every compute/revision, each estimate line whose line kind carries a labor norm (catalog row kind 'minutes') and whose unit card is auto_assumption_source_quality-flagged auto-populates one register row (estimate_id, catalog_id, line_key, text from item+reference, owner default, status open). 0-minute quote/cost-carry rows are procurement items, not norms - they surface in the quote register instead.",
+  "quote_statuses": ["draft", "received", "bound", "expired"],
+  "quote_status_transitions": {
+    "draft": ["received", "expired"],
+    "received": ["bound", "expired"],
+    "bound": ["expired"],
+    "expired": ["received"]
+  },
+  "quote_note": "draft -> received (vendor number in), received -> bound (commitment), -> expired (binding lapsed or vendor withdrew); expired -> received re-issues a corrected quote. Effective status: stored received/bound rows flip to 'expired' automatically the day AFTER binding_until.",
+  "quote_binding_warn_days": 14,
+  "default_quote_currency": "USD",
+  "bid_tab_quote_statuses": ["received", "bound"],
+  "bid_tab_note": "low/mid/high of a scope group use only quotes whose effective status is in bid_tab_quote_statuses (drafts are placeholders, expired numbers are stale); mid is the median amount, ordering is ascending by amount.",
+  "sanity_blocks_approval": true,
+  "sanity_block_states": ["approved"],
+  "sanity_blocks_note": "Phase E4 guard: when transitioning into a sanity_block_states state, the estimate's sanity report (GET /estimates/{id}/sanity) is recomputed on demand; any HARD finding (missing archetype checklist scope, crew duration math inconsistency) rejects the transition with 409 and lists the findings. Warnings (labor-share, E-density, unit-cost outliers, quote expiry) never block. Set sanity_blocks_approval false to disable."
+}

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ROMtool - in-building RF ROM estimator</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="brand">ROMtool <span class="tag">in-building RF ROM estimator &middot; public-safety phase 2</span></div>
+  <nav class="docnav">
+    <a href="/help">How-To</a>
+    <a href="/how-it-works">How it works</a>
+  </nav>
+  <div class="bar">
+    <select id="projSel" title="Project"></select>
+    <input id="newProjName" placeholder="new project name" size="14">
+    <button id="btnNewProj">+ New</button>
+    <span class="sep"></span>
+    <button id="btnSolve" class="primary">Solve cascade</button>
+    <label class="lbl">Band <select id="bandSel"></select></label>
+    <label class="chk"><input type="checkbox" id="chkHeatmap"> Heatmap</label>
+    <span class="sep"></span>
+    <button id="btnBom">Refresh BOM</button>
+    <a id="lnkCsv" href="#" download>BOM CSV</a>
+    <a id="lnkJson" href="#" download>BOM JSON</a>
+  </div>
+</header>
+<main>
+  <aside id="pal">
+    <div class="ptitle">Floor</div>
+    <div id="floorTabs" class="tabs"></div>
+    <button id="btnAddFloor" class="mini">+ Floor</button>
+    <div class="ptitle">Floorplan image</div>
+    <input type="file" id="imgFile" accept="image/png,image/jpeg">
+    <div class="row">
+      <button id="btnCalib" class="mini">Calibrate scale</button>
+      <label class="lbl">ppm <input id="inpPpm" size="5" title="pixels per meter"></label>
+    </div>
+    <div class="ptitle">Tools</div>
+    <div class="palette">
+      <button class="tool active" data-tool="select">Select</button>
+      <button class="tool" data-tool="wall">Wall</button>
+      <button class="tool" data-tool="cable">Cable</button>
+      <button class="tool" data-tool="poly">Critical area</button>
+    </div>
+    <button id="btnFinishPoly" class="mini" hidden>Finish polygon</button>
+    <label class="lbl">Wall material <select id="matSel"></select></label>
+    <label class="lbl">Cable type <select id="cableSel"></select></label>
+    <div class="ptitle">Place element</div>
+    <div class="palette">
+      <button class="tool" data-el="source">Source</button>
+      <button class="tool" data-el="repeater">Repeater</button>
+      <button class="tool" data-el="splitter">Splitter</button>
+      <button class="tool" data-el="tapper">Tap</button>
+      <button class="tool" data-el="coupler">Coupler</button>
+      <button class="tool" data-el="antenna">Antenna</button>
+    </div>
+    <label class="lbl">Antenna type <select id="antSel"></select></label>
+    <label class="lbl"><span id="waysHint">Splitter</span> ways
+      <select id="waysSel"><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
+    </label>
+    <div class="ptitle">Heatmap legend</div>
+    <div id="legend"></div>
+  </aside>
+  <section id="stage"><canvas id="cv" width="980" height="660"></canvas></section>
+  <aside id="side">
+    <div class="ptitle">KPI (per band)</div>
+    <div id="kpis" class="kpis">Run solve, then enable the heatmap overlay.</div>
+    <div class="ptitle">NFPA two-tier (critical areas)</div>
+    <div id="nfpas" class="kpis">Tier 2 evaluates inside critical-area polygons (99% min by default).</div>
+    <div class="ptitle">Inspector</div>
+    <div id="insp" class="insp">Nothing selected.</div>
+    <div class="ptitle">BOM (parts only, no pricing)</div>
+    <div id="bomBox" class="bom">-</div>
+  </aside>
+</main>
+<div id="toast"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

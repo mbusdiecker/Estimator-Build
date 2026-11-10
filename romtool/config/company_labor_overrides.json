@@ -1,0 +1,7 @@
+{
+  "version": "0.7.0",
+  "comment": "Company labor-norm override layer (phase E4 actuals loop). DATA-DRIVEN: romtool/estimate.py applies these low/high unit minutes on top of config/labor_units.json for every compute - the engine prefers the override card. Rows are written ONLY by POST /estimates/{id}/actuals/apply-refit with owner-approved numbers; propose-refit NEVER writes here (proposals are review-only and stored per estimate).",
+  "overrides": {},
+  "history": [],
+  "history_note": "Every apply appends {ts, estimate_id, catalog_id, low, high, refit_ratio, n_rows, median_ratio, actor} here for audit."
+}

@@ -1,0 +1,79 @@
+{
+  "version": "0.7.0",
+  "comment": "Missing-scope checklists per venue archetype (phase E4, v0.7.0). Each entry: zone_prefix matches the catalog zone letter prefix (zone string before the first '-'); catalog_ids (optional any-of) pins must-have unit cards inside the prefix. An entry is satisfied when the estimate carries at least one labor line whose catalog zone matches the prefix (and, when catalog_ids is set, at least one of the listed ids). Missing entries are HARD findings (config/sanity.json severity.missing_scope) and block the approved transition.",
+  "archetypes": {
+    "stadium": {
+      "label": "Stadium / large assembly venue",
+      "zones": [
+        {"zone_prefix": "A", "caption": "Rooftop donor entry: donor antenna mount/aim, cable entry port, weatherproofing"},
+        {"zone_prefix": "C", "caption": "Hub closet / TR build-out: backboard, rack, bonding, sleeves"},
+        {"zone_prefix": "E", "caption": "Cellular passive distribution: heliax, connectors, antennas"},
+        {"zone_prefix": "G", "caption": "ERCES booster, donor/service antennas and alarm wiring"},
+        {"zone_prefix": "H", "caption": "Benchmark + acceptance grid testing before closeout"},
+        {"zone_prefix": "I", "caption": "Engineering, carrier coordination and PM wrap"},
+        {"zone_prefix": "J", "caption": "Dedicated circuit / breaker / grounding for the headend plant"},
+        {"zone_prefix": "K", "caption": "Access adders (rope/lift/crane days) for bowl and roof work"},
+        {"zone_prefix": "O", "caption": "48VDC plant: bay, N+1 rectifiers, IFC 12-hr battery strings"}
+      ]
+    },
+    "hospital": {
+      "label": "Hospital / occupied healthcare campus",
+      "zones": [
+        {"zone_prefix": "C", "caption": "TR/closet build-out for signal sources and headend"},
+        {"zone_prefix": "E", "caption": "Cellular passive distribution (ceiling/wall antennas, heliax)"},
+        {"zone_prefix": "G", "caption": "ERCES / public-safety booster scope incl. battery runtime verification"},
+        {"zone_prefix": "H", "caption": "Benchmark + acceptance grid testing incl. critical-area point tests"},
+        {"zone_prefix": "I", "caption": "Engineering/AHJ submittal and PM wrap"},
+        {"zone_prefix": "J", "caption": "Power + telecom bonding for headend equipment"},
+        {"zone_prefix": "L", "caption": "Ceiling tile / patch restoration allowance in occupied areas"},
+        {"zone_prefix": "M", "caption": "Occupied-hours logistics: badging, escorted access, downtime windows"}
+      ]
+    },
+    "warehouse": {
+      "label": "Warehouse / distribution",
+      "zones": [
+        {"zone_prefix": "B", "caption": "Headend rack/cabinet build-out"},
+        {"zone_prefix": "C", "caption": "Hub closets at rack locations"},
+        {"zone_prefix": "D", "caption": "Conduit / cable tray pathway in high-bay areas"},
+        {"zone_prefix": "E", "caption": "Cellular passive distribution across rack aisles"},
+        {"zone_prefix": "H", "caption": "Acceptance testing per floor/band"},
+        {"zone_prefix": "K", "caption": "Lift access adders for high-bay antenna work"}
+      ]
+    },
+    "tunnel": {
+      "label": "Tunnel / transit / constrained utility passage",
+      "zones": [
+        {"zone_prefix": "B", "caption": "Headend / BTS shelf build-out at portal or service building"},
+        {"zone_prefix": "D", "caption": "Conduit / hangers along the bore"},
+        {"zone_prefix": "E", "caption": "Cellular + public-safety passive distribution (radiating cable class scope re-carded)"},
+        {"zone_prefix": "G", "caption": "Booster / ERCES scope with donor + service antennas"},
+        {"zone_prefix": "H", "caption": "Grid/acceptance testing through the bore"},
+        {"zone_prefix": "K", "caption": "Access adders: night/possession windows, rope or hoist access"},
+        {"zone_prefix": "M", "caption": "Possession / downtime windows priced as idle carry or night differentials"}
+      ]
+    },
+    "hotel": {
+      "label": "Hotel / occupied hospitality",
+      "zones": [
+        {"zone_prefix": "C", "caption": "Closet/TR build-out per riser"},
+        {"zone_prefix": "E", "caption": "Cellular passive distribution across guest floors"},
+        {"zone_prefix": "H", "caption": "Benchmark + acceptance testing per floor"},
+        {"zone_prefix": "I", "caption": "Engineering and PM wrap"},
+        {"zone_prefix": "L", "caption": "Ceiling tile / patch / paint restoration allowance"},
+        {"zone_prefix": "M", "caption": "Occupied-area logistics (badging, escorted access)"}
+      ]
+    },
+    "office": {
+      "label": "Office / commercial tenant space",
+      "zones": [
+        {"zone_prefix": "B", "caption": "Headend / equipment rack build-out"},
+        {"zone_prefix": "C", "caption": "Closet/TR build-out (backboard, rack, bonding)"},
+        {"zone_prefix": "D", "caption": "Conduit / pathway scope"},
+        {"zone_prefix": "E", "caption": "Cellular passive distribution: heliax, connectors, antennas"},
+        {"zone_prefix": "H", "caption": "Benchmark + acceptance grid testing"},
+        {"zone_prefix": "I", "caption": "Engineering, carrier coordination and PM wrap"},
+        {"zone_prefix": "J", "caption": "Power + grounding for the headend"}
+      ]
+    }
+  }
+}

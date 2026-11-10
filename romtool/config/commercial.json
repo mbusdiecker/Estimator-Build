@@ -1,0 +1,87 @@
+{
+  "version": "0.6.0",
+  "comment": "ROMtool commercial wrap constants (phase E3, v0.6.0). EVERY commercial constant here is editable and nothing is hard-coded in romtool/commercial.py. DOCUMENTED WRAP ORDER (the recap $ chain, applied in exactly this sequence - mirrored on /how-it-works section 11 and in estimate.py's docstring): 1) DIRECT LABOR + SUPERVISION (wrapped lines: base minutes x condition x access x schedule = task hours; + N01 working-foreman + N02 non-working supervision hours, billed at the rate card) -> 2) DOWNTIME (M01 idle crew-day carry for blacked-out windows: schedule risk cost, zero hours) -> 3) SMALL-TOOLS/CONSUMABLES allowance (pct x (labor + downtime)) -> 4) ESCALATION ((index factor - 1) x (labor + downtime), where factor = 1 + days(base_date -> anchor_date)/365 x annual_rate_pct/100; the anchor date is the definition's commercial.escalation.anchor_date, else the midpoint working day of the with-crews schedule when the definition carries start_date; no anchor -> escalation not applied, factor 1 with a warning) -> 5) SALES/USE TAX (rate x taxable-line labor per the rules below) -> 6) INSURANCE/BOND carry (pct x running subtotal through tax) -> 7) PM (I05, pct x running subtotal through insurance) -> 8) OVERHEAD (pct x running subtotal through PM) -> 9) PROFIT (pct x running subtotal through OH, optionally by risk tier) -> 10) LINE-RISK CONTINGENCY (N05 per line by source quality, on labor dollars, never marked up) -> GRAND TOTAL. Percentages apply low/mid/high uniformly; contingency stays outside the marked-up subtotal.",
+
+  "small_tools": {
+    "pct": 3.0,
+    "basis": "pct x (direct labor incl. N01/N02 supervision + M01 idle carry)",
+    "note": "Small tools, consumables, blades/bits/fasteners wear allowance carried on accepted labor cost. Assumption-grade practice default (E): edit per company standard."
+  },
+
+  "sales_use_tax": {
+    "comment": "Sales/use tax rules: every recap line is classified into a line type via zone prefix (catalog zone before the first '-') and the zone_line_types map; anything unmapped falls to default_line_type. Types listed in taxable_line_types are taxed at rate_pct (or the definition's commercial.tax.rate_pct jurisdiction override); types in exempt_line_types are not taxed. This recap prices LABOR (improvement to real property, exempt in most jurisdictions), so the shipped default classifies every zone as labor -> the tax step computes $0.00 and reports so explicitly. Classify a zone as equipment/materials (owner-furnished gear scope) only when your jurisdiction actually taxes that base.",
+    "default_line_type": "labor",
+    "taxable_line_types": ["materials", "equipment"],
+    "exempt_line_types": ["labor"],
+    "rate_pct": 7.0,
+    "rate_note": "Default jurisdiction rate (assumption-grade placeholder, E): set 0 to disable or edit to your governing rate; definition commercial.tax.rate_pct overrides per estimate.",
+    "zone_line_types": {}
+  },
+
+  "escalation": {
+    "comment": "Escalation indices: each index has a scope (which recap dollars it applies to - labor recap -> labor index), a base_date (price reference) and an annualized rate. Factor = 1 + days(base_date -> anchor_date)/365 x annual_rate_pct/100; anchor before base_date means factor 1 (never de-escalate). Days counted calendar, rate applied linearly (simple interest). Provenance: assumption-grade practice indices (E) for the ROM horizon - swap in published ENR/CPI series when vendor price-hold dates govern.",
+    "default_index": "labor",
+    "indices": {
+      "labor": {
+        "scope": "labor",
+        "base_date": "2026-01-01",
+        "annual_rate_pct": 3.5,
+        "provenance": "E",
+        "note": "Applied to (direct labor + M01 idle carry) when the estimate carries an anchor date."
+      },
+      "copper": {
+        "scope": "materials",
+        "base_date": "2026-01-01",
+        "annual_rate_pct": 8.0,
+        "provenance": "E",
+        "note": "Material-scope index for copper-bearing scope; the v0.6 labor recap carries no material lines, so it does not hit the chain - reserved for material/quote-swap scope and future phases."
+      },
+      "equipment": {
+        "scope": "equipment",
+        "base_date": "2026-01-01",
+        "annual_rate_pct": 4.0,
+        "provenance": "E",
+        "note": "Equipment-scope index; same - reserved for equipment lines / quote swaps."
+      }
+    }
+  },
+
+  "insurance_bond": {
+    "pct": 1.5,
+    "basis": "pct x running subtotal through taxes",
+    "note": "Builder's all-risk + general liability + performance/payment bond carry, as a single wrapped rate (assumption-grade practice default, E: split/carve out per program)."
+  },
+
+  "overtime": {
+    "weekly_dt_threshold_hours": 40.0,
+    "dt_multiplier": 2.0,
+    "note": "Schedule-level rule: planned crew hours above the weekly threshold are flagged on /estimates/{id}/schedule with the double-time multiplier noted. OT COST is NOT a wrap step - the M02 night/weekend hour differentials remain the labor-costing mechanism; this flag documents where a straight->DT premium would apply."
+  },
+
+  "cash_flow": {
+    "comment": "Milestone schedule and % splits of the wrapped grand total (mid band). Splits must sum to exactly 100. Patterns: 'upfront' = billed in the NTP month; 'months' = spread evenly across `months` starting `offset_months` after month 0; 'schedule' (INSTALL) = spread evenly across the calendar months the installation schedule spans (with start_date), else ceil(schedule work days / workdays_per_month_default) months; 'final' = the last month of the curve (closeout/retainage release).",
+    "workdays_per_month_default": 21,
+    "milestones": [
+      {"code": "NTP", "label": "Notice to proceed (mobilization advance)", "pct": 10.0, "pattern": "upfront"},
+      {"code": "DESIGN", "label": "Design & engineering deliverables", "pct": 15.0, "pattern": "months", "months": 2, "offset_months": 1},
+      {"code": "INSTALL", "label": "Installation progress billing", "pct": 60.0, "pattern": "schedule"},
+      {"code": "COMMISSION", "label": "Commissioning & optimization", "pct": 10.0, "pattern": "months", "months": 1, "offset_from_install_end": 1},
+      {"code": "CLOSEOUT", "label": "Closeout / retainage release", "pct": 5.0, "pattern": "final"}
+    ]
+  },
+
+  "profit_pct_by_risk_tier": {
+    "low": 8.0,
+    "standard": 10.0,
+    "high": 12.0
+  },
+  "default_profit_risk_tier": "standard",
+  "profit_tier_note": "Definition commercial.profit_risk_tier (low/standard/high) overrides estimating.json profit_pct; default tier 'standard' matches the 10% rate card so legacy totals are unchanged unless an estimate picks a tier.",
+
+  "bid_form": {
+    "title_default": "Bid Form",
+    "signature_fields": ["Bidder (company)", "Signature", "Printed name", "Title", "Date"],
+    "signature_note": "Bid valid per attachment terms; base bid excludes named alternates unless separately accepted; alternates are priced with the same wrap engine and are additive unless marked deduct.",
+    "unit_price_note": "Unit price = wrapped grand total (mid) / antenna-point count from the estimate definition."
+  }
+}

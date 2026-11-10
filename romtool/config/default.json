@@ -1,0 +1,112 @@
+{
+  "tool": "ROMtool",
+  "version": "0.4.0",
+  "phase": 4,
+  "comment": "All bands, materials, cables, parts, KPI presets and report colors are data. Phase 2 (LMR/FirstNet) and phase 3 (5G NR) add entries here without code changes. Phase 4 (Class 1 labor estimates) lives in config/estimating.json (factor values, rate card) + config/labor_units.json (catalog, regenerate with scripts/build_labor_units.py). Frequencies are DL center MHz (arithmetic midpoint of the DL block). NR bands carry technology=5G NR which opts them into the kpi_presets.nr_ssrsp SS-RSRP evaluation. Wall losses are dB at wall_loss_ref_mhz, scaled linearly in the log-frequency domain (ITU-R P.2040-style). Cable loss is dB/100m at anchor GHz values, interpolated linearly in the log-frequency domain. Per-band low-band overrides: n_exponent_overrides (per-environment N for this band) and wall_loss_scale_db (additive dB correction on every scaled wall loss). Optional per-band ss_rsrp_offset_db converts composite carrier RSSI to SS-RSRP estimate (total_port_EIRP - 10log10(N_RE) style; leave unset for 0). More NR bands are config-only additions, e.g. the 3.3 GHz n78 (3300-3800 MHz, DL midpoint 3550 in Europe, or a 3.3-3.4 GHz block at 3350): copy an N77_CBAND entry and set id/label/freq_mhz - no code changes needed.",
+  "itu_p1238_valid_mhz": [300.0, 6000.0],
+  "p1238_validity_note": "ITU-R P.1238 (editions 10+) applies indoors from 300 MHz up to 100 GHz; the tool window here is 300-6000 MHz to cover the NR n77 C-band presets. VHF 150 (and to a lesser extent UHF 450) still sits below the window: N and wall losses are extrapolated, so predict() emits a model_warning and per-band n_exponent_overrides / wall_loss_scale_db exist to calibrate. Editable.",
+  "environments": {
+    "office": { "label": "Office", "n": 30.0 },
+    "commercial": { "label": "Commercial / retail", "n": 22.0 },
+    "residential": { "label": "Residential", "n": 28.0 }
+  },
+  "default_environment": "office",
+  "floor_loss_db_per_floor": 15.4,
+  "wall_loss_ref_mhz": 2000.0,
+  "wall_materials": {
+    "concrete": { "label": "Concrete", "loss_db": 15.0, "color": "#555555" },
+    "cmu": { "label": "CMU block", "loss_db": 10.0, "color": "#8a7f70" },
+    "drywall": { "label": "Drywall", "loss_db": 4.0, "color": "#c8b28a" },
+    "glass": { "label": "Glass", "loss_db": 5.0, "color": "#7fb3d5" },
+    "low_e_glass": { "label": "Low-E glass", "loss_db": 8.0, "color": "#4a7fa5" },
+    "wood": { "label": "Wood partition/door", "loss_db": 4.0, "color": "#a3763f" },
+    "metal": { "label": "Metal cladding/door", "loss_db": 30.0, "color": "#202020" }
+  },
+  "bands": [
+    { "id": "B12_700", "label": "700 MHz LTE (B12/B13)", "freq_mhz": 751.0, "ambient_dbm": -85.0 },
+    { "id": "B5_850", "label": "850 MHz Cellular (B5)", "freq_mhz": 881.5, "ambient_dbm": -85.0 },
+    { "id": "B2_1900", "label": "PCS 1900 (B2)", "freq_mhz": 1960.0, "ambient_dbm": -85.0 },
+    { "id": "B66_2100", "label": "AWS 2100 (B66)", "freq_mhz": 2145.0, "ambient_dbm": -85.0 },
+    { "id": "B14_FIRSTNET", "label": "FirstNet Band 14 LTE (758-768 DL)", "freq_mhz": 763.0, "ambient_dbm": -85.0 },
+    { "id": "VHF_150", "label": "VHF 150 MHz LMR (P25/FM)", "freq_mhz": 154.0, "ambient_dbm": -85.0,
+      "n_exponent_overrides": { "office": 34.0, "commercial": 26.0, "residential": 32.0 },
+      "wall_loss_scale_db": 2.0 },
+    { "id": "UHF_450", "label": "UHF 450 MHz LMR (P25/FM)", "freq_mhz": 453.0, "ambient_dbm": -85.0,
+      "n_exponent_overrides": { "office": 32.0, "commercial": 24.0, "residential": 30.0 },
+      "wall_loss_scale_db": 1.0 },
+    { "id": "PS700", "label": "700 MHz Public Safety LMR (P25, 769-775 base TX)", "freq_mhz": 772.0, "ambient_dbm": -85.0 },
+    { "id": "PS800", "label": "800 MHz Public Safety LMR (P25, 851-869 base TX)", "freq_mhz": 860.0, "ambient_dbm": -85.0 },
+    { "id": "N71_600", "label": "5G NR n71 (600 MHz, 617-652 DL)", "freq_mhz": 634.5, "ambient_dbm": -85.0, "technology": "5G NR" },
+    { "id": "N41_2500", "label": "5G NR n41 (2.5 GHz TDD, 2496-2690)", "freq_mhz": 2593.0, "ambient_dbm": -85.0, "technology": "5G NR" },
+    { "id": "N77_CBAND", "label": "5G NR n77 (C-band 3.7-3.98 GHz DL)", "freq_mhz": 3840.0, "ambient_dbm": -85.0, "technology": "5G NR" }
+  ],
+  "cables": {
+    "lmr400": { "label": "Coax, 3/8 in class (LMR-400)", "loss_db_per_100m_ghz": { "0.7": 11.3, "0.9": 12.8, "2.0": 19.7, "3.0": 22.9, "4.0": 25.5 } },
+    "coax_1_2in": { "label": "Coax, 1/2 in corrugated", "loss_db_per_100m_ghz": { "0.7": 8.5, "0.9": 9.5, "2.0": 14.4, "3.0": 16.2, "4.0": 18.2 } },
+    "coax_7_8in": { "label": "Coax, 7/8 in corrugated", "loss_db_per_100m_ghz": { "0.7": 5.2, "0.9": 5.8, "2.0": 8.9, "3.0": 10.0, "4.0": 11.0 } }
+  },
+  "cable_low_freq_note": "Anchors start at 0.7 GHz; below that the 0.7 GHz value is clamped (conservative for VHF 150 / UHF 450 - real low-band loss is lower). Upper anchors 3.0/4.0 GHz added in phase 3 so n41 (2.6 GHz) and n77 C-band (3.8 GHz) cascade runs interpolate instead of clamping at the 2.0 GHz anchor; values are representative, edit per cable datasheet.",
+  "parts": {
+    "splitters": {
+      "2way": { "label": "Splitter, 2-way", "il_db": 3.5 },
+      "3way": { "label": "Splitter, 3-way", "il_db": 5.5 },
+      "4way": { "label": "Splitter, 4-way", "il_db": 7.5 }
+    },
+    "tappers": {
+      "default": { "label": "Tap (through + taps)", "ways": 2, "through_il_db": 0.8, "tap_loss_db": 12.0 }
+    },
+    "couplers": {
+      "default": { "label": "Directional coupler (through + coupled)", "through_il_db": 0.6, "coupled_loss_db": 10.0 }
+    }
+  },
+  "antennas": {
+    "omni_das": { "label": "Omni ceiling antenna", "gain_db": 2.0, "max_port_dbm": 20.0 },
+    "panel_das": { "label": "Panel antenna", "gain_db": 7.0, "max_port_dbm": 20.0 }
+  },
+  "repeater": { "label": "Off-air repeater (BDA)", "dl_gain_db": 65.0, "max_dl_out_dbm": 33.0, "ports": 2 },
+  "source": {
+    "label": "Off-air source (donor)",
+    "subtype_default": "off_air",
+    "donor_gain_db": 11.0,
+    "feeder_loss_db": 0.0,
+    "feeder_note": "feeder_loss_db is an optional extra inline loss (e.g. donor-side jumper). The donor feeder run itself is modeled as an explicit cable_run element from source to repeater so it lands in the BOM.",
+    "subtypes": {
+      "off_air": { "label": "Off-air donor (P25/FM/LTE ambient)", "injection_dbm": null },
+      "direct": { "label": "Direct inject (base station / P25 source feed)", "injection_dbm": 5.0 }
+    }
+  },
+  "kpi_thresholds_dbm_note": "Coverage threshold(s); presets define required % of floor grid area at/above threshold. Tier scope: tier 1 always evaluates the whole floor; tier 2 evaluates inside critical-area polygons when any exist (else whole floor, with a note). 'scope' on a tier entry overrides the default. Bands whose technology matches nr_ssrsp.technology also get the SS-RSRP preset evaluated (whole floor), on the band's composite RSSI optionally shifted by a per-band ss_rsrp_offset_db.",
+  "kpi_presets": {
+    "single_tier": { "name": "Single tier", "threshold_dbm": -95.0, "min_area_pct": 95.0 },
+    "nfpa_two_tier": [
+      { "tier": 1, "name": "general", "threshold_dbm": -95.0, "min_area_pct": 95.0 },
+      { "tier": 2, "name": "critical-area", "threshold_dbm": -95.0, "min_area_pct": 99.0 }
+    ],
+    "nr_ssrsp": {
+      "name": "5G NR SS-RSRP",
+      "technology": "5G NR",
+      "threshold_dbm": -95.0,
+      "min_area_pct": 95.0,
+      "rsrp_class_note": "Planning buckets (editable, % of floor area per class). 'none' = below the lowest class; classes are evaluated on the SS-RSRP estimate (composite RSSI + band ss_rsrp_offset_db).",
+      "class_table": [
+        { "name": "excellent", "min_dbm": -80.0 },
+        { "name": "good", "min_dbm": -90.0 },
+        { "name": "fair", "min_dbm": -100.0 },
+        { "name": "edge", "min_dbm": -110.0 }
+      ]
+    }
+  },
+  "report": {
+    "critical_area_stroke_rgb": [200, 40, 200],
+    "critical_area_fill_rgb": [200, 40, 200],
+    "color_scale": [
+      { "dbm": -55, "rgb": [22, 160, 80] },
+      { "dbm": -65, "rgb": [39, 174, 96] },
+      { "dbm": -75, "rgb": [241, 196, 15] },
+      { "dbm": -85, "rgb": [230, 126, 34] },
+      { "dbm": -95, "rgb": [211, 84, 0] },
+      { "dbm": -105, "rgb": [150, 40, 40] },
+      { "dbm": -125, "rgb": [45, 45, 45] }
+    ]
+  }
+}

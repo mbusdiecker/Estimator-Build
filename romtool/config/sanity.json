@@ -1,0 +1,110 @@
+{
+  "version": "0.7.0",
+  "comment": "ROMtool sanity gates (phase E4, v0.7.0). EVERY gate threshold lives here - nothing is hard-coded in romtool/sanity.py. Gates run on demand (GET /estimates/{id}/sanity) and ride the recap exports. HARD findings block the approved transition (see config/governance.json sanity_blocks_approval); warnings never do. Labor-share bands are plausibility WINDOWS per zone-letter prefix for each venue archetype (windows may overlap; a zone outside its window is a finding, not a partition assertion).",
+  "severity": {
+    "labor_share": "warning",
+    "crew_duration": "hard",
+    "e_density": "warning",
+    "unit_cost_outlier": "warning",
+    "quote_expiry": "warning",
+    "missing_scope": "hard",
+    "severity_note": "gate -> finding severity. hard findings block the approved state transition; warnings are surfaced on the sanity report and recap exports only."
+  },
+  "labor_share_basis": "share of wrapped task+foreman(N01)+super(N02) hours (mid band) across kind=='minutes' lines, grouped by catalog zone letter prefix (zone string before the first '-')",
+  "labor_share_by_archetype": {
+    "stadium": {
+      "label": "Stadium / large assembly venue",
+      "bands": {
+        "A": {"low": 0.0, "high": 0.30}, "B": {"low": 0.0, "high": 0.10},
+        "C": {"low": 0.0, "high": 0.12}, "D": {"low": 0.0, "high": 0.12},
+        "E": {"low": 0.25, "high": 0.65}, "F": {"low": 0.0, "high": 0.10},
+        "G": {"low": 0.0, "high": 0.10}, "H": {"low": 0.01, "high": 0.15},
+        "I": {"low": 0.01, "high": 0.12}, "J": {"low": 0.0, "high": 0.10},
+        "K": {"low": 0.0, "high": 0.22}, "L": {"low": 0.0, "high": 0.12},
+        "M": {"low": 0.0, "high": 0.10}, "N": {"low": 0.0, "high": 0.08},
+        "O": {"low": 0.0, "high": 0.10}
+      }
+    },
+    "hospital": {
+      "label": "Hospital / occupied healthcare campus",
+      "bands": {
+        "A": {"low": 0.0, "high": 0.10}, "B": {"low": 0.0, "high": 0.10},
+        "C": {"low": 0.0, "high": 0.12}, "D": {"low": 0.01, "high": 0.15},
+        "E": {"low": 0.20, "high": 0.60}, "F": {"low": 0.0, "high": 0.10},
+        "G": {"low": 0.01, "high": 0.10}, "H": {"low": 0.02, "high": 0.18},
+        "I": {"low": 0.01, "high": 0.12}, "J": {"low": 0.0, "high": 0.10},
+        "K": {"low": 0.0, "high": 0.20}, "L": {"low": 0.0, "high": 0.12},
+        "M": {"low": 0.0, "high": 0.10}, "N": {"low": 0.0, "high": 0.06},
+        "O": {"low": 0.0, "high": 0.08}
+      }
+    },
+    "warehouse": {
+      "label": "Warehouse / distribution",
+      "bands": {
+        "A": {"low": 0.0, "high": 0.15}, "B": {"low": 0.0, "high": 0.10},
+        "C": {"low": 0.0, "high": 0.12}, "D": {"low": 0.01, "high": 0.18},
+        "E": {"low": 0.25, "high": 0.65}, "F": {"low": 0.0, "high": 0.12},
+        "G": {"low": 0.0, "high": 0.10}, "H": {"low": 0.01, "high": 0.15},
+        "I": {"low": 0.01, "high": 0.12}, "J": {"low": 0.0, "high": 0.10},
+        "K": {"low": 0.0, "high": 0.20}, "L": {"low": 0.0, "high": 0.08},
+        "M": {"low": 0.0, "high": 0.08}, "N": {"low": 0.0, "high": 0.06},
+        "O": {"low": 0.0, "high": 0.08}
+      }
+    },
+    "tunnel": {
+      "label": "Tunnel / transit / constrained utility passage",
+      "bands": {
+        "A": {"low": 0.0, "high": 0.10}, "B": {"low": 0.0, "high": 0.12},
+        "C": {"low": 0.0, "high": 0.10}, "D": {"low": 0.0, "high": 0.18},
+        "E": {"low": 0.25, "high": 0.70}, "F": {"low": 0.0, "high": 0.08},
+        "G": {"low": 0.0, "high": 0.12}, "H": {"low": 0.01, "high": 0.15},
+        "I": {"low": 0.01, "high": 0.15}, "J": {"low": 0.0, "high": 0.12},
+        "K": {"low": 0.0, "high": 0.25}, "L": {"low": 0.0, "high": 0.08},
+        "M": {"low": 0.0, "high": 0.12}, "N": {"low": 0.0, "high": 0.08},
+        "O": {"low": 0.0, "high": 0.08}
+      }
+    },
+    "hotel": {
+      "label": "Hotel / occupied hospitality",
+      "bands": {
+        "A": {"low": 0.0, "high": 0.10}, "B": {"low": 0.0, "high": 0.10},
+        "C": {"low": 0.0, "high": 0.12}, "D": {"low": 0.0, "high": 0.15},
+        "E": {"low": 0.22, "high": 0.60}, "F": {"low": 0.0, "high": 0.12},
+        "G": {"low": 0.0, "high": 0.08}, "H": {"low": 0.01, "high": 0.15},
+        "I": {"low": 0.01, "high": 0.12}, "J": {"low": 0.0, "high": 0.10},
+        "K": {"low": 0.0, "high": 0.20}, "L": {"low": 0.0, "high": 0.12},
+        "M": {"low": 0.0, "high": 0.10}, "N": {"low": 0.0, "high": 0.06},
+        "O": {"low": 0.0, "high": 0.06}
+      }
+    },
+    "office": {
+      "label": "Office / commercial tenant space",
+      "bands": {
+        "A": {"low": 0.0, "high": 0.15}, "B": {"low": 0.0, "high": 0.12},
+        "C": {"low": 0.0, "high": 0.12}, "D": {"low": 0.0, "high": 0.18},
+        "E": {"low": 0.25, "high": 0.70}, "F": {"low": 0.0, "high": 0.12},
+        "G": {"low": 0.0, "high": 0.08}, "H": {"low": 0.01, "high": 0.15},
+        "I": {"low": 0.01, "high": 0.15}, "J": {"low": 0.0, "high": 0.10},
+        "K": {"low": 0.0, "high": 0.20}, "L": {"low": 0.0, "high": 0.10},
+        "M": {"low": 0.0, "high": 0.10}, "N": {"low": 0.0, "high": 0.06},
+        "O": {"low": 0.0, "high": 0.08}
+      }
+    }
+  },
+  "unbanded_zone_note": "A zone present in the estimate but without a band entry for the archetype is reported informationally (share shown, no finding).",
+  "e_density_warn_pct": 50.0,
+  "e_density_note": "Share of labor (kind=='minutes') lines whose unit card is provenance E (estimated/placeholder). Above the threshold the recap is placeholder-heavy: the assumption register should be worked before pricing sign-off. Warning only.",
+  "unit_cost_outlier": {
+    "ratio_low": 0.4,
+    "ratio_high": 3.0,
+    "basis": "per line: wrapped labor $ mid / qty vs the norm-card unit cost (minutes_low..high mid / 60 x (tech_rate + (N01 ratio + N02 pct) x foreman_rate)). With the default crew plan the ratio equals the line's stacked factor: rope x exterior x night stacks to ~3x and flags, K-adder rows exclude the access factor so they do not self-flag.",
+    "note": "Outlier is a verify-the-stack warning, not a math error: access x condition x schedule stacking legitimately pushes stadium roof hours past the band."
+  },
+  "crew": {
+    "max_plausible_hours_per_crew_week": 300.0,
+    "note": "Averages above this per crew-week (>6 x 10h days sustained) are implausible for planning: warning, not a math error."
+  },
+  "quote_expiry_note": "Quote expiry findings reuse romtool/governance.py quote date math (binding_until inclusive) and the governance.json warn threshold; severities ride the quote_expiry gate (warning).",
+  "archetype_definition_key": "sanity.archetype",
+  "archetype_note": "An estimate definition may carry {\"sanity\": {\"archetype\": \"stadium\"}} (any archetype key of labor_share_by_archetype). GET /estimates/{id}/sanity?archetype=a overrides without editing the definition. With no archetype the labor-share and missing-scope gates report 'skipped' and never block."
+}

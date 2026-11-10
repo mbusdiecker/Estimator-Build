@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ROMtool How-To — step-by-step workflow</title>
+<style>
+:root { --bg:#14171c; --panel:#1d2229; --line:#2c333d; --ink:#d8dee7; --dim:#8b95a3; --accent:#4aa3ff; --ok:#2fae71; --bad:#d24d4d; }
+* { box-sizing: border-box; }
+body { margin:0; font:14px/1.55 system-ui, Segoe UI, sans-serif; background:var(--bg); color:var(--ink); }
+header { padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; align-items:baseline; gap:16px; flex-wrap:wrap; }
+.brand { font-weight:700; font-size:15px; letter-spacing:.4px; }
+.brand .tag { color:var(--dim); font-weight:400; font-size:12px; margin-left:8px; }
+nav.docnav { margin-left:auto; }
+nav.docnav a { color:var(--accent); text-decoration:none; margin-left:14px; font-size:13px; }
+nav.docnav a:hover { text-decoration:underline; }
+main { max-width:980px; margin:0 auto; padding:18px 20px 60px; }
+h1 { font-size:22px; margin:8px 0 4px; }
+h2 { font-size:17px; margin:30px 0 8px; padding-top:10px; border-top:1px solid var(--line); }
+h3 { font-size:14px; margin:18px 0 6px; color:var(--accent); }
+p.sub { color:var(--dim); margin-top:0; }
+code { background:#10141a; border:1px solid var(--line); border-radius:4px; padding:1px 5px; font:12px/1.5 ui-monospace, Consolas, monospace; color:#c9e2ff; }
+pre { background:#10141a; border:1px solid var(--line); border-radius:6px; padding:10px 12px; overflow-x:auto; font:12px/1.5 ui-monospace, Consolas, monospace; color:#c9e2ff; }
+pre code { border:none; padding:0; background:none; }
+table { border-collapse:collapse; width:100%; font-size:13px; margin:10px 0; }
+th, td { border:1px solid var(--line); padding:5px 8px; text-align:left; vertical-align:top; }
+th { background:var(--panel); color:var(--dim); font-weight:600; }
+td.c { font-family:ui-monospace, Consolas, monospace; font-size:12px; }
+.note { border-left:4px solid var(--accent); background:#1a2330; padding:8px 12px; border-radius:4px; margin:10px 0; }
+.warn { border-left:4px solid var(--bad); background:#241a1e; padding:8px 12px; border-radius:4px; margin:10px 0; }
+.k { color:var(--ok); }
+.bad { color:var(--bad); }
+.dim { color:var(--dim); }
+ul, ol { padding-left:22px; }
+li { margin:3px 0; }
+footer { margin-top:44px; color:var(--dim); font-size:12px; border-top:1px solid var(--line); padding-top:10px; }
+footer a { color:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">ROMtool <span class="tag">in-building RF ROM estimator</span></div>
+  <nav class="docnav">
+    <a href="/">App</a>
+    <a href="/help">How-To</a>
+    <a href="/how-it-works">How it works</a>
+  </nav>
+</header>
+<main>
+
+<h1>How-To: the end-to-end workflow</h1>
+<p class="sub">Step-by-step: floorplan &rarr; scale &rarr; walls and critical areas &rarr; element chain &rarr; solve &rarr; predict &rarr; KPIs &rarr; BOM. The math behind every number on this page is documented on the <a href="/how-it-works">How it works</a> page. An <b>example project</b> ("Example Small Office (LTE)") ships preloaded &mdash; on a fresh install it is project id <b>1</b>; find it any time with <code>GET /projects</code>.</p>
+
+<h2 id="s1">1. Open or create a project</h2>
+<p>Projects hold floors; floors hold the plan, walls, critical-area polygons and the element chain. Use the project dropdown at the top or <b>+ New</b>. Through the API: <code>POST /projects</code> with <code>{"name": "121 Main St"}</code>.</p>
+<p>Each project has an <b>environment</b> that selects the indoor path-loss N exponent (office 30 / commercial 22 / residential 28 &mdash; editable in config). Default is <code>office</code>; change it with <code>PATCH /projects/{id} {"environment": "commercial"}</code>. A project can also carry a <code>config_overrides</code> dict that deep-merges over the global config (bands, materials, KPI presets, everything else) without touching other projects.</p>
+
+<h2 id="s2">2. Add floors and upload the floorplan image</h2>
+<ol>
+  <li><b>+ Floor</b> prompts for a name and a level number (0 = ground).</li>
+  <li>Pick a PNG or JPEG under <b>Floorplan image</b>. The image is stored with the floor and the pixel size becomes the prediction grid (<code>w_px</code> x <code>h_px</code>).</li>
+  <li>Cable runs are graph edges between elements; placing them "on" a floor is bookkeeping only &mdash; the chain can span floors (see the <a href="/help#s6">example project</a>: riser from SP1 to SP3 feeds floor 2).</li>
+</ol>
+
+<h2 id="s3">3. Calibrate the scale (ppm)</h2>
+<p>The grid works in pixels; the propagation model needs meters. <b>ppm</b> = pixels per meter. Two ways to set it:</p>
+<ul>
+  <li>Click <b>Calibrate scale</b>, click two points on the plan you know the real distance between (e.g. a 10 m exterior wall), and enter the real distance in meters when prompted. The app sets <code>ppm = pixel distance / real meters</code>.</li>
+  <li>Or type a known <code>ppm</code> value directly in the <b>ppm</b> box.</li>
+</ul>
+<div class="note">Scale accuracy directly scales every distance term. On the example project the 12.0 m x 9.2 m plate sits at <code>ppm = 10</code>.</div>
+
+<h2 id="s4">4. Draw walls</h2>
+<ol>
+  <li>Pick a wall material from the <b>Wall material</b> list. Each material carries a tabulated penetration loss in dB at 2 GHz (concrete 15, CMU 10, drywall 4, glass 5, low-E glass 8, wood 4, metal 30 &mdash; all editable in config) and its drawing color.</li>
+  <li>Select the <b>Wall</b> tool and drag on the canvas to draw the wall segment.</li>
+</ol>
+<p>Draw the walls that actually block signal paths on this floor: perimeter, shafts, stair cores, glass, metal doors. Wall losses are applied per crossing of the straight line from each antenna to each grid point (same floor only &mdash; antennas on other levels use the floor-loss term instead). See <a href="/how-it-works#walls">How it works &rarr; Wall crossings</a>.</p>
+
+<h2 id="s5">5. Mark critical-area polygons</h2>
+<p>Critical areas are where the NFPA two-tier tier-2 KPI is evaluated:</p>
+<ol>
+  <li>Select the <b>Critical area</b> tool and click the polygon corners in order.</li>
+  <li>Close it by clicking near the first corner or press <b>Finish polygon</b>, then give it a label (e.g. "IT room").</li>
+</ol>
+<p>Typical uses: fire command center, IT/riser rooms, areas of refuge. The example ground floor carries one ("IT room (critical)", the northwest room). Polygons count at the grid-point level &mdash; they do not change the RF; they scope where tier 2 is judged. Edit or add more later: nothing else needs to change.</p>
+
+<h2 id="s6">6. Place the element chain</h2>
+<p>The cascade is a chain graph: a source feeds a repeater (or feeds the system directly), trunks run to splitters / taps / couplers, branches run to antennas.</p>
+<ol>
+  <li><b>Place elements</b>: pick a type in <i>Place element</i> (Source, Repeater, Splitter, Tap, Coupler, Antenna), then click the floor. For antennas pick the type first (omni 2 dBi / panel 7 dBi by default); for splitters pick 2/3/4-way. After placing an element, click it to edit its parameters in the <b>Inspector</b>.</li>
+  <li><b>Place cable runs</b>: select the <b>Cable</b> tool, click the feeding element, then the receiving element. The run's length is estimated from the pixel distance and ppm; correct the real length (and cable type) in the Inspector afterwards.</li>
+</ol>
+<h3>Element parameters (Inspector)</h3>
+<table>
+<tr><th>Element</th><th>Key fields</th><th>Model meaning</th></tr>
+<tr><td>Source (off-air donor)</td><td><code>donor_gain_db</code>, <code>feeder_loss_db</code>, optional <code>ambient_dbm</code></td><td>Output = ambient + donor gain - inline feeder loss (per band). Ambients default to the band's config value (-85 dBm across the default set).</td></tr>
+<tr><td>Source (direct inject)</td><td><code>subtype: direct</code>, <code>injection_dbm</code></td><td>Fixed carrier level on the port (default +5 dBm); ambient/gain do not apply.</td></tr>
+<tr><td>Repeater / BDA</td><td><code>dl_gain_db</code>, <code>max_dl_out_dbm</code>, <code>ports</code>, optional <code>dl_gain_db_per_band</code></td><td>out = min(in + gain, max out); per-band gain overrides win. Trunk branches limited by <code>ports</code>.</td></tr>
+<tr><td>Splitter</td><td><code>ways</code>, optional <code>il_db</code></td><td>Every branch loses the part's insertion loss (2-way 3.5 / 3-way 5.5 / 4-way 7.5 dB by default).</td></tr>
+<tr><td>Tap</td><td><code>through_il_db</code>, <code>tap_loss_db</code></td><td>Branch connected <i>through</i> loses the through IL; branches on the tap port lose the tap loss.</td></tr>
+<tr><td>Coupler</td><td><code>through_il_db</code>, <code>coupled_loss_db</code></td><td>Same with through / coupled roles (defaults 0.6 / 10 dB).</td></tr>
+<tr><td>Antenna</td><td><code>antenna_id</code>, <code>gain_db</code>, <code>max_port_dbm</code></td><td>Port power capped at max port; <b>EIRP = port + gain</b>. Antennas terminate the chain.</td></tr>
+</table>
+<div class="note"><b>Chain rules the solver enforces</b>: every non-source node takes exactly one cable run in; the source receives nothing; antennas feed nothing; every node must connect back to a source; splitter ways need a configured part (or an <code>il_db</code> override); repeater trunk branches may not exceed its ports. Violations surface as HTTP 422 on solve with explicit messages.</div>
+
+<h2 id="s7">7. Solve the cascade</h2>
+<p><b>Solve cascade</b> runs the whole model for <i>every</i> configured band (LTE + FirstNet + LMR + 5G NR by default) and returns a per-band power trace: each node's in/out dBm with the arithmetic in its detail line, each cable run's loss, each antenna's port power, EIRP and cap state. Validation errors (graph problems) are fatal; budget warnings are not: antenna port below 0 dBm, repeater output clamped at max, port power capped. Read these before trusting the heatmap.</p>
+
+<h2 id="s8">8. Predict and read the KPIs</h2>
+<p>Pick a <b>Band</b> and tick <b>Heatmap</b>. ROMtool predicts every grid point of the floor: each solved antenna contributes its EIRP minus path loss (P.1238 distance and floor terms plus the wall crossings along the straight ray); co-channel contributions combine as a linear (mW) sum. The overlay colors the floor by composite level; the KPI panel on the right shows:</p>
+<ul>
+  <li><b>Single tier</b>: percent of the floor grid at/above the design threshold (default -95 dBm), pass at 95% by default.</li>
+  <li><b>NFPA two-tier</b>: Tier 1 (general) = whole floor at/above -95 dBm for 95% of area. Tier 2 (critical area) = inside the critical-area polygons, 99% minimum by default. The tier-2 result combines all polygons as a union (a point in two polygons counts once), with per-polygon rows so you can see which room passed. A floor without polygons falls back to whole-floor tier 2 and says so.</li>
+  <li><b>SS-RSRP classes (5G NR bands only)</b>: bands marked <code>technology: "5G NR"</code> additionally report the floor as a percentage per planning class: excellent (>= -80 dBm), good (>= -90), fair (>= -100), edge (>= -110), none below. These buckets are editable planning defaults, not normative 3GPP classes.</li>
+  <li><b>Model warnings</b>, e.g. bands predicted below the P.1238 validity window (VHF 150 does) - the number is still printed but flagged as extrapolation.</li>
+</ul>
+<p>Grid step: prediction samples the floor every <code>step</code> pixels (1 = full detail). Use step 3-6 for quick sweeps, step 1 for the final number. The full-resolution grid on the example floor is ~11,000 points.</p>
+
+<h2 id="s9">9. Multiband composite view</h2>
+<p>The composite answers a different question than the single-band heatmap: <i>at each point, what is the best coverage available across a set of bands, and from which band and antenna?</i> It is exposed as an API view plus PNG (no UI control yet): per grid point the <b>strongest band's level</b>, <code>best_band</code> and <code>best_server</code>, and a <b>union KPI</b> counting points where <i>any</i> selected band clears that band's own single-tier threshold. Bands do <b>not</b> combine RF-wise (different carriers are not co-channel) &mdash; see <a href="/how-it-works#composite">How it works &rarr; Multiband composite</a>.</p>
+
+<h2 id="s10">10. BOM and exports</h2>
+<p><b>Refresh BOM</b> lists parts only (no pricing): cable per type in meters and feet, connectors (2 per run), splitters/taps/couplers by count and way, antennas, sources/repeaters. Export the same bill as <code>CSV</code> or <code>JSON</code>. Critical areas and walls never appear in the BOM.</p>
+
+<h2 id="s11">11. Drive it from Claude (REST)</h2>
+<p>Everything above is also the complete API surface. Set <code>BASE=http://localhost:8807</code> (or the host's LAN IP). These worked examples run against the preloaded example project (id <b>1</b>, ground floor id <code>exf1</code>):</p>
+<pre><code>BASE=http://localhost:8807
+
+# What is running?
+curl -s $BASE/health
+# {"ok":true,"tool":"ROMtool","version":"0.5.0","phase":4,"subphase":"E2"}
+
+# Find the example project
+curl -s $BASE/projects
+# {"projects":[{"id":1,"name":"Example Small Office (LTE)","example":true,..."floors":2,...}]}
+
+# Full model (floors, walls, elements, critical areas)
+curl -s $BASE/projects/1 | python3 -m json.tool
+
+# Solve every band and show the FirstNet Band-14 trace
+curl -s -X POST $BASE/projects/1/cascade/solve | python3 -c "import json,sys; d=json.load(sys.stdin); print(json.dumps(d['bands']['B14_FIRSTNET']['nodes'], indent=1))"
+# SRC  out -74.0 dBm   (ambient -85.0 + donor 11.0 - feeder 0.0)
+# RPTR in -74.24 -> out -9.24  (in -74.24 + 65.0 dB gain, max out 33.0 dBm)
+# SP1  in  -9.67 -> out -13.17 (3.5 dB IL per branch, 2-way)
+# ...
+# A1   port -17.67 dBm -> EIRP -15.67 dBm
+
+# Predict one floor/band and read the KPI block (step 4 px for speed)
+curl -s -X POST "$BASE/projects/1/floors/exf1/predict?band=B14_FIRSTNET&amp;step=4" \
+  | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin)['kpi']['presets'], indent=1))"
+# single tier: 100.0% pass | tier 1: 100.0% | tier 2 inside the IT room polygon:
+# 154/154 points, 100.0% pass (min 99%)
+
+# Critical-area polygons on the floor
+curl -s $BASE/projects/1/floors/exf1/critical_areas
+# {"critical_areas":[{"id":"exf1_ca1","label":"IT room (critical)",
+#   "points":[[2,2],[60,2],[60,46],[2,46]]}]}
+
+# Draw a wall through the API (batch or single; materials from /config)
+curl -s -X POST $BASE/projects/1/floors/exf1/walls \
+  -H "Content-Type: application/json" \
+  -d '{"material":"drywall","x1":70,"y1":10,"x2":70,"y2":40}'
+
+# Upload a floorplan image (PNG/JPEG) and set the scale
+curl -s -X POST $BASE/projects/1/floors/exf1/image -F "file=@floorplan.png"
+curl -s -X PATCH $BASE/projects/1/floors/exf1 -H "Content-Type: application/json" -d '{"ppm":10.0}'
+
+# Multiband composite (5G NR selection) + union KPI
+curl -s "$BASE/projects/1/floors/exf1/composite?bands=N71_600,N41_2500,N77_CBAND&amp;step=4" \
+  | python3 -c "import json,sys; print(json.load(sys.stdin)['union_kpi'])"
+# {"n_points": 690, "n_covered": 690, "covered_pct": 100.0, ..., "rule": "OR: a point counts when ANY ..." }
+
+# Rendered artifacts
+curl -s -o heatmap-b14.png "$BASE/projects/1/floors/exf1/heatmap.png?band=B14_FIRSTNET&amp;step=4"
+curl -s -o composite.png "$BASE/projects/1/floors/exf1/composite.png?bands=N71_600,N41_2500&amp;step=4"
+curl -s $BASE/projects/1/floors/exf1/nfpa_report?band=B14_FIRSTNET&amp;step=4 | python3 -m json.tool
+
+# BOM
+curl -s -o bom-1.csv $BASE/exports/projects/1/bom.csv
+# category,item,qty,unit
+# cable,"Coax, 7/8 in corrugated",17.0,m
+# ...
+</code></pre>
+<p>Live endpoint reference: <code>GET /docs</code> (OpenAPI). Full table in README; the complete worked arithmetic of the numbers above is on <a href="/how-it-works">How it works</a>.</p>
+
+<h2 id="estimates">12. Build the Class 1 labor estimate (Phase 4)</h2>
+<p>Beyond coverage and parts, ROMtool prices the <b>labor build</b> down the AACE
+Class 1 stack: catalog unit cards from
+<code>config/labor_units.json</code> (134 rows, zones A-Rooftop &hellip; N-Wrap,
+O-DC-Power-Plant; regenerate from the owner's CSV with
+<code>.venv/bin/python scripts/build_labor_units.py</code>) &times; quantities
+&times; access adders &times; finishing &times; downtime/logistics &times;
+supervision &amp; wrap, with every line visible in the recap. All constants
+(factor values, ratios, rate card) live in <code>config/estimating.json</code>.
+REST: <code>POST /estimates</code> computes + stores a definition,
+<code>POST /estimates/compute</code> is a dry run, <code>GET /estimates</code> /
+<code>GET /estimates/{id}</code> / <code>DELETE /estimates/{id}</code> manage
+stored recaps, and the exports render <code>recap.csv</code> /
+<code>recap.xlsx</code>.</p>
+<p><b>Definition schema</b> (POST body): a <code>name</code>, a non-empty
+<code>locations[]</code> array, optional top-level extras:
+</p>
+<ul>
+  <li>Each location: <code>id</code> (unique), <code>name</code>,
+      <code>access</code> &mdash; one of <code>ground | ladder | lift | scissor |
+      rope</code> (maps to catalog factors K06 / K03 / K03 / K05; ground = 1.0),
+      <code>conditions[]</code> from <code>occupied | exterior |
+      constrained_access</code> (M03 / M04 / M07), and
+      <code>lines[{catalog_id, qty}]</code> rows from the catalog.</li>
+  <li><code>schedule</code>: <code>{"night": true/false, "weekend": true/false}</code> (M02 premiums).</li>
+  <li><code>travel_moves[]</code>: <code>{"from": id, "to": id, "moves": n}</code> &mdash; in-venue
+      M05 crew-travel moves between locations.</li>
+  <li><code>downtime_windows[]</code>: <code>{"label": "...", "days": n}</code> &mdash; blacked-out
+      owner/event days; each carries <b>idle crew-day cost, not hours</b> (M01).</li>
+  <li><code>crew</code>: <code>{"crews", "techs", "foremen", "hours_per_day", "days_per_week"}</code>
+      (defaults from config; 1 crew of 4 techs + 1 foreman, 8 h days, 5-day weeks).</li>
+  <li>Optional per-location <code>power_plant</code> helper:
+      <code>{"runtime_hours": 12, "load_amps": 30, "spill_containment": bool,
+      "battery_monitoring": bool, "rectifier_modules": n?, "string_ah": n?}</code> &mdash;
+      auto-derives O01 + rectifiers (<b>N+1</b>: ceil(load/50A)+1) and battery
+      strings (Ah = <code>runtime_hours</code> &times; <code>load_amps</code>;
+      strings = ceil(Ah / 120 Ah string), IFC 12-hr runtime). Flagged optional:
+      manual O-zone line entry always stays available.</li>
+  <li>Optional <code>rate_overrides</code>: deep-merges over the default rate card
+      per estimate, e.g. <code>{"rate_card": {"tech_rate": 100.0}, "pm_pct": 15.0}</code>.</li>
+</ul>
+<p>Curl worked example (stadium: rope roof + lift bowl + closets + ERCES headend,
+night differential):</p>
+<pre><code>curl -s -X POST $BASE/estimates -H "Content-Type: application/json" -d '{
+  "name": "Metropolitan Stadium ERCES/DAS build (ROM)",
+  "locations": [
+    {"id": "roof", "name": "Roof / donor array", "access": "rope",
+     "conditions": ["exterior"],
+     "lines": [{"catalog_id": "A01", "qty": 1}, {"catalog_id": "K04", "qty": 2},
+               {"catalog_id": "K10", "qty": 2}]},
+    {"id": "bowl-lower", "access": "lift", "conditions": ["occupied"],
+     "lines": [{"catalog_id": "E06", "qty": 40}, {"catalog_id": "E11", "qty": 8},
+               {"catalog_id": "L02", "qty": 60}]},
+    {"id": "headend", "access": "ground",
+     "lines": [{"catalog_id": "B03", "qty": 1}, {"catalog_id": "B11", "qty": 1}],
+     "power_plant": {"runtime_hours": 12, "load_amps": 30}}
+  ],
+  "schedule": {"night": true, "weekend": false},
+  "travel_moves": [{"from": "roof", "to": "bowl-lower"}, {"from": "bowl-lower", "to": "headend"}],
+  "downtime_windows": [{"label": "Concert load-in lockout", "days": 1}],
+  "crew": {"techs": 4, "foremen": 1}
+}' | python3 -c "import json,sys; r=json.load(sys.stdin)['estimate']['recap']; print(r['totals']); print(r['cost']['grand_total_usd'])"
+
+# Dry run (compute, do not store)
+curl -s -X POST $BASE/estimates/compute -H "Content-Type: application/json" -d @definition.json
+
+# Stored estimates + exports
+curl -s -o recap.csv  $BASE/exports/estimates/1/recap.csv
+curl -s -o recap.xlsx $BASE/exports/estimates/1/recap.xlsx</code></pre>
+<p><b>Reading the recap:</b> per line the factor stack is printed in order
+&mdash; base minutes (qty &times; unit minutes low/mid/high) &rarr; condition
+(M03/M04/M07) &rarr; access (K03/K05/K06) &rarr; schedule (M02) &rarr;
+supervision (N01 foreman hours + N02 super hours) &rarr; wrap and line-risk
+contingency (N05, by catalog source-quality P/E/G). Zone rollups, location
+rollups, crew-days/crew-week stats and the full $ chain (labor &rarr; M01
+downtime &rarr; I05 PM% &rarr; overhead &rarr; profit &rarr; contingency &rarr;
+total) are stacked below the lines. Export renders <code>recap.csv</code> and
+<code>recap.xlsx</code> from the same data.</p>
+<p><b>Catalog line conventions (read before quoting):</b> <code>FACTOR</code>
+rows (K03, K05, K06, K14, M02-M04, M07, N01, N02, N05) are multipliers, never
+line quantities &mdash; they are applied via the access/condition/schedule
+flags and crew plan, and POSTing one in <code>lines[]</code> is rejected. Rows
+with 0 minutes in DAY/LOT/EA units (A10, B08, H08, I05, J07, M01, K09, K12,
+O13) are <b>cost-carry quote lines</b>: they carry schedule exposure or
+recurring service dollars, not field hours &mdash; the engine derives the M01
+lockout cost from <code>downtime_windows</code>, and the rest belong in the
+quote. For detail-level estimates the O-DC-POWER-PLANT zone
+<b>supersedes B05/B06</b> (48VDC plant + N+1 rectifiers + IFC-sized battery
+strings instead of the phase-2 placeholders); B05/B06 remain usable for quick
+ROMs. Heavy reels (&gt;100 lb of 1/2in coax) are handled through the crew plan
+per K14, not unit minutes.</p>
+
+<h2 id="governance">13. Estimate governance (v0.5.0)</h2>
+<p>Stored estimates are first-class <b>versioned</b> objects: every write
+creates an immutable revision, every change lands in an audit log, and the
+estimate moves through a review state machine before anything leaves the
+shop. All rules (transitions, frozen states, default owner, binding warn
+window) live in <code>config/governance.json</code>.</p>
+<ul>
+  <li><b>Revision history</b>: <code>POST /estimates</code> stores revision 1.
+      <code>PATCH /estimates/{id}</code> with <code>{"definition": {...},
+      "note": "..."}</code> recomputes, captures a <b>diff summary</b> (lines
+      added/removed/re-priced by stable line ids, changed settings, totals
+      drift) and freezes revision N+1. Revisions are allowed only while the
+      estimate is in <code>draft</code> or <code>review</code> &mdash;
+      approved/sent/superseded estimates are frozen and PATCHing them is a
+      <b>409</b>. Read them back with <code>GET
+      /estimates/{id}/revisions</code> (list + diffs) and
+      <code>GET /estimates/{id}/revisions/{n}</code> (full snapshot).</li>
+  <li><b>Audit log</b>: <code>GET /estimates/{id}/audit</code> returns every
+      event &mdash; actor, action, UTC timestamp, revision and the exact
+      changed paths (<code>lines.bowl-lower:E06.qty</code>,
+      <code>schedule.night</code>, <code>assumptions#12.status</code>, ...).
+      The actor comes from the <code>X-Romtool-Actor</code> header, an
+      <code>?actor=</code> query param, or the config default
+      (<code>api</code>).</li>
+  <li><b>State machine</b>: <code>draft &rarr; review &rarr; approved &rarr;
+      sent &rarr; superseded</code> via
+      <code>POST /estimates/{id}/state</code> with
+      <code>{"to": "...", "note": "..."}</code>. Legal side steps:
+      review&rarr;draft (sent back for re-pricing) and
+      approved&rarr;superseded (withdrawn). Every other jump (draft&rarr;approved,
+      sent&rarr;review, superseded&rarr;anything) is rejected with
+      <b>409</b> and the allowed list. Deleting is blocked from
+      approved/sent &mdash; supersede first. The state and revision are
+      stamped into the recap exports (<code>governance</code> rows in
+      recap.csv, header rows in recap.xlsx).</li>
+  <li><b>Assumption register</b>: every estimate line whose unit card is an
+      <span class="bad">E-grade</span> norm (estimated, not published)
+      auto-populates a register row on create and on every revision &mdash;
+      fields: catalog id, line key, assumption text (item + reference),
+      owner (default <i>Senior Project Estimator</i>), review-date, status.
+      Close-out ladder <code>open &rarr; verified &rarr; closed</code>
+      (verified&rarr;open reopens); skipped steps are <b>409</b>. Re-sync on a
+      revision drops only <i>open</i> rows whose line disappeared &mdash;
+      verified/closed rows persist as close-out evidence.
+      <code>GET /estimates/{id}/assumptions</code> + CRUD +
+      <code>POST .../assumptions/{aid}/status</code>; export:
+      <code>GET /exports/estimates/{id}/assumptions.csv</code>.</li>
+  <li><b>Quote register</b>: <code>POST /estimates/{id}/quotes</code> with
+      vendor, scope, amount, currency, <code>binding_until</code> (ISO date),
+      <code>inclusions[]</code>, <code>exclusions[]</code>,
+      <code>linked_line_ids[]</code> (estimate line keys like
+      <code>headend:B03</code>) and workflow <code>draft &rarr; received
+      &rarr; bound &rarr; expired</code> (expired&rarr;received re-issues).
+      <code>binding_until</code> is <b>inclusive</b>: the price holds through
+      the date and flips to <i>expired</i> the day after (in every read,
+      export and the bid tab &mdash; stored status is never silently mutated).
+      Each expired quote warns exactly <b>once</b> in the governance view and
+      in the recap exports; binding windows inside
+      <code>quote_binding_warn_days</code> (14) warn early. lapsed drafts are
+      flagged, never expired.</li>
+  <li><b>Bid tab</b>: <code>GET /estimates/{id}/bid_tab</code> groups quotes
+      by linked lines (or whole-estimate), ranks them ascending, and reports
+      low/median/high over active received/bound quotes only &mdash; drafts
+      are placeholders, expired numbers are stale. The <b>estimate carry</b>
+      per group is wrapped labor + line-risk contingency + idle-cost carry
+      (mid band); whole-estimate quotes are compared against the grand
+      total. Gaps and &ldquo;carry below the lowest quote&rdquo; warnings are
+      computed per group.</li>
+  <li><b>Inclusions/exclusions sheet</b>: the commercial draft generator
+      merges <code>config/commercial_draft.json</code> templates, lines
+      derived from the definition (night/weekend premiums, travel moves,
+      blackout carry, supervision wrap, power-plant sizing), and verbatim
+      vendor-quote terms (active quotes only; expired quotes get an explicit
+      <i>not honored</i> exclusion line). Preview:
+      <code>GET /estimates/{id}/inclusions_exclusions</code>; exports:
+      <code>GET /exports/estimates/{id}/inclusions_exclusions.xlsx</code>
+      (Inclusions_Exclusions + Quotes sheets) and
+      <code>.../inclusions_exclusions.pdf</code>.</li>
+</ul>
+<pre><code>curl -s -X PATCH $BASE/estimates/1 -H "X-Romtool-Actor: rowan" \\
+  -d '{"definition": @definition2.json, "note": "bowl qty update"}'
+curl -s -X POST $BASE/estimates/1/state -d '{"to": "review", "note": "ready"}'
+curl -s -X POST $BASE/estimates/1/quotes -d '{"vendor": "DAS Vendor A",
+  "scope": "headend bundle", "amount": 185000, "binding_until": "2027-01-15",
+  "linked_line_ids": ["headend:B03"], "status": "received"}'
+curl -s $BASE/estimates/1/bid_tab
+curl -s -o assumptions.csv $BASE/exports/estimates/1/assumptions.csv
+curl -s -o ie.xlsx $BASE/exports/estimates/1/inclusions_exclusions.xlsx</code></pre>
+
+<h2 id="commercial">14. Commercial wrap constants (v0.6.0)</h2>
+<p>All commercial constants live in one editable file,
+<code>config/commercial.json</code> &mdash; nothing numeric is hard-coded in
+the engine. The recap applies them in one <b>documented order</b> (see
+<a href="/how-it-works">/how-it-works</a> &sect;11 and the config comment,
+which carries the order verbatim): direct labor + supervision &rarr;
+downtime idle carry &rarr; small-tools/consumables allowance (3%
+&times; labor+downtime) &rarr; escalation &rarr; sales/use tax &rarr;
+insurance/bond carry (1.5%) &rarr; PM &rarr; overhead &rarr; profit
+(risk tiers low 8 / standard 10 / high 12) &rarr; line-risk contingency.
+Every estimate response carries the applied values in
+<code>recap.commercial</code> (wrap_order, small_tools_pct, escalation meta,
+tax classification, insurance pct, profit tier) and the money lines appear
+in exactly that order.</p>
+<ul>
+  <li><b>Escalation indices</b>: labor / copper / equipment, each with a
+      <code>base_date</code> and annualized rate. Factor =
+      1 + days(base_date &rarr; anchor)/365 &times; rate%. The anchor is the
+      definition's <code>commercial.escalation.anchor_date</code>, else the
+      midpoint working day of the with-crews schedule when the definition
+      carries <code>start_date</code>; no anchor &rarr; the step is skipped
+      with a warning (never de-escalates).</li>
+  <li><b>Sales/use tax rules</b>: lines classify by catalog zone prefix via
+      <code>zone_line_types</code>; types in <code>taxable_line_types</code>
+      are taxed at <code>rate_pct</code> (7% editable default, override per
+      estimate with <code>commercial.tax.rate_pct</code>). The shipped
+      default classifies every zone as exempt labor, so the stadium taxes
+      $0.00 &mdash; reported explicitly.</li>
+  <li><b>Overtime</b>: schedule-level double-time flag when planned weekly
+      hours exceed <code>weekly_dt_threshold_hours</code> (40 h); the M02
+      night/weekend differentials remain the costing mechanism.</li>
+</ul>
+
+<h2 id="scenarios">15. What-if scenarios (v0.6.0)</h2>
+<p>Named scenario sets are stored against an estimate and recomputed against
+the <b>current</b> base at diff time, so they never go stale:</p>
+<pre><code>curl -s -X POST $BASE/estimates/1/scenarios -d '{"name": "lift the bowl",
+  "overlay": {"access_overrides": {"bowl-lower": "lift"},
+              "factor_overrides": {"pm_pct": 12},
+              "qty_overrides": [{"location_id": "roof",
+                                 "catalog_id": "A09", "qty": 10}],
+              "quote_swap": {"quote_id": 3,
+                             "line_ids": ["bowl-lower:E06"]}}}'
+curl -s $BASE/estimates/1/scenarios
+curl -s $BASE/estimates/1/scenarios/1/diff
+curl -s -X DELETE $BASE/estimates/1/scenarios/1</code></pre>
+<ul>
+  <li><b>Overlay families</b>: <code>access_overrides</code> (per-location
+      access method), <code>factor_overrides</code> (deep-merged onto the
+      estimating config), <code>qty_overrides</code> (existing definition
+      lines only), <code>quote_swap</code> (a vendor quote's amount replaces
+      the named lines' wrapped labor, allocated proportionally by each
+      line's share per band; hours/schedule unchanged, swap flows through
+      the full wrap).</li>
+  <li><b>Diff report</b>: only changed lines (qty / hours mid / labor mid
+      moved) plus the totals delta. The grand-total delta includes the wrap
+      amplification, not the raw labor delta.</li>
+</ul>
+
+<h2 id="bidform">16. Bid form export (v0.6.0)</h2>
+<p><code>GET /exports/estimates/{id}/bid_form.pdf|.xlsx</code> renders the
+bid package out of the same engine: base bid (mid band), named
+<code>alternates[]</code> priced through the identical factor-stack/wrap
+engine, unit prices per antenna point, a condensed schedule of values in
+wrap order, the exclusions summary, and a signature block.</p>
+<ul>
+  <li><b>Alternates</b> live on the definition:
+      <code>"alternates": [{"name": "Alt 1", "locations": ["roof"]},
+      {"name": "Alt 2", "kind": "deduct", "lines":
+      [{"location_id": "bowl-lower", "catalog_id": "E06", "qty": 5}]}]</code>.
+      locations-only prices that location's whole current scope (including
+      auto-derived power-plant lines); lines specs price a subset (new
+      catalog lines need an explicit qty under kind <code>add</code>); kind
+      <code>deduct</code> prices the removed scope and signs the amount
+      negative (credit when accepted). No travel moves / downtime windows
+      are re-carried inside alternates.</li>
+  <li><b>Unit prices</b>: base bid &div; the definition's
+      <code>antenna_points</code> count (scalar or per-location map).
+      Alternates can carry their own <code>antenna_points</code>.</li>
+  <li><b>Companion endpoints</b>:
+      <code>GET /estimates/{id}/schedule</code> (crew-loading plan, blackout
+      windows, early/late duration bounds, OT flag) and
+      <code>GET /estimates/{id}/cashflow</code> (+ CSV/XLSX exports) from
+      the milestone splits in <code>config/commercial.json</code>.</li>
+</ul>
+
+<h2 id="s13">17. Tips and gotchas</h2>
+<ul>
+  <li><span class="bad">Warnings first</span>: a pass/fail on a floor that produced "clamped" or "below 0 dBm budget" warnings is an estimate of a broken chain, not a result.</li>
+  <li>Ambient donor levels are a baseline (-85 dBm); override per source element with <code>ambient_dbm</code> (single number or per band) once you have a site survey number.</li>
+  <li>KPI counts the full floor rectangle including wall pixels - keep that in mind when comparing against a walk-test.</li>
+  <li>Everything numeric (bands, materials, cables, KPI presets, class buckets) lives in <code>config/default.json</code> and can be layered per project via <code>config_overrides</code>.</li>
+  <li>This is a rough-order-of-magnitude tool: empirical models, relative accuracy. It is not a substitute for a site survey or an iBwave-grade prediction.</li>
+</ul>
+
+<h2 id="sanity">18. Sanity gates &amp; missing-scope checklists (v0.7.0)</h2>
+<p><code>GET /estimates/{id}/sanity</code> runs the rule-driven pre-sign-off
+checks over the stored recap + definition + quote register. Thresholds and
+severities live in <code>config/sanity.json</code>; the venue checklists in
+<code>config/checklists.json</code>. Nothing is hard-coded.</p>
+<ul>
+  <li><b>Gates</b>: labor share per zone-letter band for the venue archetype
+      (wrapped hours mid share per zone vs a plausibility window), hours &rarr;
+      crew-days/weeks consistency (ceil recompute from the stored lines),
+      E-density (share of labor lines on placeholder cards), unit-cost
+      outliers (line unit cost vs the norm-card unit cost &mdash; with the
+      default crew plan the ratio equals the line's stacked factor), quote
+      expiry (same date math as the bid tab), and the archetype
+      missing-scope checklist.</li>
+  <li><b>Hard vs warnings</b>: <code>hard_findings</code> block the
+      <code>approved</code> transition (409 with the findings listed;
+      governance config <code>sanity_blocks_approval</code>). Currently hard:
+      missing-scope checklist items and crew-duration math inconsistencies.
+      Everything else (labor-share bands, E-density, unit-cost outliers,
+      quote expiry) warns only.</li>
+  <li><b>Archetype</b>: set it on the definition with
+      <code>"sanity": {"archetype": "stadium"}</code> (six shipped:
+      stadium / hospital / warehouse / tunnel / hotel / office), or override
+      read-only with <code>?archetype=office</code>. With no archetype the
+      labor-share and missing-scope gates report <em>skipped</em> and never
+      block.</li>
+  <li><b>Checklist math</b>: an entry is satisfied when the estimate carries
+      any labor line whose catalog zone matches the prefix (stadium expects
+      A/C/E/G/H/I/J/K/O); a missing entry is a hard finding naming the zone
+      and the expected scope, e.g. the shipped stadium fixture reports I and
+      J missing until the engineering/electrical rows are added.</li>
+  <li><b>Exports</b>: recap.csv/.xlsx carry the full sanity section (summary
+      row + every hard/warning finding) under the governance block.</li>
+</ul>
+
+<h2 id="actuals">19. Actuals loop: drift &amp; refit proposals (v0.7.0)</h2>
+<p>Close the norm-card loop with field data. <code>romtool/actuals.py</code> +
+the <code>estimate_actuals</code> / <code>refit_proposals</code> tables +
+<code>config/actuals.json</code>; the write-once company layer lives in
+<code>config/company_labor_overrides.json</code>.</p>
+<ul>
+  <li><b>Import</b>: <code>POST /estimates/{id}/actuals</code> with
+      <code>{"rows": [{"catalog_id", "location_id"?, "qty", "hours",
+      "cost"?, "date", "note"?}]}</code>. qty/hours &gt; 0, ISO date; one
+      audit event per import.</li>
+  <li><b>Drift</b>: <code>GET /estimates/{id}/actuals/drift</code> &mdash; per
+      catalog card, row ratio = (actual hours / qty) &divide; (effective card
+      mid minutes / 60); the report ratio is the qty-weighted mean, the
+      proposal basis is the qty-weighted median of the row ratios; drift pct
+      and a quality flag (tight &le; 10%, watch &le; 25%, else divergent).</li>
+  <li><b>Propose (never applies)</b>: <code>POST
+      /estimates/{id}/actuals/propose-refit</code> scales the card low/high by
+      the median ratio with the ratio clamped into 0.5&ndash;2.0 of the current
+      norm (guarded bounds), needs &ge; 2 usable rows, stores the proposal,
+      and never touches the company layer.</li>
+  <li><b>Apply (owner-approved)</b>: <code>POST
+      /estimates/{id}/actuals/apply-refit</code> takes your approved
+      <code>{catalog_id, low, high, note?}</code> and writes
+      <code>config/company_labor_overrides.json</code> (atomic, history
+      appended, audit event on the estimate). The engine prefers the override
+      card on every later compute and stamps
+      <code>company_override</code> provenance on affected recap lines +
+      <code>company_override_catalog_ids</code>. Hand example: E01
+      (1.8&ndash;3.0 min/ft) with rows at median 1.2&times; proposes
+      2.16&ndash;3.6; a 3.0&times; median clamps to 2.0&times; (3.6&ndash;6.0).</li>
+</ul>
+
+<h2 id="rflink">20. RF link: draft an estimate from the RF project (v0.7.0)</h2>
+<p><code>POST /projects/{id}/draft-estimate</code> walks the RF model (floors,
+antennas, cable runs, splitters/taps, source/repeater, critical areas, solved
+bands &mdash; every mapping in the editable <code>config/rflink.json</code>)
+and drafts a full estimate definition for estimator review:</p>
+<ul>
+  <li>antenna point counts per floor &rarr; E06 lines + definition
+      <code>antenna_points</code> (bid unit prices) + H02 PIM per antenna;</li>
+  <li>cable_run lengths per size &rarr; coax footage E01 horizontal / E02
+      cross-floor riser (run owned by its from-element's floor) + E10 riser
+      fire wrap + E03 both-end connectors + E04 jumpers + D05 supports
+      proportional to footage;</li>
+  <li>splitter/coupler/tapper floors &rarr; hub closets (C01/C02/C06/C07) +
+      E05 splitter installs;</li>
+  <li>source/repeater floors &rarr; the headend (B-zone, donor-side A-zone,
+      J-zone power feed) plus the booster DC load block &rarr; the estimate
+      engine's O-zone auto-sizer (10 A / 12 h config &rarr; O01 x1, O02 x2
+      N+1, O04 x1 string);</li>
+  <li>L-zone allowances: 4 ceiling tiles per antenna point, patch rows per
+      penetration count (A04/C07/D06/D07); H-zone testing per floor &times;
+      solved band (H04 benchmark, H05 acceptance), H01 sweep per run, H09
+      carrier acceptance, H06/H07/H10, I-zone engineering.</li>
+</ul>
+<p>The default response is a review draft (not stored). Re-POST with
+<code>?store=true</code> to compute it and store a real estimate (revision 1,
+state draft) the estimator then edits via <code>PATCH /estimates/{id}</code>.
+A test builds it from the seeded example project and asserts every drafted
+catalog id exists.</p>
+
+<h2 id="ai">21. AI endpoints (v0.7.0)</h2>
+<p>All three AI endpoints are gateway-agnostic OpenAI-chat-style completions,
+configured in <code>config/ai.json</code>
+(<code>base_url</code>, <code>model</code>, <code>api_key_env</code>,
+prompts). They degrade gracefully:</p>
+<pre>HTTP 503 {"detail": "ai gateway unreachable", "schema": {..documented request/response shape..}}</pre>
+<p>when the config file is missing, the key env var is unset, or the gateway
+is unreachable/non-200; 502 with the same schema when the gateway answers
+but the body does not fit the contract. No test may call paid APIs &mdash; the
+transport is mocked in tests.</p>
+<ul>
+  <li><code>POST /ai/rfp-scan</code> <code>{"text": "..."}</code> &rarr;
+      requirements / scope matrix / gaps / assumptions (strict JSON).</li>
+  <li><code>POST /ai/scenario-suggest</code> with
+      <code>{"recap": {...}}</code> or <code>{"estimate_id": n}</code> &rarr;
+      suggested what-if overlays with rationale; suggestion overlays are
+      validated against the stored estimate (invalid overlay &rarr; 422).</li>
+  <li><code>POST /ai/bid-memo</code> with
+      <code>{"recap": {...}}</code> or <code>{"estimate_id": n}</code> &rarr;
+      narrative memo + highlights; the estimate's assumption register is
+      included in the prompt automatically.</li>
+</ul>
+
+<h2 id="stadium-pkg">22. Stadium morning package (v0.8.0)</h2>
+<p>Phase E5 ships the capstone deliverable: the <em>Generic 60k-Seat
+Stadium</em> exists as real stored objects and a complete bid package.</p>
+<ul>
+  <li>Build it with
+      <code>cd /root/assistant/romtool &amp;&amp;
+      .venv/bin/python scripts/build_stadium_package.py</code>. The script is
+      idempotent: it reuses the stored project/estimate/quotes if they exist.</li>
+  <li>Objects created: RF project "Generic 60k-Seat Stadium (RF)" (roof over
+      two bowl levels, concourse, ERCES/DAS headend; direct carrier feeds
+      &rarr; repeater &rarr; 7/8in risers &rarr; zone splitters &rarr;
+      antennas; the cascade solves with zero errors) and labor estimate
+      "Generic 60k-Seat Stadium (ERCES + 3-carrier neutral host DAS)" with
+      <code>sanity.archetype = stadium</code>, start 2026-11-16, night
+      schedule, dated event-lockout windows, alternates and
+      <code>antenna_points</code>, plus two bound vendor quotes
+      (ERCES booster, headend equipment; placeholder amounts).</li>
+  <li>Package written to <code>dist/stadium-package/</code>:
+      <code>recap.xlsx</code>, <code>recap.csv</code>, <code>bid_form.pdf</code>,
+      <code>bid_form.xlsx</code>, <code>inclusions_exclusions.pdf</code>,
+      <code>assumptions.csv</code>, <code>cashflow.xlsx</code>,
+      <code>crew_plan.csv</code>, <code>bid_tab.json</code>,
+      <code>sanity.json</code>, <code>manifest.json</code> and
+      <code>MORNING-REPORT.md</code> (the review document: what shipped
+      E1&ndash;E5, P/G/E provenance counts, the accuracy-class statement and
+      the open items).</li>
+  <li><code>GET /reports/stadium</code> serves the package manifest (404 with
+      the rebuild command when the package has not been built).</li>
+  <li>Accuracy statement (stated in the report too): fixture-class inputs
+      with partial vendor quotes support <b>Class 4 at best</b> (low end in
+      AACE Class 5 territory); not a Class 3 without a design takeoff and
+      executed quotes.</li>
+</ul>
+
+<footer>
+  ROMtool 0.8.0 &mdash; <a href="/">App</a> &middot; <a href="/help">How-To</a> &middot; <a href="/how-it-works">How it works</a>
+</footer>
+</main>
+</body>
+</html>

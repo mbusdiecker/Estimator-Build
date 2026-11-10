@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "romtool"
+version = "0.8.0"
+description = "ROMtool - in-building RF ROM estimator (phase 4 + E2 governance + E3 commercial wrap: LTE + public safety + 5G NR + Class 1 labor estimate engine)"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.23",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "httpx>=0.24",
+]
+
+[tool.setuptools]
+packages = ["romtool", "app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,88 @@
+{
+  "version": "0.7.0",
+  "comment": "ROMtool RF-link auto-draft mapping (phase E4, v0.7.0) - every catalog mapping and allowance multiplier lives here; romtool/rflink.py only reads it. The draft definition is a REVIEW draft: the estimator edits quantities/access/conditions before pricing. Draft source data comes from the RF project model: antenna elements per floor, cable_run lengths per cable_id (same-floor vs cross-floor riser detected from the endpoints' floors), splitter/coupler/tapper counts (hub closets), source/repeater floors (headend), critical-area polygons, solved-band count.",
+  "meters_to_feet": 3.28084,
+  "location_prefix": "floor_",
+  "location_prefix_note": "Draft location ids are the RF model floor ids prefixed with this prefix to avoid collisions with hand-built estimate locations.",
+  "cable_catalog_map": {
+    "lmr400": {"catalog_id": "E01", "note": "3/8in-class branch coax is pulled to the 1/2in Heliax card (E01); 3/8 pull is faster - estimator re-cards on review."},
+    "coax_1_2in": {"catalog_id": "E01"},
+    "coax_7_8in": {"catalog_id": "E01", "note": "7/8in trunk re-card to a 7/8-specific unit when the company adds one; E01 is the closest shipped card."}
+  },
+  "riser_catalog_id": "E02",
+  "riser_note": "A cable_run whose endpoints sit on model floors of different levels is drafted as vertical riser footage (E02) on the floor that owns the run (the from-element's floor).",
+  "riser_fire_wrap": {"catalog_id": "E10", "enabled": true, "note": "2-hr riser fire wrap LF proportional to riser footage."},
+  "connector_catalog_id": "E03",
+  "connectors_per_run": 2,
+  "jumper_catalog_id": "E04",
+  "jumpers_per_antenna": 1,
+  "jumpers_per_splitter_or_tap": 1,
+  "antenna_catalog_id": "E06",
+  "antenna_note": "Ceiling omni (E06) is the default antenna card; estimator swaps to E07 hard-lid / E08 wall-mount per room conditions.",
+  "splitter_install_catalog_id": "E05",
+  "headend_trigger_types": ["source", "repeater"],
+  "hub_trigger_types": ["splitter", "coupler", "tapper"],
+  "headend_lines": [
+    {"catalog_id": "B01", "qty": 1, "derivation": "headend rack assembly"},
+    {"catalog_id": "B03", "when_repeater": true, "qty": 1, "derivation": "BDA/master unit install+configure per booster"},
+    {"catalog_id": "B09", "qty": 1, "derivation": "surge suppression at AC + RF entry"},
+    {"catalog_id": "A01", "qty": 1, "derivation": "off-air donor antenna mount/aim/seal (donor side of the headend)"},
+    {"catalog_id": "A02", "qty": 1, "derivation": "donor jumper assemblies (both ends)"},
+    {"catalog_id": "A04", "qty": 1, "derivation": "rooftop cable entry port (assumed; relocate if the donor path is not rooftop)"}
+  ],
+  "booster_load": {
+    "load_amps": 10.0,
+    "runtime_hours": 12.0,
+    "provenance": "E",
+    "note": "Steady DC load assumption for the booster + headend electronics (practice allowance, assumption-grade). The engine auto-sizes the O-zone plant from this block: Ah = runtime x load, strings = ceil(Ah / string_Ah), rectifiers N+1. IFC 510.4.2.3 12-hr runtime."
+  },
+  "power_feed_lines": [
+    {"catalog_id": "J01", "qty": 1, "derivation": "dedicated circuit home run to the headend"},
+    {"catalog_id": "J02", "qty": 2, "derivation": "breakers for headend + DC plant feeds"},
+    {"catalog_id": "J04", "qty": 1, "derivation": "duplex receptacle at headend equipment"}
+  ],
+  "hub_closet_lines": [
+    {"catalog_id": "C01", "qty": 1, "derivation": "backboard per hub closet"},
+    {"catalog_id": "C02", "qty": 1, "derivation": "wall-mount rack per hub closet"},
+    {"catalog_id": "C06", "qty": 1, "derivation": "busbar + bonding per closet"},
+    {"catalog_id": "C07", "qty": 2, "derivation": "sleeves + firestop at closet entry"}
+  ],
+  "pathway_support": {"catalog_id": "D05", "ft_per_support": 5.0, "derivation": "J-hooks/supports proportional to the floor's pulled coax footage"},
+  "l_zone_allowance": {
+    "tiles_per_antenna": 4.0,
+    "tiles_catalog_id": "L02",
+    "tiles_note": "ceiling tiles lifted/reinstalled per antenna point (practice allowance)",
+    "patches_per_penetration": 1.0,
+    "patches_catalog_id": "L03",
+    "penetration_catalog_ids": ["A04", "C07", "D06", "D07"],
+    "patches_note": "patch/finish allowance proportional to penetration rows (roof port, sleeves, core drills) drafted on the same location"
+  },
+  "engineering_lines": [
+    {"catalog_id": "I02", "qty_token": "floors", "derivation": "RF design / propagation model per floor"},
+    {"catalog_id": "I01", "qty": 1, "derivation": "existing-signal benchmark survey"},
+    {"catalog_id": "I03", "qty": 1, "derivation": "permit / AHJ submittal package"},
+    {"catalog_id": "I06", "qty": 1, "derivation": "mobilization / demob"},
+    {"catalog_id": "I05", "qty": 1, "derivation": "project management LOT"}
+  ],
+  "include_engineering": true,
+  "include_donor_entry": true,
+  "include_power_plant": true,
+  "include_pathway_support": true,
+  "include_l_zone_allowance": true,
+  "testing": {
+    "sweep_catalog_id": "H01",
+    "sweep_per_run": 1.0,
+    "pim_catalog_id": "H02",
+    "pim_per_antenna": 1.0,
+    "benchmark_catalog_id": "H04",
+    "acceptance_catalog_id": "H05",
+    "per_band": true,
+    "per_band_note": "H04/H05 qty = floors x solved bands when per_band is true (unit FLOOR = floor-band test passes); else floors only, one walk covering all bands.",
+    "critical_point_catalog_id": "H06",
+    "functional_catalog_id": "H07",
+    "carrier_catalog_id": "H09",
+    "carriers_override": null,
+    "carriers_note": "H09 qty = distinct solved band count (each band counted as an acceptance scope) unless carriers_override is set.",
+    "asbuilts_catalog_id": "H10"
+  }
+}

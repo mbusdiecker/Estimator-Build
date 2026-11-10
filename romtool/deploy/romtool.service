@@ -1,0 +1,14 @@
+[Unit]
+Description=ROMtool - in-building RF ROM estimator (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/assistant/romtool
+ExecStart=/root/assistant/romtool/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8807
+Restart=on-failure
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target

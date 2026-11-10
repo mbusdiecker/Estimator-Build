@@ -1,0 +1,65 @@
+{
+  "name": "Metropolitan Stadium ERCES/DAS build (ROM)",
+  "locations": [
+    {
+      "id": "roof",
+      "name": "Roof / donor array",
+      "access": "rope",
+      "conditions": ["exterior"],
+      "lines": [
+        {"catalog_id": "A01", "qty": 1},
+        {"catalog_id": "A04", "qty": 2},
+        {"catalog_id": "A09", "qty": 6},
+        {"catalog_id": "K04", "qty": 2},
+        {"catalog_id": "K10", "qty": 2}
+      ]
+    },
+    {
+      "id": "bowl-lower",
+      "name": "Bowl lower level",
+      "access": "lift",
+      "conditions": ["occupied"],
+      "lines": [
+        {"catalog_id": "E06", "qty": 40},
+        {"catalog_id": "E03", "qty": 80},
+        {"catalog_id": "E01", "qty": 1200},
+        {"catalog_id": "E11", "qty": 8},
+        {"catalog_id": "K01", "qty": 4},
+        {"catalog_id": "K02", "qty": 12},
+        {"catalog_id": "L02", "qty": 60}
+      ]
+    },
+    {
+      "id": "closet-500",
+      "name": "Club level closet 500",
+      "access": "ground",
+      "conditions": ["occupied", "constrained_access"],
+      "lines": [
+        {"catalog_id": "C01", "qty": 1},
+        {"catalog_id": "C07", "qty": 3},
+        {"catalog_id": "C08", "qty": 12}
+      ]
+    },
+    {
+      "id": "headend",
+      "name": "ERCES headend room",
+      "access": "ground",
+      "lines": [
+        {"catalog_id": "B03", "qty": 1},
+        {"catalog_id": "B11", "qty": 1},
+        {"catalog_id": "B05", "qty": 1},
+        {"catalog_id": "H07", "qty": 1},
+        {"catalog_id": "G03", "qty": 1}
+      ],
+      "power_plant": {"runtime_hours": 12, "load_amps": 30}
+    }
+  ],
+  "schedule": {"night": true, "weekend": false},
+  "travel_moves": [
+    {"from": "roof", "to": "bowl-lower"},
+    {"from": "bowl-lower", "to": "closet-500"},
+    {"from": "closet-500", "to": "headend"}
+  ],
+  "downtime_windows": [{"label": "Concert load-in lockout", "days": 1}],
+  "crew": {"crews": 1, "techs": 4, "foremen": 1}
+}

@@ -1,0 +1,128 @@
+{
+  "version": "0.4.0",
+  "comment": "ROMtool Class 1 estimating constants (phase 4). EVERY engine constant lives here: factor values, ratios, rates, contingency bands. Nothing is hard-coded in romtool/estimate.py. 'low'/'high' come straight from the catalog factor-row ranges; the engine uses mid = (low+high)/2. Rate card is $/hour, burdened. Contingency is line-risk by catalog source_quality (P published anchors, E estimated/placeholder rows, G guess/practice rows). Edit any value; POST /estimates also accepts a rate_overrides block that deep-merges on top of this file per estimate.",
+  "rate_card": {
+    "currency": "USD",
+    "tech_rate": 85.0,
+    "foreman_rate": 105.0,
+    "rate_notes": "Burdened rates (wages + payroll burden + vehicle/small tools allowance). Foreman rate also bills the N02 non-working supervision hours (super/PM labor class). I05 Project management is a percent of accepted labor (pm_pct), not hours."
+  },
+  "pm_pct": 10.0,
+  "overhead_pct": 10.0,
+  "profit_pct": 10.0,
+  "contingency_pct_by_quality": {
+    "P": 3.0,
+    "E": 7.0,
+    "G": 10.0
+  },
+  "contingency_note": "N05 Class-1 carry, line-risk based not blanket (catalog note); E placeholder rows carry more than P published rows, G rows most. Applied per line to its labor dollars, never mark-up dollars.",
+  "factors": {
+    "occupied": {
+      "row": "M03",
+      "low": 1.25,
+      "high": 1.5,
+      "note": "Occupied-building productivity: +25-50% zone hours in live areas."
+    },
+    "exterior": {
+      "row": "M04",
+      "low": 1.2,
+      "high": 1.4,
+      "note": "Weather-exposed roof/exterior: +20-40% hours."
+    },
+    "constrained_access": {
+      "row": "M07",
+      "low": 1.2,
+      "high": 1.4,
+      "note": "Freight elevator / parking / escort constraints: +20-40% affected hours."
+    }
+  },
+  "schedule_factors": {
+    "night": {
+      "row": "M02",
+      "low": 1.25,
+      "high": 1.4,
+      "note": "Night-shift hours differential: +25-40%."
+    },
+    "weekend": {
+      "row": "M02",
+      "low": 1.25,
+      "high": 1.5,
+      "note": "Weekend differential: 1.25-1.5x."
+    }
+  },
+  "access_factors": {
+    "ground": {
+      "row": null,
+      "low": 1.0,
+      "high": 1.0
+    },
+    "ladder": {
+      "row": "K06",
+      "low": 1.15,
+      "high": 1.25,
+      "note": "Ladder work above 12 ft (Durand difficult column): +15-25%."
+    },
+    "lift": {
+      "row": "K03",
+      "low": 1.25,
+      "high": 1.5,
+      "note": "Elevated-work factor (K03 difficult..very-difficult); boom/MEWP zones default at the difficult end unless very_difficult applies."
+    },
+    "scissor": {
+      "row": "K03",
+      "low": 1.1,
+      "high": 1.25,
+      "note": "Scissor lifts position faster than boom lifts: easier end of K03."
+    },
+    "rope": {
+      "row": "K05",
+      "low": 1.5,
+      "high": 2.0,
+      "note": "Rope-access (rappel) penalty vs ground-level same task: +50-100%."
+    }
+  },
+  "access_note": "Access methods map to catalog factor rows: ground=none, ladder=K06, lift/scissor=K03, rope=K05. The access factor is NOT applied to K-Access-ADDERS minute rows themselves (K01/K02/K04/K07/K08/K10/K11/K13 are already access-specific adders); condition and schedule factors still apply to them.",
+  "crew_defaults": {
+    "crews": 1,
+    "techs": 4,
+    "foremen": 1,
+    "hours_per_day": 8,
+    "days_per_week": 5
+  },
+  "foreman_productive_haircut": 0.5,
+  "foreman_note": "N01 working-foreman mechanics: a working foreman produces at ~50% while supervising, so a crew of T techs + F foremen delivers T + F*0.5 effective techs; foreman hours carry at foreman_rate.",
+  "supervision_pct": {
+    "row": "N02",
+    "low": 0.08,
+    "high": 0.15,
+    "note": "Non-working supervision (super, PM) labor: 8-15% of direct labor hours, billed at foreman_rate."
+  },
+  "idle_lockout": {
+    "row": "M01",
+    "note": "Blacked-out windows carry idle crew-day cost (schedule risk, not hours): crew_size x hours_per_day x blended rate, blended = (techs*tech_rate + foremen*foreman_rate)/crew_size."
+  },
+  "power_plant": {
+    "battery_string_ah": 120.0,
+    "rectifier_size_amps": 50.0,
+    "runtime_hours_default": 12.0,
+    "runtime_ifc_min_hours": 12.0,
+    "rows": {
+      "bay": "O01",
+      "rectifier": "O02",
+      "strings": "O04",
+      "spill_containment": "O05",
+      "battery_monitoring": "O06"
+    },
+    "note": "O-zone auto-sizing helper: Ah = runtime_hours x load_amps; strings = ceil(Ah / battery_string_ah) (IFC 510.4.2.3 12-hr sizing per O04 notes). Rectifiers auto N+1: qty = ceil(load_amps / rectifier_size_amps) + 1 unless the block pins rectifier_modules."
+  },
+  "wrap_rows": {
+    "travel": "M05",
+    "orientation": "N03",
+    "cleanup": "N04",
+    "lockout_cost": "M01"
+  },
+  "derived_note": "Derived estimate-level logistics lines (M05 travel moves, N03 orientation, N04 cleanup) carry base minutes with NO factor stacking (they ARE the wrap); location-level power-plant derived lines stack normally.",
+  "crew_week_basis": {
+    "note": "Crew-day capacity = crews x (techs + foremen) x hours_per_day; crew-week capacity adds days_per_week. crew_days = ceil(direct wrapped hours / crew-day capacity) drives the N04 cleanup qty."
+  }
+}

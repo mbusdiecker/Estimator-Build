@@ -1,0 +1,23 @@
+{
+  "version": "0.5.0",
+  "comment": "Commercial draft templates for the inclusions/exclusions sheet (phase E2). Edit freely - the generator merges these defaults with derived lines from the estimate definition (schedule/travel/downtime/supervision markers) and with vendor-quote inclusions/exclusions. Items are provenance-labeled template sentences, not cost data.",
+  "sheet_title": "Inclusions & Exclusions - Commercial Draft",
+  "inclusions_default": [
+    "All labor shown on the recap is included: catalog unit-card task hours wrapped with N01 working-foreman and N02 non-working supervision hours.",
+    "Line-risk contingency (N05) is carried per line by catalog source quality: P 3% / E 7% / G 10% of line labor; E-flagged norms are tracked in the estimate's assumption register.",
+    "Project management (I05) at 10% of accepted labor, overhead and profit per the estimate rate card are included in the recap total.",
+    "Builder's all-risk insurance, warranty (1 year) and standard cleanup/debris removal during the N04 cleanup crew-days are included.",
+    "Mounting hardware, splitters/tappers/couplers, connectors, grounding bars and annunciation panels shown in the estimate lines are included."
+  ],
+  "exclusions_default": [
+    "Sales/use tax: not included; applied at invoice per governing jurisdiction.",
+    "Permits, utility locate fees, inspection fees and AHJ-mandated witness tests beyond the listed scope.",
+    "Structural steel, new penetrations requiring fire-stopping materials, and any landlord-required union jurisdictions.",
+    "Owner-furnished materials installation unless the materials appear as estimate lines.",
+    "After-hours building access fees, freight-elevator deposits and security-escort costs beyond the constrained-access allowance (M07).",
+    "Escalation on labor or materials beyond the quote/validity period; price-hold dates govern.",
+    "RF design, iBwave prediction package, commissioning sweep reports and final as-builts (design deliverables are a separate line item)."
+  ],
+  "inclusions_note": "Derived lines below the template block are generated from this estimate's definition and its bound quote register; vendor-tagged lines come verbatim from vendor quotes.",
+  "exclusions_note": "Derived lines below the template block are generated from this estimate's definition and its bound quote register; vendor-tagged lines come verbatim from vendor quotes."
+}

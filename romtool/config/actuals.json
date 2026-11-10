@@ -1,0 +1,20 @@
+{
+  "version": "0.7.0",
+  "comment": "Actuals-loop constants (phase E4, v0.7.0) - nothing hard-coded in romtool/actuals.py. Drift ratio per catalog row = unit actual hours / unit norm-card mid hours (mid minutes / 60); the report-level ratio is qty-weighted (sum of actual hours / sum of norm mid-hours at the row qtys) and the proposal uses the weighted MEDIAN of per-row ratios (robust to one bad field report). quality flag bands on |drift_pct|.",
+  "min_rows_for_refit_proposal": 2,
+  "min_rows_note": "A proposal needs at least this many valid actual rows (qty>0, hours>0) per catalog card - one field report is an observation, not a refit basis.",
+  "guard_ratio_low": 0.5,
+  "guard_ratio_high": 2.0,
+  "guard_note": "Proposal guard: the proposed card is norm low/high scaled by the median ratio, with the median ratio clamped into [guard_ratio_low, guard_ratio_high] of the current norm before scaling. Proposals NEVER auto-apply; POST .../apply-refit writes owner-approved numbers to config/company_labor_overrides.json.",
+  "quality_flags": {
+    "tight_pct": 10.0,
+    "watch_pct": 25.0,
+    "labels": ["tight", "watch", "divergent"],
+    "note": "|drift_pct| <= tight_pct -> 'tight', <= watch_pct -> 'watch', else 'divergent'."
+  },
+  "apply_note": "apply-refit accepts owner-approved low/high (both > 0, high > low). It writes the company override layer and logs an audit event on the applying estimate; every later compute prefers the override card (provenance stamped on affected recap lines and company_override_catalog_ids).",
+  "defaults": {
+    "default_date": null,
+    "note": "Rows without a date are rejected; dates are ISO YYYY-MM-DD. cost is optional ($); hours and qty are required > 0."
+  }
+}
