@@ -62,7 +62,9 @@ def test_building_type_config_has_grades_and_references(cfg):
                           "retail_mall"}
     for tid, t in types.items():
         assert t["n_grade"] in ("P", "E"), tid
-        assert t["clutter_grade"] in ("P", "E"), tid
+        assert t["clutter_grade"] in ("P", "C", "E"), tid
+        if t["clutter_grade"] == "C":   # company-calibrated against ANS designs
+            assert "calibrated" in t["clutter_ref"], tid
         assert t["n_ref"] and t["clutter_ref"], tid
         if t["n_grade"] == "P":
             assert "P.1238" in t["n_ref"], tid
@@ -160,15 +162,18 @@ def test_default_behavior_unchanged_without_building_type(cfg):
     pr = predict_floor(m, cfg, "f1", "B2_1900", step_px=2)
     assert pr["n_exponent"] == 30.0 and pr["n_exponent_source"] == "environment"
     # a building type with the same N as the environment gives identical values
+    # pin clutter to 0 so only N is compared (office clutter is company-calibrated in config)
+    c0 = with_overrides(cfg, {"building_types": {"office": {"clutter_db_per_m": 0.0}}})
     m2 = _one_antenna_model(building_type="office")
-    pr2 = predict_floor(m2, cfg, "f1", "B2_1900", step_px=2)
+    pr2 = predict_floor(m2, c0, "f1", "B2_1900", step_px=2)
     assert pr2["values_dbm"] == pr["values_dbm"]
 
 
 def test_clutter_term_subtracts_per_metre(cfg):
+    c0 = with_overrides(cfg, {"building_types": {"office": {"clutter_db_per_m": 0.0}}})
     c2 = with_overrides(cfg, {"building_types": {"office": {"clutter_db_per_m": 0.5}}})
     m = _one_antenna_model(building_type="office")
-    base = predict_floor(m, cfg, "f1", "B2_1900", step_px=1)
+    base = predict_floor(m, c0, "f1", "B2_1900", step_px=1)
     cl = predict_floor(m, c2, "f1", "B2_1900", step_px=1)
     # 10 m away: 0.5 dB/m * 10 m = 5 dB lower
     assert base["values_dbm"][100] - cl["values_dbm"][100] == pytest.approx(5.0, abs=0.11)
