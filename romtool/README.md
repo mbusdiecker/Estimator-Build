@@ -499,6 +499,66 @@ plus a complete bid package:
   accuracy at best from fixture-class inputs with partial vendor quotes; it
   is not a design-takeoff Class 3 number.
 
+## Building-type default loss and automatic antenna placement
+
+**Building-type default loss.** Set `building_type` on a project or floor
+(floor wins; `POST/PATCH /projects`, `POST/PATCH .../floors`). Allowed ids are
+the keys of `building_types` in `config/default.json`: office, hospital,
+warehouse_open, school_campus, hotel_residential, parking_garage,
+stadium_venue, retail_mall. When a floor has no walls drawn, predict and
+autoplace use that type's N and optional `clutter_db_per_m`:
+`PL = 20log10(f) + N*log10(d) + clutter*d - 28`. With walls drawn, or no
+building type, behavior is unchanged (environment N plus wall crossings).
+Every value carries a grade and reference. Grade P is published: office 30,
+hotel_residential 28, retail_mall 22 (ITU-R P.1238 Table 2, 1.8-2 GHz column,
+the same numbers as `environments`; re-check against the edition you cite).
+Grade E is an estimate with no published coefficient, set to an analog and
+flagged for calibration: hospital 30 and school_campus 30 (office analog),
+warehouse_open, parking_garage and stadium_venue 22 (commercial analog).
+`clutter_db_per_m` is 0.0 for every type (grade E, not calibrated). A band can
+override N per building type with `n_exponent_overrides.<building_type>`.
+`predict` returns `loss_model` showing which source applied.
+
+**Autoplace.** `POST /projects/{pid}/floors/{fid}/autoplace` with
+`bands` (required), `antenna_id`, `threshold_dbm` and `coverage_target_pct`
+(default the single-tier preset, -95 dBm / 95%), `rsrp_offset_db`, `nfpa`
+(auto: bands in `autoplace.public_safety_band_ids` use the NFPA two-tier
+rule), `step_px`, `max_antennas`, `source` / `repeater` overrides,
+`headend {x_px,y_px}`, `feed_element_id`, `outline` (also `floor.outline`),
+`verify_max_points`, `dry_run`. It replaces earlier auto-placed elements
+(flag `auto: true`) on that floor, builds source, repeater, a spatially
+clustered splitter tree and cable runs, and saves them, so `/cascade/solve`,
+`/predict` and `/bom` work unchanged. Response: antenna count, achieved
+coverage per band and tier, iterations, per-antenna EIRP, cascade port-power
+minimums, warnings, runtime and the BOM.
+
+Algorithm: hex-lattice seed sized from the link budget, greedy fill (add the
+candidate that newly covers the most uncovered points), prune (remove
+antennas while every requirement holds). An outer loop solves the real
+cascade and re-plans until the solved EIRPs meet the target; the final layout
+is verified with the same arithmetic as predict. Deterministic, no randomness.
+Stops when the target is met, at `max_antennas`, when fill stalls, or with a
+422 if the link budget supports under 2 m radius.
+
+Limits:
+- Thresholds are in the predict domain (composite carrier power). For an LTE
+  RSRP target pass `rsrp_offset_db` (RSRP minus carrier power, about -31 dB
+  for 20 MHz).
+- The default N values are generic; no-wall coverage radii are long and the
+  count is only as good as the calibration against closed jobs.
+- Planning runs on at most 6000 points; verification on at most
+  `verify_max_points` (100,000) and is coarsened beyond that (reported).
+  Predict's own KPI stays canvas-wide, so `outline` only affects autoplace.
+- One head-end per call. Use `feed_element_id` to hang a floor off an existing
+  repeater/splitter port; otherwise each floor gets its own source and repeater.
+- Drawn walls make it much slower (ray tests per point and antenna).
+- Cable lengths are Manhattan distance plus 3 m per run (grade E). Port
+  power below 0 dBm is reported, not fixed (no second head-end or sectors).
+- Measured on a 960 x 960 px plate at 10 px/m (9,216 m2, about 99,000 sq ft),
+  two bands, 27 antennas: 1.6 s with default verification; 18 s with
+  `verify_max_points=0` at step 1 (921,600 points). Plain predict on that
+  floor takes about 29 s per band at step 1.
+
 ## Non-goals (per SPEC)
 
 Ray tracing, capacity modeling, .ibw interop, auth, pricing fields, systemd

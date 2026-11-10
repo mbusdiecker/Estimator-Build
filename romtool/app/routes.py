@@ -44,6 +44,7 @@ from fastapi.responses import JSONResponse
 
 from romtool import ai as ai_mod
 from romtool import actuals as actuals_mod
+from romtool.autoplace import AutoplaceError, autoplace_floor
 from romtool.bom import bom_csv, generate_bom
 from romtool.bidform import build_bid_form, bid_form_pdf, bid_form_xlsx
 from romtool.cascade import solve_cascade
@@ -139,6 +140,30 @@ def _num(v):
         raise HTTPException(status_code=422, detail="expected a number, got %r" % (v,))
 
 
+def _check_building_type(value):
+    """None/'' clears; otherwise the id must exist in config building_types."""
+    if value in (None, ""):
+        return None
+    known = (load_config().get("building_types") or {})
+    _require(value in known, "unknown building_type '%s' (known: %s)"
+             % (value, ", ".join(sorted(known))))
+    return value
+
+
+def _check_outline(value):
+    """None/[] clears; otherwise a list of >= 3 [x, y] number pairs."""
+    if not value:
+        return None
+    _require(isinstance(value, list) and len(value) >= 3,
+             "outline must be a list of at least 3 [x, y] points")
+    out = []
+    for pt in value:
+        _require(isinstance(pt, (list, tuple)) and len(pt) == 2,
+                 "outline points must be [x, y] pairs")
+        out.append([_num(pt[0]), _num(pt[1])])
+    return out
+
+
 def _find_floor(model, fid):
     for fl in model.get("floors", []):
         if fl.get("id") == fid:
@@ -214,6 +239,8 @@ def create_project(payload: dict = Body(default_factory=dict)):
         "config_overrides": payload.get("config_overrides") or {},
         "floors": [],
     }
+    if payload.get("building_type"):
+        model["building_type"] = _check_building_type(payload["building_type"])
     proj = db.create_project(name, model)
     return _public_project(proj)
 
@@ -235,6 +262,12 @@ def patch_project(pid: int, payload: dict = Body(...)):
         model["environment"] = payload["environment"]
     if "description" in payload:
         model["description"] = payload["description"]
+    if "building_type" in payload:
+        bt = _check_building_type(payload["building_type"])
+        if bt is None:
+            model.pop("building_type", None)
+        else:
+            model["building_type"] = bt
     if "config_overrides" in payload:
         model["config_overrides"] = payload["config_overrides"] or {}
     proj = _save(pid, model.get("name", proj["name"]), model)
@@ -1454,6 +1487,10 @@ def create_floor(pid: int, payload: dict = Body(...)):
         "walls": [],
         "elements": [],
     }
+    if payload.get("building_type"):
+        floor["building_type"] = _check_building_type(payload["building_type"])
+    if payload.get("outline"):
+        floor["outline"] = _check_outline(payload["outline"])
     model.setdefault("floors", []).append(floor)
     _save(pid, proj["name"], model)
     return {"floor": {k: v for k, v in floor.items() if k != "image"}}
@@ -1469,6 +1506,18 @@ def patch_floor(pid: int, fid: str, payload: dict = Body(...)):
             floor[key] = payload[key]
     if "ppm" in floor:
         floor["ppm"] = float(_num(floor["ppm"]))
+    if "building_type" in payload:
+        bt = _check_building_type(payload["building_type"])
+        if bt is None:
+            floor.pop("building_type", None)
+        else:
+            floor["building_type"] = bt
+    if "outline" in payload:
+        ol = _check_outline(payload["outline"])
+        if ol is None:
+            floor.pop("outline", None)
+        else:
+            floor["outline"] = ol
     _save(pid, proj["name"], model)
     return {"floor": {k: v for k, v in floor.items() if k != "image"}}
 
@@ -1864,6 +1913,35 @@ def predict(pid: int, fid: str, band: str = Query(...), step: int = Query(1, ge=
 @router.get("/projects/{pid}/floors/{fid}/predict")
 def predict_get(pid: int, fid: str, band: str = Query(...), step: int = Query(1, ge=1, le=64)):
     return _run_predict(pid, fid, band, step)
+
+
+# ------------------------------------------------------------ autoplace
+
+@router.post("/projects/{pid}/floors/{fid}/autoplace")
+def autoplace(pid: int, fid: str, payload: dict = Body(default_factory=dict)):
+    """Place antennas + build the splitter/cable chain for one floor so the
+    coverage target is met with as few antennas as practical. Replaces any
+    earlier auto-placed elements on the floor. `dry_run: true` returns the
+    result without saving. The saved model feeds /predict and /bom as usual."""
+    proj = _load_or_404(pid)
+    payload = payload or {}
+    dry = bool(payload.get("dry_run", False))
+    model = json.loads(json.dumps(proj["model"])) if dry else proj["model"]
+    _find_floor(model, fid)  # 404 if missing
+    cfg = _proj_config(model)
+    try:
+        result = autoplace_floor(model, cfg, fid, payload)
+    except AutoplaceError as exc:
+        raise HTTPException(status_code=422, detail={"errors": exc.errors})
+    if not dry:
+        _save(pid, proj["name"], model)
+    result["saved"] = not dry
+    try:
+        result["bom"] = generate_bom(model, cfg)["items"]
+    except ValueError as exc:  # pragma: no cover - chain just solved
+        result["bom"] = []
+        result["warnings"].append("bom: %s" % exc)
+    return result
 
 
 # ------------------------------------------------- multiband composite (phase 3)

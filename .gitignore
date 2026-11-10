@@ -9,6 +9,7 @@
 # job and working data
 demo/25-00151/
 demo/*.json
+romtool-test/
 data/
 cache/
 drafts/

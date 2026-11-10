@@ -20,6 +20,7 @@ import math
 from . import config as cfgmod
 from .cascade import CascadeError, solve_cascade
 from .geometry import build_wall_index, polygon_membership, ray_wall_crossings
+from .lossmodel import LossModelError, resolve_loss_model
 from .physics import composite_dbm, itu_p1238_pl_db, scale_wall_loss_db
 
 
@@ -152,7 +153,12 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
         raise PredictError("unknown environment '%s'" % env)
     model_warnings = []
     _model_validity_warnings(config, band, model_warnings)
-    n_exp, n_source = _n_exponent_for_band(config, env, band, model_warnings)
+    try:
+        loss = resolve_loss_model(model, config, floor, band, env)
+    except LossModelError as exc:
+        raise PredictError(str(exc))
+    n_exp, n_source = loss["n"], loss["n_source"]
+    clutter_db_per_m = loss["clutter_db_per_m"]
     wall_scale_db = float(band.get("wall_loss_scale_db") or 0.0)
     floor_loss = float(config.get("floor_loss_db_per_floor", 15.4))
     ref_mhz = float(config.get("wall_loss_ref_mhz", 2000.0))
@@ -192,6 +198,8 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
                 dx = x - ax
                 d_m = math.sqrt(dx * dx + dy2) / ppm
                 pl = const20 + n_exp * math.log10(max(d_m, 0.01)) - 28.0
+                if clutter_db_per_m:
+                    pl += clutter_db_per_m * d_m
                 if same:
                     for w in ray_wall_crossings(same_floor_walls, (ax, ay), (x, y)):
                         pl += mat_scaled[w[8]["material"]]
@@ -364,6 +372,9 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
         "project_environment": env,
         "n_exponent": n_exp,
         "n_exponent_source": n_source,
+        "loss_model": {k: loss[k] for k in ("source", "building_type",
+                                            "clutter_db_per_m", "grade_n",
+                                            "grade_clutter")},
         "wall_loss_scale_db": wall_scale_db,
         "model_warnings": model_warnings,
         "floor": {"id": floor_id, "name": floor.get("name"), "level": grid_level,
