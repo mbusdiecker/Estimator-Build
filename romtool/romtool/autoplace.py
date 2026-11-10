@@ -502,6 +502,26 @@ def _parse_remotes(config, ap, raw, feed_element_id):
             "fiber": fiber, "element": element}
 
 
+WALL_INSET_M = 0.5
+
+
+def _wall_bbox_outline(floor):
+    """Placement outline for a floor that has walls and no outline: the walls'
+    bounding box, inset by WALL_INSET_M. None when the floor has no walls or
+    the inset leaves no area."""
+    walls = floor.get("walls") or []
+    if not walls:
+        return None
+    xs = [float(w[k]) for w in walls for k in ("x1", "x2")]
+    ys = [float(w[k]) for w in walls for k in ("y1", "y2")]
+    inset = WALL_INSET_M * float(floor.get("ppm") or 10.0)
+    x0, x1 = min(xs) + inset, max(xs) - inset
+    y0, y1 = min(ys) + inset, max(ys) - inset
+    if x1 <= x0 or y1 <= y0:
+        return None
+    return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]
+
+
 def _parse_request(model, config, floor, request):
     ap = _ap_cfg(config)
     req = request or {}
@@ -594,6 +614,8 @@ def _parse_request(model, config, floor, request):
             raise AutoplaceError("outline needs at least 3 points")
     else:
         outline = None
+    if outline is None and req.get("outline") is None:
+        outline = _wall_bbox_outline(floor)
 
     head = req.get("headend") or {}
     remotes = _parse_remotes(config, ap, req.get("remotes"), req.get("feed_element_id"))

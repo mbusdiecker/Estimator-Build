@@ -546,6 +546,9 @@ Limits:
   for 20 MHz).
 - The default N values are generic; no-wall coverage radii are long and the
   count is only as good as the calibration against closed jobs.
+- A floor with walls and no outline is placed inside the walls' bounding box,
+  inset 0.5 m. Floors without walls keep the canvas rectangle. An outline on the
+  request or the floor overrides both.
 - Planning runs on at most 6000 points; verification on at most
   `verify_max_points` (100,000) and is coarsened beyond that (reported).
   Predict's own KPI stays canvas-wide, so `outline` only affects autoplace.
@@ -674,6 +677,50 @@ bands B2_1900 and B12_700, threshold -72 dBm (composite domain), step 4: 37
 antennas in 3.4 s plain; 12.3 s with a clutter map (33 antennas, map build 0.1
 s); remotes with taps and branch losses 3.1 s. Verification at step 1 on that
 floor still takes tens of seconds (`verify_max_points=0`).
+
+## Drawings: one-line diagram and floor layout
+
+Four endpoints export the drawings as SVG or PNG. The SVG and PNG show the same
+elements. Module: `romtool/drawings.py` (stdlib only).
+
+- `GET /projects/{pid}/one_line.svg` and `.../one_line.png`: run the cascade
+  solve first and return 422 with the errors when it fails, as `/cascade/solve`
+  does.
+- `GET /projects/{pid}/floors/{fid}/layout.svg` and `.../layout.png`. Add
+  `?include_image=false` to leave out the plan background.
+
+The one-line diagram runs left to right from the sources. Each antenna gets a
+row, and each parent sits centred on its children, so boxes do not overlap. Boxes
+show the source, repeater, remote (max output), splitter (ways and insertion
+loss from `parts`), tapper and coupler (part loss) and antenna (port power).
+Cable edges show the cable id and length in m and ft. Fiber edges are dashed.
+Port power is the worst band by default. Ports below 0 dBm are drawn in red. On a
+multi-floor project each floor gets a labelled band. The title block gives the
+element counts and the cable totals.
+
+The floor layout is drawn at the floor's pixel size. It shows the stored plan
+image (embedded as a data URI in the SVG), walls, the outline, clutter squares
+shaded by class with a legend, and the auto-placed equipment. Cable runs follow
+their stored `route` points: coax solid, fiber dashed, one colour per cable id.
+The scale bar comes from the floor's ppm.
+
+Limits:
+- Port power needs the cascade solve. Without it the diagram draws the tree and
+  says so.
+- A run that feeds another floor is drawn only in the one-line diagram. The floor
+  layout skips it because one end is off the floor.
+- The PNG layout enlarges plates up to 1600 px a side by a factor of 2 to 4. It
+  does not draw a JPEG background (decoding needs Pillow). The SVG draws both.
+- The PNG uses the 3 x 5 bitmap font, so it shows uppercase letters, digits and
+  `. - : %` only. Other characters become spaces.
+- The one-line PNG uses fixed row heights (36 px per leaf). A 300-antenna tree is
+  about 10,800 px tall, so use the SVG for large trees.
+- Critical areas are not drawn. Edge and equipment labels are not collision
+  checked, so labels on a dense floor can overlap.
+- The example drawings in `romtool/examples/` come from a 2-floor office on a
+  96 m x 74 m plate, autoplaced with remotes and taps requested at -63 dBm
+  (B2_1900 and B12_700). Each floor picks one coupler stage (7 and 10 antennas).
+  The 12 dB tap does not win at these counts.
 
 ## Non-goals (per SPEC)
 
