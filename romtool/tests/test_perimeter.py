@@ -573,3 +573,36 @@ def test_ai_box_proposal_with_mocked_gateway(client, monkeypatch):
     assert close(body["area_px"], AREA_PX, 0.03)
     assert body["roi"] == [[40.0, 40.0], [390.0, 40.0], [390.0, 290.0], [40.0, 290.0]]
 
+
+# ------------------------------------------------------------ thin lines on box edges
+
+def test_box_edge_on_a_border_double_line_leaves_no_spike(cfg):
+    """Two thin vertical border lines at x 42..43 and 45..46; the box's west edge is
+    at x=45, so the second line sits inside the box along the whole box height."""
+    g = building(door=None)
+    fill(g, W, 42, 20, 44, 280)
+    fill(g, W, 45, 20, 47, 280)
+    res = trace_outline(bytes(g), W, H, 10.0, cfg, roi=[45, 20, 360, 280])
+    assert close(res["area_px"], AREA_PX, 0.03), res["area_px"]
+    assert min(p[0] for p in res["outline"]) >= X0 - 1
+
+
+def test_wall_touching_a_border_line_inside_the_box_is_kept(cfg):
+    """The building's east wall (outer face x=350) with a thin border line at x 352..353
+    inside the box. The line is cut; the thick wall stays."""
+    g = building(door=None)
+    fill(g, W, 352, 20, 354, 280)
+    res = trace_outline(bytes(g), W, H, 10.0, cfg, roi=[30, 20, 356, 280])
+    assert close(res["area_px"], AREA_PX, 0.03), res["area_px"]
+    assert max(p[0] for p in res["outline"]) <= X1 + 1
+
+
+def test_thin_interior_line_far_from_the_box_edge_is_unaffected(cfg):
+    roi = [30, 20, 380, 280]
+    plain = trace_outline(bytes(building(door=None)), W, H, 10.0, cfg, roi=roi)
+    g = building(door=None)
+    fill(g, W, 200, 60, 202, 240)                     # thin interior partition, far from edges
+    with_line = trace_outline(bytes(g), W, H, 10.0, cfg, roi=roi)
+    assert with_line["outline"] == plain["outline"]
+    assert close(with_line["area_px"], AREA_PX, 0.03)
+

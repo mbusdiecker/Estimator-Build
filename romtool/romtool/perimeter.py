@@ -54,6 +54,11 @@ DEFAULTS = {
     "frame_blank_frac": 0.5,
     "frame_peel_max": 3,
     "roi_cut_min_px": 2,
+    "roi_line_m": 0.2,
+    "roi_line_px": 3,
+    "roi_edge_m": 1.0,
+    "roi_edge_px": 8,
+    "roi_edge_share": 0.4,
     "gap_m": 1.0,
     "gap_frac_unknown": 0.03,
     "keep_regions": 1,
@@ -103,6 +108,9 @@ def perimeter_params(config, **over):
         raise PerimeterError("frame_min_span must be 0.2..1 and frame_margin_frac 0..0.5")
     if p["roi_cut_min_px"] < 1:
         raise PerimeterError("roi_cut_min_px must be at least 1")
+    if min(p["roi_line_m"], p["roi_line_px"], p["roi_edge_m"], p["roi_edge_px"]) < 0 \
+            or not 0 < p["roi_edge_share"] <= 1:
+        raise PerimeterError("roi line and edge distances must be >= 0 and roi_edge_share in (0, 1]")
     if not 0 < p["frame_blank_frac"] <= 1 or p["frame_peel_max"] < 0:
         raise PerimeterError("frame_blank_frac must be in (0, 1] and frame_peel_max >= 0")
     if p["keep_regions"] < 1:
@@ -495,6 +503,17 @@ def _peel_round(keep_ink, content, W, H, d_cells, p):
                            for i in range(n))
         if not any(others):
             continue
+        # the content inside must span most of the ring's box: a frame encloses the
+        # sheet's drawing, while a building with one far partition does not qualify
+        ox0, oy0, ox1, oy1 = W, H, -1, -1
+        for i in range(n):
+            if others[i]:
+                x, y = i % W, i // W
+                ox0, ox1 = min(ox0, x), max(ox1, x)
+                oy0, oy1 = min(oy0, y), max(oy1, y)
+        rw, rh = x1 - x0 + 1, y1 - y0 + 1
+        if (ox1 - ox0 + 1) < p["frame_min_span"] * rw or (oy1 - oy0 + 1) < p["frame_min_span"] * rh:
+            continue
         bad = _dilate(others, W, H, d_cells)
         ring_cells = blank = 0
         for i in range(n):
@@ -571,6 +590,84 @@ def apply_roi(gray, iw, ih, poly):
     return bytes(out)
 
 
+def _clear_lines(ink, W, H, fixed_row, xa, xb, edge_cells, line_cells, share):
+    """Horizontal edge at row fixed_row, spanning columns xa..xb. A cell is thin when
+    its vertical run of ink is at most line_cells and lies within edge_cells of the
+    edge. A horizontal run of thin cells covering at least share of the edge length is
+    cleared. Thick ink (a wall meeting the line) is not thin, so the line is cut there
+    and the wall stays."""
+    out = bytearray(ink)
+    r0 = max(0, fixed_row - edge_cells)
+    r1 = min(H - 1, fixed_row + edge_cells)
+    if r0 > r1 or xa > xb:
+        return out
+    thin = bytearray(W * H)
+    for x in range(xa, xb + 1):
+        col = ink[x::W]
+        i = 0
+        while i < H:
+            if col[i]:
+                j = i
+                while j < H and col[j]:
+                    j += 1
+                if j - i <= line_cells:
+                    for r in range(max(i, r0), min(j, r1 + 1)):
+                        thin[r * W + x] = 1
+                i = j
+            else:
+                i += 1
+    need = share * (xb - xa + 1)
+    for r in range(r0, r1 + 1):
+        base = r * W
+        x = xa
+        while x <= xb:
+            if thin[base + x]:
+                j = x
+                while j <= xb and thin[base + j]:
+                    j += 1
+                if j - x >= need:
+                    out[base + x:base + j] = bytes(j - x)
+                x = j
+            else:
+                x += 1
+    return out
+
+
+def _strip_roi_lines(ink, W, H, roi_poly, s, ppm, p):
+    """Remove thin lines that run along an axis-aligned box edge (sheet-border lines
+    inside the box). Metre distances use the scale; without one, the pixel values
+    roi_line_px and roi_edge_px are used."""
+    if ppm:
+        ppm_w = ppm / s
+        line_cells = max(1, int(round(p["roi_line_m"] * ppm_w)))
+        edge_cells = max(1, int(round(p["roi_edge_m"] * ppm_w)))
+    else:
+        line_cells = max(1, int(round(p["roi_line_px"] / s)))
+        edge_cells = max(1, int(round(p["roi_edge_px"] / s)))
+    share = p["roi_edge_share"]
+    n = len(roi_poly)
+    out = bytearray(ink)
+    for k in range(n):
+        a, b = roi_poly[k], roi_poly[(k + 1) % n]
+        if abs(a[1] - b[1]) < 1e-9 and abs(a[0] - b[0]) > 1e-9:
+            row = int(round(a[1] / s))
+            xa = max(0, int(min(a[0], b[0]) / s))
+            xb = min(W - 1, int(max(a[0], b[0]) / s))
+            out = _clear_lines(out, W, H, row, xa, xb, edge_cells, line_cells, share)
+        elif abs(a[0] - b[0]) < 1e-9 and abs(a[1] - b[1]) > 1e-9:
+            col = int(round(a[0] / s))
+            ya = max(0, int(min(a[1], b[1]) / s))
+            yb = min(H - 1, int(max(a[1], b[1]) / s))
+            # transpose so the column becomes a row, clear, transpose back
+            tr = bytearray(W * H)
+            for x in range(W):
+                tr[x * H:(x + 1) * H] = out[x::W]
+            tr = _clear_lines(tr, H, W, col, ya, yb, edge_cells, line_cells, share)
+            for x in range(W):
+                out[x::W] = tr[x * H:(x + 1) * H]
+    return out
+
+
 def _roi_cut_warnings(gray, iw, ih, poly, dark_threshold, min_px):
     """Warn when ink crosses a box edge: a wall or line runs through the box boundary.
     Checked on the plan before the box masks it, one pixel inside and outside each
@@ -642,6 +739,8 @@ def trace_outline(gray, iw, ih, ppm=None, config=None, roi=None, **options):
         simplify_px = max(1.0, 0.5 * gap_cells * s)
 
     ink = _ink_grid(gray, iw, ih, s, W, H, p["dark_threshold"], p["ink_fraction"])
+    if roi_poly:
+        ink = _strip_roi_lines(ink, W, H, roi_poly, s, ppm, p)
     keep_ink, frames, specks, content = _filter_ink(ink, W, H, min_feat, p["frame_frac"],
                                                     gap_cells)
     if frames:
