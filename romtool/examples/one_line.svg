@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2068" height="796" viewBox="0 0 2068 796" font-family="Roboto, Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="2068" height="796" fill="#ffffff"/>
+<text x="24.00" y="18.00" font-size="14" text-anchor="start" fill="#232426" font-weight="bold">ROMtool one-line diagram: Example 2-floor office</text>
+<text x="24.00" y="36.00" font-size="11" text-anchor="start" fill="#232426">Floors: 2</text>
+<text x="24.00" y="54.00" font-size="11" text-anchor="start" fill="#232426">Antennas 11, remotes 2, splitters 6, tappers 0, couplers 0, repeaters 2, sources 2. Cable runs 21 (coax 393 m, fiber 102 m).</text>
+<text x="24.00" y="72.00" font-size="11" text-anchor="start" fill="#232426">Port power in dBm, worst band (700 MHz LTE (B12/B13), 850 MHz Cellular (B5), PCS 1900 (B2), AWS 2100 (B66), FirstNet Band 14 LTE (758-768 DL), VHF 150 MHz LMR (P25/FM), UHF 450 MHz LMR (P25/FM), 700 MHz Public Safety LMR (P25, 769-775 base TX), 800 MHz Public Safety LMR (P25, 851-869 base TX), 5G NR n71 (600 MHz, 617-652 DL), 5G NR n41 (2.5 GHz TDD, 2496-2690), 5G NR n77 (C-band 3.7-3.98 GHz DL)). Red: below 0 dBm. Coax solid, fiber dashed.</text>
+<rect x="0.00" y="90.00" width="2068.00" height="362.00" fill="#f2f1f0" stroke="none" stroke-width="1.0"/>
+<text x="24.00" y="108.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">Ground (level 0), 6 antenna row(s)</text>
+<rect x="0.00" y="466.00" width="2068.00" height="306.00" fill="#ffffff" stroke="none" stroke-width="1.0"/>
+<text x="24.00" y="484.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">Level 2 (level 1), 5 antenna row(s)</text>
+<polyline points="1674.00,200.00 1714.00,200.00 1714.00,144.00 1874.00,144.00" fill="none" stroke="#0895cd" stroke-width="1.8" data-kind="cable_run" data-id="ex1_auto_auto_r2"><title>coax_1_2in 23.4 m / 77 ft</title></polyline>
+<text x="1794.00" y="138.00" font-size="10" text-anchor="middle" fill="#232426">coax_1_2in 23.4 m / 77 ft</text>
+<polyline points="1674.00,200.00 1714.00,200.00 1714.00,200.00 1874.00,200.00" fill="none" stroke="#0895cd" stroke-width="1.8" data-kind="cable_run" data-id="ex1_auto_auto_r4"><title>coax_1_2in 25.0 m / 82 ft</title></polyline>
+<text x="1794.00" y="194.00" font-size="10" text-anchor="middle" fill="#232426">coax_1_2in 25.0 m / 82 ft</text>
+<polyline points="1674.00,200.00 1714.00,200.00 1714.00,256.00 1874.00,256.00" fill="none" stroke="#0895cd" stroke-width="1.8" data-kind="cable_run" data-id="ex1_auto_auto_r3"><title>coax_1_2in 22.9 m / 75 ft</title></polyline>
+<text x="1794.00" y="250.00" font-size="10" text-anchor="middle" fill="#232426">coax_1_2in 22.9 m / 75 ft</text>
+<polyline points="1304.00,284.00 1344.00,284.00 1344.00,200.00 1504.00,200.00" fill="none" stroke="#112732" stroke-width="1.8" data-kind="cable_run" data-id="ex1_auto_auto_r8"><title>coax_7_8in 28.4 m / 93 ft</title></polyline>
+<text x="1424.00" y="194.00" font-size="10" text-anchor="middle" fill="#232426">coax_7_8in 28.4 m / 93 ft</text>
+<polyline points="1674.00,368.00 1714.00,368.00 1714.00,312.00 1874.00,312.00" fill="none" stroke="#0895cd" stroke-width="1.8" data-kind="cable_run" data-id="ex1_auto_auto_r7"><title>coax_1_2in 38.8 m / 127 ft</title></polyline>
+<text x="1794.00" y="306.00" font-size="10" text-anchor="middle" fill="#232426">coax_1_2in 38.8 m / 127 ft</text>
+<polyline points="1674.00,368.00 1714.00,368.00 1714.00,368.00 1874.00,368.00" fill="none" stroke="#0895cd" stroke-width="1.8" data-kind="cable_run" data-id="ex1_auto_auto_r6"><title>coax_1_2in 7.4 m / 24 ft</title></polyline>
+<text x="1794.00" y="362.00" font-size="10" text-anchor="middle" fill="#232426">coax_1_2in 7.4 m / 24 ft</text>
+<polyline points="1674.00,368.00 1714.00,368.00 1714.00,424.00 1874.00,424.00" fill="none" stroke="#0895cd" stroke-width="1.8" data-kind="cable_run" data-id="ex1_auto_auto_r5"><title>coax_1_2in 39.3 m / 129 ft</title></polyline>
+<text x="1794.00" y="418.00" font-size="10" text-anchor="middle" fill="#232426">coax_1_2in 39.3 m / 129 ft</text>
+<polyline points="1304.00,284.00 1344.00,284.00 1344.00,368.00 1504.00,368.00" fill="none" stroke="#112732" stroke-width="1.8" data-kind="cable_run" data-id="ex1_auto_auto_r9"><title>coax_7_8in 28.4 m / 93 ft</title></polyline>
+<text x="1424.00" y="362.00" font-size="10" text-anchor="middle" fill="#232426">coax_7_8in 28.4 m / 93 ft</text>
+<polyline points="934.00,284.00 974.00,284.00 974.00,284.00 1134.00,284.00" fill="none" stroke="#112732" stroke-width="1.8" data-kind="cable_run" data-id="ex1_auto_auto_r10"><title>coax_7_8in 3.0 m / 10 ft</title></polyline>
+<text x="1054.00" y="278.00" font-size="10" text-anchor="middle" fill="#232426">coax_7_8in 3.0 m / 10 ft</text>
+<polyline points="564.00,284.00 604.00,284.00 604.00,284.00 764.00,284.00" fill="none" stroke="#f37d28" stroke-width="1.8" stroke-dasharray="6 4" data-kind="cable_run" data-id="ex1_auto_auto_r11"><title>fiber_sm 57.4 m / 188 ft</title></polyline>
+<text x="684.00" y="278.00" font-size="10" text-anchor="middle" fill="#232426">fiber_sm 57.4 m / 188 ft</text>
+<polyline points="194.00,284.00 234.00,284.00 234.00,284.00 394.00,284.00" fill="none" stroke="#02548d" stroke-width="1.8" data-kind="cable_run" data-id="ex1_auto_auto_r1"><title>lmr400 2.0 m / 7 ft</title></polyline>
+<text x="314.00" y="278.00" font-size="10" text-anchor="middle" fill="#232426">lmr400 2.0 m / 7 ft</text>
+<polyline points="1674.00,576.00 1714.00,576.00 1714.00,520.00 1874.00,520.00" fill="none" stroke="#0895cd" stroke-width="1.8" data-kind="cable_run" data-id="ex2_auto_auto_r4"><title>coax_1_2in 29.2 m / 96 ft</title></polyline>
+<text x="1794.00" y="514.00" font-size="10" text-anchor="middle" fill="#232426">coax_1_2in 29.2 m / 96 ft</text>
+<polyline points="1674.00,576.00 1714.00,576.00 1714.00,576.00 1874.00,576.00" fill="none" stroke="#0895cd" stroke-width="1.8" data-kind="cable_run" data-id="ex2_auto_auto_r6"><title>coax_1_2in 26.7 m / 88 ft</title></polyline>
+<text x="1794.00" y="570.00" font-size="10" text-anchor="middle" fill="#232426">coax_1_2in 26.7 m / 88 ft</text>
+<polyline points="1674.00,576.00 1714.00,576.00 1714.00,632.00 1874.00,632.00" fill="none" stroke="#0895cd" stroke-width="1.8" data-kind="cable_run" data-id="ex2_auto_auto_r5"><title>coax_1_2in 15.8 m / 52 ft</title></polyline>
+<text x="1794.00" y="626.00" font-size="10" text-anchor="middle" fill="#232426">coax_1_2in 15.8 m / 52 ft</text>
+<polyline points="1304.00,646.00 1344.00,646.00 1344.00,576.00 1504.00,576.00" fill="none" stroke="#112732" stroke-width="1.8" data-kind="cable_run" data-id="ex2_auto_auto_r8"><title>coax_7_8in 28.2 m / 92 ft</title></polyline>
+<text x="1424.00" y="570.00" font-size="10" text-anchor="middle" fill="#232426">coax_7_8in 28.2 m / 92 ft</text>
+<polyline points="1674.00,716.00 1714.00,716.00 1714.00,688.00 1874.00,688.00" fill="none" stroke="#0895cd" stroke-width="1.8" data-kind="cable_run" data-id="ex2_auto_auto_r3"><title>coax_1_2in 18.0 m / 59 ft</title></polyline>
+<text x="1794.00" y="682.00" font-size="10" text-anchor="middle" fill="#232426">coax_1_2in 18.0 m / 59 ft</text>
+<polyline points="1674.00,716.00 1714.00,716.00 1714.00,744.00 1874.00,744.00" fill="none" stroke="#0895cd" stroke-width="1.8" data-kind="cable_run" data-id="ex2_auto_auto_r2"><title>coax_1_2in 18.0 m / 59 ft</title></polyline>
+<text x="1794.00" y="738.00" font-size="10" text-anchor="middle" fill="#232426">coax_1_2in 18.0 m / 59 ft</text>
+<polyline points="1304.00,646.00 1344.00,646.00 1344.00,716.00 1504.00,716.00" fill="none" stroke="#112732" stroke-width="1.8" data-kind="cable_run" data-id="ex2_auto_auto_r7"><title>coax_7_8in 28.2 m / 92 ft</title></polyline>
+<text x="1424.00" y="710.00" font-size="10" text-anchor="middle" fill="#232426">coax_7_8in 28.2 m / 92 ft</text>
+<polyline points="934.00,646.00 974.00,646.00 974.00,646.00 1134.00,646.00" fill="none" stroke="#112732" stroke-width="1.8" data-kind="cable_run" data-id="ex2_auto_auto_r9"><title>coax_7_8in 8.0 m / 26 ft</title></polyline>
+<text x="1054.00" y="640.00" font-size="10" text-anchor="middle" fill="#232426">coax_7_8in 8.0 m / 26 ft</text>
+<polyline points="564.00,646.00 604.00,646.00 604.00,646.00 764.00,646.00" fill="none" stroke="#f37d28" stroke-width="1.8" stroke-dasharray="6 4" data-kind="cable_run" data-id="ex2_auto_auto_r10"><title>fiber_sm 44.2 m / 145 ft</title></polyline>
+<text x="684.00" y="640.00" font-size="10" text-anchor="middle" fill="#232426">fiber_sm 44.2 m / 145 ft</text>
+<polyline points="194.00,646.00 234.00,646.00 234.00,646.00 394.00,646.00" fill="none" stroke="#02548d" stroke-width="1.8" data-kind="cable_run" data-id="ex2_auto_auto_r1"><title>lmr400 2.0 m / 7 ft</title></polyline>
+<text x="314.00" y="640.00" font-size="10" text-anchor="middle" fill="#232426">lmr400 2.0 m / 7 ft</text>
+<g data-kind="source" data-id="ex1_auto_auto_src">
+<rect x="24.00" y="264.00" width="170.00" height="40.00" rx="4" fill="#112732" stroke="#112732" stroke-width="1"/>
+<text x="32.00" y="279.00" font-size="12" text-anchor="start" fill="#ffffff" font-weight="bold">ASRC</text>
+<text x="32.00" y="297.00" font-size="11" text-anchor="start" fill="#ffffff">direct 15.0 dBm</text>
+</g>
+<g data-kind="repeater" data-id="ex1_auto_auto_rep">
+<rect x="394.00" y="264.00" width="170.00" height="40.00" rx="4" fill="#02548d" stroke="#02548d" stroke-width="1"/>
+<text x="402.00" y="279.00" font-size="12" text-anchor="start" fill="#ffffff" font-weight="bold">ARPTR</text>
+<text x="402.00" y="297.00" font-size="11" text-anchor="start" fill="#ffffff">max out 33.0 dBm</text>
+</g>
+<g data-kind="remote" data-id="ex1_auto_auto_u1">
+<rect x="764.00" y="264.00" width="170.00" height="40.00" rx="4" fill="#0895cd" stroke="#112732" stroke-width="1"/>
+<text x="772.00" y="279.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">RU1</text>
+<text x="772.00" y="297.00" font-size="11" text-anchor="start" fill="#112732">remote unit</text>
+</g>
+<g data-kind="splitter" data-id="ex1_auto_auto_s3">
+<rect x="1134.00" y="264.00" width="170.00" height="40.00" rx="4" fill="#e7e7e7" stroke="#112732" stroke-width="1"/>
+<text x="1142.00" y="279.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">ASP3</text>
+<text x="1142.00" y="297.00" font-size="11" text-anchor="start" fill="#112732">2-way, 3.5 dB IL</text>
+</g>
+<g data-kind="splitter" data-id="ex1_auto_auto_s1">
+<rect x="1504.00" y="180.00" width="170.00" height="40.00" rx="4" fill="#e7e7e7" stroke="#112732" stroke-width="1"/>
+<text x="1512.00" y="195.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">ASP1</text>
+<text x="1512.00" y="213.00" font-size="11" text-anchor="start" fill="#112732">3-way, 5.5 dB IL</text>
+</g>
+<g data-kind="antenna" data-id="ex1_auto_auto_a6">
+<rect x="1874.00" y="124.00" width="170.00" height="40.00" rx="4" fill="#ffffff" stroke="#f37d28" stroke-width="2"/>
+<text x="1882.00" y="139.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">AP6 omni_das</text>
+<text x="1882.00" y="157.00" font-size="11" text-anchor="start" fill="#232426">port 13.4 dBm</text>
+</g>
+<g data-kind="antenna" data-id="ex1_auto_auto_a3">
+<rect x="1874.00" y="180.00" width="170.00" height="40.00" rx="4" fill="#ffffff" stroke="#f37d28" stroke-width="2"/>
+<text x="1882.00" y="195.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">AP3 omni_das</text>
+<text x="1882.00" y="213.00" font-size="11" text-anchor="start" fill="#232426">port 13.1 dBm</text>
+</g>
+<g data-kind="antenna" data-id="ex1_auto_auto_a2">
+<rect x="1874.00" y="236.00" width="170.00" height="40.00" rx="4" fill="#ffffff" stroke="#f37d28" stroke-width="2"/>
+<text x="1882.00" y="251.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">AP2 omni_das</text>
+<text x="1882.00" y="269.00" font-size="11" text-anchor="start" fill="#232426">port 13.5 dBm</text>
+</g>
+<g data-kind="splitter" data-id="ex1_auto_auto_s2">
+<rect x="1504.00" y="348.00" width="170.00" height="40.00" rx="4" fill="#e7e7e7" stroke="#112732" stroke-width="1"/>
+<text x="1512.00" y="363.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">ASP2</text>
+<text x="1512.00" y="381.00" font-size="11" text-anchor="start" fill="#112732">3-way, 5.5 dB IL</text>
+</g>
+<g data-kind="antenna" data-id="ex1_auto_auto_a4">
+<rect x="1874.00" y="292.00" width="170.00" height="40.00" rx="4" fill="#ffffff" stroke="#f37d28" stroke-width="2"/>
+<text x="1882.00" y="307.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">AP4 omni_das</text>
+<text x="1882.00" y="325.00" font-size="11" text-anchor="start" fill="#232426">port 10.6 dBm</text>
+</g>
+<g data-kind="antenna" data-id="ex1_auto_auto_a1">
+<rect x="1874.00" y="348.00" width="170.00" height="40.00" rx="4" fill="#ffffff" stroke="#f37d28" stroke-width="2"/>
+<text x="1882.00" y="363.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">AP1 omni_das</text>
+<text x="1882.00" y="381.00" font-size="11" text-anchor="start" fill="#232426">port 16.3 dBm</text>
+</g>
+<g data-kind="antenna" data-id="ex1_auto_auto_a5">
+<rect x="1874.00" y="404.00" width="170.00" height="40.00" rx="4" fill="#ffffff" stroke="#f37d28" stroke-width="2"/>
+<text x="1882.00" y="419.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">AP5 omni_das</text>
+<text x="1882.00" y="437.00" font-size="11" text-anchor="start" fill="#232426">port 10.6 dBm</text>
+</g>
+<g data-kind="source" data-id="ex2_auto_auto_src">
+<rect x="24.00" y="626.00" width="170.00" height="40.00" rx="4" fill="#112732" stroke="#112732" stroke-width="1"/>
+<text x="32.00" y="641.00" font-size="12" text-anchor="start" fill="#ffffff" font-weight="bold">ASRC</text>
+<text x="32.00" y="659.00" font-size="11" text-anchor="start" fill="#ffffff">direct 15.0 dBm</text>
+</g>
+<g data-kind="repeater" data-id="ex2_auto_auto_rep">
+<rect x="394.00" y="626.00" width="170.00" height="40.00" rx="4" fill="#02548d" stroke="#02548d" stroke-width="1"/>
+<text x="402.00" y="641.00" font-size="12" text-anchor="start" fill="#ffffff" font-weight="bold">ARPTR</text>
+<text x="402.00" y="659.00" font-size="11" text-anchor="start" fill="#ffffff">max out 33.0 dBm</text>
+</g>
+<g data-kind="remote" data-id="ex2_auto_auto_u1">
+<rect x="764.00" y="626.00" width="170.00" height="40.00" rx="4" fill="#0895cd" stroke="#112732" stroke-width="1"/>
+<text x="772.00" y="641.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">RU1</text>
+<text x="772.00" y="659.00" font-size="11" text-anchor="start" fill="#112732">remote unit</text>
+</g>
+<g data-kind="splitter" data-id="ex2_auto_auto_s3">
+<rect x="1134.00" y="626.00" width="170.00" height="40.00" rx="4" fill="#e7e7e7" stroke="#112732" stroke-width="1"/>
+<text x="1142.00" y="641.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">ASP3</text>
+<text x="1142.00" y="659.00" font-size="11" text-anchor="start" fill="#112732">2-way, 3.5 dB IL</text>
+</g>
+<g data-kind="splitter" data-id="ex2_auto_auto_s2">
+<rect x="1504.00" y="556.00" width="170.00" height="40.00" rx="4" fill="#e7e7e7" stroke="#112732" stroke-width="1"/>
+<text x="1512.00" y="571.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">ASP2</text>
+<text x="1512.00" y="589.00" font-size="11" text-anchor="start" fill="#112732">3-way, 5.5 dB IL</text>
+</g>
+<g data-kind="antenna" data-id="ex2_auto_auto_a4">
+<rect x="1874.00" y="500.00" width="170.00" height="40.00" rx="4" fill="#ffffff" stroke="#f37d28" stroke-width="2"/>
+<text x="1882.00" y="515.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">AP4 omni_das</text>
+<text x="1882.00" y="533.00" font-size="11" text-anchor="start" fill="#232426">port 11.8 dBm</text>
+</g>
+<g data-kind="antenna" data-id="ex2_auto_auto_a2">
+<rect x="1874.00" y="556.00" width="170.00" height="40.00" rx="4" fill="#ffffff" stroke="#f37d28" stroke-width="2"/>
+<text x="1882.00" y="571.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">AP2 omni_das</text>
+<text x="1882.00" y="589.00" font-size="11" text-anchor="start" fill="#232426">port 12.3 dBm</text>
+</g>
+<g data-kind="antenna" data-id="ex2_auto_auto_a1">
+<rect x="1874.00" y="612.00" width="170.00" height="40.00" rx="4" fill="#ffffff" stroke="#f37d28" stroke-width="2"/>
+<text x="1882.00" y="627.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">AP1 omni_das</text>
+<text x="1882.00" y="645.00" font-size="11" text-anchor="start" fill="#232426">port 14.2 dBm</text>
+</g>
+<g data-kind="splitter" data-id="ex2_auto_auto_s1">
+<rect x="1504.00" y="696.00" width="170.00" height="40.00" rx="4" fill="#e7e7e7" stroke="#112732" stroke-width="1"/>
+<text x="1512.00" y="711.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">ASP1</text>
+<text x="1512.00" y="729.00" font-size="11" text-anchor="start" fill="#112732">2-way, 3.5 dB IL</text>
+</g>
+<g data-kind="antenna" data-id="ex2_auto_auto_a3">
+<rect x="1874.00" y="668.00" width="170.00" height="40.00" rx="4" fill="#ffffff" stroke="#f37d28" stroke-width="2"/>
+<text x="1882.00" y="683.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">AP3 omni_das</text>
+<text x="1882.00" y="701.00" font-size="11" text-anchor="start" fill="#232426">port 15.8 dBm</text>
+</g>
+<g data-kind="antenna" data-id="ex2_auto_auto_a5">
+<rect x="1874.00" y="724.00" width="170.00" height="40.00" rx="4" fill="#ffffff" stroke="#f37d28" stroke-width="2"/>
+<text x="1882.00" y="739.00" font-size="12" text-anchor="start" fill="#112732" font-weight="bold">AP5 omni_das</text>
+<text x="1882.00" y="757.00" font-size="11" text-anchor="start" fill="#232426">port 15.8 dBm</text>
+</g>
+</svg>

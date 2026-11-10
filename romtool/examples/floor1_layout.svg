@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="624" height="688" viewBox="0 0 624 688" font-family="Roboto, Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="624" height="688" fill="#ffffff"/>
+<text x="12.00" y="18.00" font-size="14" text-anchor="start" fill="#232426" font-weight="bold">Floor layout: Ground (level 0)</text>
+<text x="12.00" y="36.00" font-size="11" text-anchor="start" fill="#232426">Project: Example 2-floor office. Plate 60.0 m x 46.0 m at 10.0 px per m. 6 antennas.</text>
+<text x="12.00" y="54.00" font-size="11" text-anchor="start" fill="#232426">Coax solid, fiber dashed. Clutter squares shaded by class.</text>
+<rect x="12.00" y="70.00" width="600.00" height="460.00" fill="none" stroke="#868e92" stroke-width="1"/>
+<polyline points="22.00,80.00 602.00,80.00" fill="none" stroke="#232426" stroke-width="2"></polyline>
+<polyline points="602.00,80.00 602.00,520.00" fill="none" stroke="#232426" stroke-width="2"></polyline>
+<polyline points="602.00,520.00 22.00,520.00" fill="none" stroke="#232426" stroke-width="2"></polyline>
+<polyline points="22.00,520.00 22.00,80.00" fill="none" stroke="#232426" stroke-width="2"></polyline>
+<polyline points="22.00,300.00 312.00,300.00" fill="none" stroke="#232426" stroke-width="2"></polyline>
+<polyline points="312.00,300.00 312.00,520.00" fill="none" stroke="#232426" stroke-width="2"></polyline>
+<polyline points="312.00,80.00 312.00,300.00" fill="none" stroke="#0895cd" stroke-width="2"></polyline>
+<polyline points="32.00,505.00 32.00,505.00" fill="none" stroke="#02548d" stroke-width="2" data-kind="cable_run" data-id="ex1_auto_auto_r1"><title>AR1 lmr400 2.0 m / 7 ft</title></polyline>
+<polyline points="124.40,161.70 12.00,161.70 12.00,70.00" fill="none" stroke="#0895cd" stroke-width="2" data-kind="cable_run" data-id="ex1_auto_auto_r2"><title>AR2 coax_1_2in 23.4 m / 77 ft</title></polyline>
+<polyline points="124.40,161.70 85.60,161.70 85.60,321.80" fill="none" stroke="#0895cd" stroke-width="2" data-kind="cable_run" data-id="ex1_auto_auto_r3"><title>AR3 coax_1_2in 22.9 m / 75 ft</title></polyline>
+<polyline points="124.40,161.70 275.60,161.70 275.60,93.20" fill="none" stroke="#0895cd" stroke-width="2" data-kind="cable_run" data-id="ex1_auto_auto_r4"><title>AR4 coax_1_2in 25.0 m / 82 ft</title></polyline>
+<polyline points="486.20,307.50 341.00,307.50 341.00,525.00" fill="none" stroke="#0895cd" stroke-width="2" data-kind="cable_run" data-id="ex1_auto_auto_r5"><title>AR5 coax_1_2in 39.3 m / 129 ft</title></polyline>
+<polyline points="486.20,307.50 510.60,307.50 510.60,327.40" fill="none" stroke="#0895cd" stroke-width="2" data-kind="cable_run" data-id="ex1_auto_auto_r6"><title>AR6 coax_1_2in 7.4 m / 24 ft</title></polyline>
+<polyline points="486.20,307.50 607.00,307.50 607.00,70.00" fill="none" stroke="#0895cd" stroke-width="2" data-kind="cable_run" data-id="ex1_auto_auto_r7"><title>AR7 coax_1_2in 38.8 m / 127 ft</title></polyline>
+<polyline points="305.30,234.60 124.40,234.60 124.40,161.70" fill="none" stroke="#112732" stroke-width="2" data-kind="cable_run" data-id="ex1_auto_auto_r8"><title>AR8 coax_7_8in 28.4 m / 93 ft</title></polyline>
+<polyline points="305.30,234.60 486.20,234.60 486.20,307.50" fill="none" stroke="#112732" stroke-width="2" data-kind="cable_run" data-id="ex1_auto_auto_r9"><title>AR9 coax_7_8in 28.4 m / 93 ft</title></polyline>
+<polyline points="305.30,234.60 305.30,234.60" fill="none" stroke="#112732" stroke-width="2" data-kind="cable_run" data-id="ex1_auto_auto_r10"><title>AR10 coax_7_8in 3.0 m / 10 ft</title></polyline>
+<polyline points="32.00,505.00 305.30,505.00 305.30,234.60" fill="none" stroke="#f37d28" stroke-width="2" stroke-dasharray="6 4" data-kind="cable_run" data-id="ex1_auto_auto_r11"><title>AR11 fiber_sm 57.4 m / 188 ft</title></polyline>
+<g data-kind="antenna" data-id="ex1_auto_auto_a1">
+<circle cx="510.60" cy="327.40" r="6.00" fill="#ffffff" stroke="#f37d28" stroke-width="1.7999999999999998"/>
+<circle cx="510.60" cy="327.40" r="2.40" fill="#f37d28" stroke="none" stroke-width="1.0"/>
+<text x="519.60" y="321.40" font-size="10" text-anchor="start" fill="#112732">AP1</text>
+</g>
+<g data-kind="antenna" data-id="ex1_auto_auto_a2">
+<circle cx="85.60" cy="321.80" r="6.00" fill="#ffffff" stroke="#f37d28" stroke-width="1.7999999999999998"/>
+<circle cx="85.60" cy="321.80" r="2.40" fill="#f37d28" stroke="none" stroke-width="1.0"/>
+<text x="94.60" y="315.80" font-size="10" text-anchor="start" fill="#112732">AP2</text>
+</g>
+<g data-kind="antenna" data-id="ex1_auto_auto_a3">
+<circle cx="275.60" cy="93.20" r="6.00" fill="#ffffff" stroke="#f37d28" stroke-width="1.7999999999999998"/>
+<circle cx="275.60" cy="93.20" r="2.40" fill="#f37d28" stroke="none" stroke-width="1.0"/>
+<text x="284.60" y="87.20" font-size="10" text-anchor="start" fill="#112732">AP3</text>
+</g>
+<g data-kind="antenna" data-id="ex1_auto_auto_a4">
+<circle cx="607.00" cy="70.00" r="6.00" fill="#ffffff" stroke="#f37d28" stroke-width="1.7999999999999998"/>
+<circle cx="607.00" cy="70.00" r="2.40" fill="#f37d28" stroke="none" stroke-width="1.0"/>
+<text x="616.00" y="64.00" font-size="10" text-anchor="start" fill="#112732">AP4</text>
+</g>
+<g data-kind="antenna" data-id="ex1_auto_auto_a5">
+<circle cx="341.00" cy="525.00" r="6.00" fill="#ffffff" stroke="#f37d28" stroke-width="1.7999999999999998"/>
+<circle cx="341.00" cy="525.00" r="2.40" fill="#f37d28" stroke="none" stroke-width="1.0"/>
+<text x="350.00" y="519.00" font-size="10" text-anchor="start" fill="#112732">AP5</text>
+</g>
+<g data-kind="antenna" data-id="ex1_auto_auto_a6">
+<circle cx="12.00" cy="70.00" r="6.00" fill="#ffffff" stroke="#f37d28" stroke-width="1.7999999999999998"/>
+<circle cx="12.00" cy="70.00" r="2.40" fill="#f37d28" stroke="none" stroke-width="1.0"/>
+<text x="21.00" y="64.00" font-size="10" text-anchor="start" fill="#112732">AP6</text>
+</g>
+<g data-kind="source" data-id="ex1_auto_auto_src">
+<rect x="24.80" y="497.80" width="14.40" height="14.40" fill="#112732" stroke="#112732" stroke-width="1"/>
+<text x="41.00" y="499.00" font-size="10" text-anchor="start" fill="#112732">ASRC</text>
+</g>
+<g data-kind="repeater" data-id="ex1_auto_auto_rep">
+<rect x="24.80" y="497.80" width="14.40" height="14.40" fill="#02548d" stroke="#112732" stroke-width="1"/>
+<text x="41.00" y="499.00" font-size="10" text-anchor="start" fill="#112732">ARPTR</text>
+</g>
+<g data-kind="remote" data-id="ex1_auto_auto_u1">
+<rect x="299.30" y="228.60" width="12.00" height="12.00" fill="#0895cd" stroke="#112732" stroke-width="1"/>
+<text x="314.30" y="228.60" font-size="10" text-anchor="start" fill="#112732">RU1</text>
+</g>
+<g data-kind="splitter" data-id="ex1_auto_auto_s1">
+<polygon points="118.40,155.70 130.40,161.70 118.40,167.70" fill="#e7e7e7" stroke="#112732" stroke-width="1"/>
+<text x="133.40" y="155.70" font-size="10" text-anchor="start" fill="#112732">ASP1</text>
+</g>
+<g data-kind="splitter" data-id="ex1_auto_auto_s2">
+<polygon points="480.20,301.50 492.20,307.50 480.20,313.50" fill="#e7e7e7" stroke="#112732" stroke-width="1"/>
+<text x="495.20" y="301.50" font-size="10" text-anchor="start" fill="#112732">ASP2</text>
+</g>
+<g data-kind="splitter" data-id="ex1_auto_auto_s3">
+<polygon points="299.30,228.60 311.30,234.60 299.30,240.60" fill="#e7e7e7" stroke="#112732" stroke-width="1"/>
+<text x="314.30" y="228.60" font-size="10" text-anchor="start" fill="#112732">ASP3</text>
+</g>
+<rect x="12.00" y="544.00" width="500.00" height="4.00" fill="#232426" stroke="none" stroke-width="1.0"/>
+<text x="12.00" y="560.00" font-size="10" text-anchor="start" fill="#232426">50 m / 164 ft scale bar</text>
+<rect x="13.00" y="574.00" width="12.00" height="12.00" fill="#112732" stroke="#112732" stroke-width="1"/>
+<text x="34.00" y="584.00" font-size="10" text-anchor="start" fill="#232426">Source (head end)</text>
+<rect x="243.00" y="574.00" width="12.00" height="12.00" fill="#02548d" stroke="#112732" stroke-width="1"/>
+<text x="264.00" y="584.00" font-size="10" text-anchor="start" fill="#232426">Repeater</text>
+<rect x="14.00" y="593.00" width="10.00" height="10.00" fill="#0895cd" stroke="#112732" stroke-width="1"/>
+<text x="34.00" y="602.00" font-size="10" text-anchor="start" fill="#232426">Remote unit</text>
+<polygon points="244.00,593.00 254.00,598.00 244.00,603.00" fill="#e7e7e7" stroke="#112732" stroke-width="1"/>
+<text x="264.00" y="602.00" font-size="10" text-anchor="start" fill="#232426">Splitter</text>
+<circle cx="19.00" cy="616.00" r="5.00" fill="#ffffff" stroke="#f37d28" stroke-width="1.5"/>
+<circle cx="19.00" cy="616.00" r="2.00" fill="#f37d28" stroke="none" stroke-width="1.0"/>
+<text x="34.00" y="620.00" font-size="10" text-anchor="start" fill="#232426">Antenna</text>
+<polyline points="242.00,616.00 260.00,616.00" fill="none" stroke="#02548d" stroke-width="2"></polyline>
+<text x="264.00" y="620.00" font-size="10" text-anchor="start" fill="#232426">Coax, 3/8 in class (LMR-400)</text>
+<polyline points="12.00,634.00 30.00,634.00" fill="none" stroke="#0895cd" stroke-width="2"></polyline>
+<text x="34.00" y="638.00" font-size="10" text-anchor="start" fill="#232426">Coax, 1/2 in corrugated</text>
+<polyline points="242.00,634.00 260.00,634.00" fill="none" stroke="#112732" stroke-width="2"></polyline>
+<text x="264.00" y="638.00" font-size="10" text-anchor="start" fill="#232426">Coax, 7/8 in corrugated</text>
+<polyline points="12.00,652.00 30.00,652.00" fill="none" stroke="#f37d28" stroke-width="2" stroke-dasharray="6 4"></polyline>
+<text x="34.00" y="656.00" font-size="10" text-anchor="start" fill="#232426">Fiber, single-mode (head end to remote)</text>
+</svg>
