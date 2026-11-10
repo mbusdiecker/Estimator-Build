@@ -274,6 +274,20 @@ def _layout(by_id, fl_of, runs_from, roots, m, multi):
             "height": cursor + m["left"]}
 
 
+def _png_text_width(s, size):
+    """Width in pixels of a text primitive as the PNG renderer draws it."""
+    scale = 3 if size >= 15 else (2 if size >= 11 else 1)
+    clean = "".join(c if c in FONT else " " for c in str(s).upper())
+    return text_width(clean, scale)
+
+
+def _widen_to_text(prims, width, left):
+    """Widen a canvas so every left-aligned text line fits."""
+    longest = max((p["x"] + _png_text_width(p["s"], p["size"]) for p in prims
+                   if p["t"] == "text" and p["anchor"] == "start"), default=0)
+    return max(width, longest + left)
+
+
 def _antenna_power(solve_result, mode):
     """{element_id: (dbm, band label)} from the cascade solve, worst or first band."""
     out = {}
@@ -386,6 +400,8 @@ def _one_line_scene(model, config, solve_result, m, project_name, date, power_mo
     else:
         note = "No cascade solve: port power not shown. Coax solid, fiber dashed."
     prims.append(_txt(m["left"], 72, note, size=11))
+
+    width = _widen_to_text(prims, width, m["left"])
 
     # floor bands
     for i, b in enumerate(lay["blocks"]):
@@ -578,6 +594,8 @@ def _floor_scene(model, config, floor_id, k, include_image, project_name, png_no
         prims.append(_txt(x + r + 3, y - r, el.get("label") or el.get("id"), size=10,
                           fill=NAVY))
         prims.append(_end())
+
+    canvas_w = _widen_to_text(prims, canvas_w, FLOOR_PAD)
 
     # legend
     legend_y = oy + dh + 14

@@ -174,3 +174,49 @@ def test_drawing_endpoints(client):
     assert r.status_code == 404
     r = client.get("/projects/999999/one_line.svg")
     assert r.status_code == 404
+
+
+# ------------------------------------------------------------ font and labels
+
+LABEL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,-:%/()+= "
+
+
+def _ink(canvas):
+    return sum(1 for row in canvas for i in range(0, len(row), 4) if row[i] < 128)
+
+
+def test_font_covers_every_label_character():
+    from romtool.report import FONT
+    for c in LABEL_CHARS:
+        assert c in FONT, c
+        if c != " ":
+            assert any("1" in row for row in FONT[c]), "blank glyph for %r" % c
+
+
+def test_every_label_character_renders_ink():
+    from romtool.drawings import _png_text
+    from romtool.report import make_canvas, WHITE
+    for c in LABEL_CHARS.strip():
+        canvas = make_canvas(12, 12, WHITE)
+        _png_text(canvas, 1, 10, c, 10, None, "start", False)
+        assert _ink(canvas) > 0, "no ink for %r" % c
+
+
+def test_lowercase_renders_like_uppercase():
+    from romtool.drawings import _png_text
+    from romtool.report import make_canvas, WHITE
+    a = make_canvas(80, 12, WHITE)
+    b = make_canvas(80, 12, WHITE)
+    _png_text(a, 1, 10, "example project", 10, None, "start", False)
+    _png_text(b, 1, 10, "EXAMPLE PROJECT", 10, None, "start", False)
+    assert a == b
+
+
+def test_png_title_fits_canvas_width(built, cfg):
+    from romtool.drawings import ONE_LINE_PNG, _one_line_scene, _png_text_width
+    long_name = "A very long project name " * 6
+    scene = _one_line_scene(built["model"], cfg, built["solve"], ONE_LINE_PNG, long_name,
+                            None, "worst", ONE_LINE_PNG["chars"])
+    for p in scene["prims"]:
+        if p["t"] == "text" and p["anchor"] == "start":
+            assert p["x"] + _png_text_width(p["s"], p["size"]) <= scene["w"], p["s"]
