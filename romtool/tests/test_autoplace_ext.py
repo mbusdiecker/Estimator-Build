@@ -298,3 +298,101 @@ def test_autoplace_taps_use_couplers_and_report_counts(cfg):
     # invalid option
     with pytest.raises(AutoplaceError):
         autoplace_floor(make_model(600, 400), cfg, "f1", request(taps={"x": 1}))
+
+
+# ============================================ 3. fixed losses per antenna branch
+
+def _branch_chain(branch_db):
+    ant = {"id": "a", "type": "antenna", "antenna_id": "omni_das", "x": 1, "y": 1}
+    if branch_db is not None:
+        ant["branch_loss_db"] = branch_db
+    return {"environment": "office", "floors": [{
+        "id": "f1", "level": 0, "ppm": 10.0, "w_px": 100, "h_px": 100, "walls": [],
+        "elements": [
+            {"id": "s", "type": "source", "subtype": "direct", "injection_dbm": 10.0},
+            ant,
+            {"id": "r", "type": "cable_run", "from_id": "s", "to_id": "a",
+             "cable_id": "coax_1_2in", "length_m": 0.0}]}]}
+
+
+def test_cascade_applies_and_shows_branch_loss(cfg):
+    # hand math: 10 dBm in, 0 m cable, 1.0 dB branch hardware -> 9.0 dBm at the
+    # port, EIRP 9.0 + 2 dBi (omni_das) = 11.0 dBm
+    sol = solve_cascade(_branch_chain(1.0), cfg)
+    b = sol["bands"]["B2_1900"]
+    row = next(n for n in b["nodes"] if n["element_id"] == "a")
+    ant = b["antennas"][0]
+    assert ant["in_dbm"] == pytest.approx(10.0)
+    assert ant["port_dbm"] == pytest.approx(9.0)
+    assert ant["eirp_dbm"] == pytest.approx(11.0)
+    assert ant["branch_loss_db"] == pytest.approx(1.0)
+    assert row["branch_loss_db"] == pytest.approx(1.0)
+    assert "branch hardware" in row["detail"]
+    # without the field the output is the old shape and values
+    base = solve_cascade(_branch_chain(None), cfg)["bands"]["B2_1900"]["antennas"][0]
+    assert base["eirp_dbm"] == pytest.approx(12.0) and "branch_loss_db" not in base
+    # the below-0-dBm warning is judged at the port, after the allowance
+    low = _branch_chain(10.5)
+    w = solve_cascade(low, cfg)["bands"]["B2_1900"]["warnings"]
+    assert any("below the 0 dBm" in x for x in w)
+
+
+def test_branch_allowance_from_config_parts(cfg):
+    from romtool.autoplace import _parse_branch_losses
+    assert _parse_branch_losses(cfg, None, 1) == {"enabled": False}
+    one = _parse_branch_losses(cfg, True, 1)
+    hw = cfg["branch_hardware"]
+    # one band: 2 connectors + 1 jumper, no diplexer
+    assert one["parts"] == {"connectors": 2, "jumpers": 1, "diplexers": 0}
+    assert one["total_db"] == pytest.approx(2 * hw["connector"]["loss_db"]
+                                            + hw["jumper"]["loss_db"])
+    two = _parse_branch_losses(cfg, True, 2)  # bands share an antenna: + diplexer
+    assert two["parts"]["diplexers"] == 1
+    assert two["total_db"] == pytest.approx(one["total_db"] + hw["diplexer"]["loss_db"])
+    ov = _parse_branch_losses(cfg, {"connectors": 4, "jumper_loss_db": 0.5,
+                                    "diplexers": 0}, 3)
+    assert ov["total_db"] == pytest.approx(4 * hw["connector"]["loss_db"] + 0.5)
+    for key in ("connector", "jumper", "diplexer"):
+        assert hw[key]["grade"] in ("P", "G", "C", "E") and hw[key]["ref"]
+    with pytest.raises(AutoplaceError):
+        _parse_branch_losses(cfg, {"nope": 1}, 1)
+    with pytest.raises(AutoplaceError):
+        _parse_branch_losses(cfg, {"jumpers": -1}, 1)
+
+
+def test_autoplace_branch_losses_reach_every_antenna_and_the_bom(cfg):
+    m = make_model(900, 600)
+    res = autoplace_floor(m, cfg, "f1", request(
+        bands=["B2_1900", "B5_850"], threshold_dbm=-70.0, branch_losses=True))
+    bl = res["branch_losses"]
+    assert bl["parts_per_antenna"] == {"connectors": 2, "jumpers": 1, "diplexers": 1}
+    ants = els(m, "antenna")
+    assert all(a["branch_loss_db"] == pytest.approx(bl["per_antenna_db"]) for a in ants)
+    assert res["target_met"]
+    # the cascade port is exactly the allowance below the run output
+    with_bl = solve_cascade(m, cfg)["bands"]["B2_1900"]["antennas"]
+    for a in ants:
+        a.pop("branch_loss_db")
+    without = {x["element_id"]: x for x in solve_cascade(m, cfg)["bands"]["B2_1900"]["antennas"]}
+    for x in with_bl:
+        assert without[x["element_id"]]["in_dbm"] == pytest.approx(x["in_dbm"])
+        assert (without[x["element_id"]]["port_dbm"] - x["port_dbm"]
+                in (pytest.approx(bl["per_antenna_db"], abs=0.01), pytest.approx(0.0, abs=0.01)))
+    # BOM lists the hardware
+    for a in ants:
+        a["branch_loss_db"] = bl["per_antenna_db"]
+    bom = generate_bom(m, cfg)["items"]
+    hw = {i["item"]: i["qty"] for i in bom if i["category"] == "branch hardware"}
+    n = res["antenna_count"]
+    assert hw[cfg["branch_hardware"]["connector"]["label"]] == 2 * n
+    assert hw[cfg["branch_hardware"]["jumper"]["label"]] == n
+    assert hw[cfg["branch_hardware"]["diplexer"]["label"]] == n
+
+
+def test_branch_losses_off_by_default(cfg):
+    m = make_model(900, 600)
+    res = autoplace_floor(m, cfg, "f1", request(threshold_dbm=-70.0))
+    assert res["branch_losses"] is None
+    assert all("branch_loss_db" not in a for a in els(m, "antenna"))
+    assert not [i for i in generate_bom(m, cfg)["items"] if i["category"] == "branch hardware"]
+

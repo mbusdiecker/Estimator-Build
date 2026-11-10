@@ -285,6 +285,50 @@ def _pct(cov, n_in):
     return round(100.0 * cov / n_in, 2) if n_in else None
 
 
+# ---------------------------------------------------------- branch hardware
+
+def _parse_branch_losses(config, raw, n_bands):
+    """`branch_losses`: omitted/false (off, the default), true (counts and
+    losses from config branch_hardware), or {connectors, jumpers, diplexers,
+    connector_loss_db, jumper_loss_db, diplexer_loss_db}. Returns the
+    per-antenna allowance and its parts."""
+    if raw is None or raw is False:
+        return {"enabled": False}
+    if raw is True:
+        raw = {}
+    if not isinstance(raw, dict):
+        raise AutoplaceError("branch_losses must be true or an object")
+    if raw.get("enabled") is False:
+        return {"enabled": False}
+    hw = config.get("branch_hardware") or {}
+    if not hw:
+        raise AutoplaceError("config has no branch_hardware block")
+    allowed = ("connectors", "jumpers", "diplexers", "connector_loss_db",
+               "jumper_loss_db", "diplexer_loss_db", "enabled")
+    for k in raw:
+        if k not in allowed:
+            raise AutoplaceError("branch_losses option '%s' not allowed (use %s)"
+                                 % (k, ", ".join(allowed[:-1])))
+    parts, total, detail = {}, 0.0, {}
+    for key in ("connector", "jumper", "diplexer"):
+        spec = hw.get(key) or {}
+        loss = _num(raw.get(key + "_loss_db", spec.get("loss_db", 0.0)),
+                    key + "_loss_db")
+        if key == "diplexer":
+            default_n = (int(spec.get("per_branch", 1))
+                         if n_bands > int(spec.get("when_bands_gt", 1)) else 0)
+        else:
+            default_n = int(spec.get("per_branch", 0))
+        n = int(_num(raw.get(key + "s", default_n), key + "s"))
+        if n < 0 or loss < 0:
+            raise AutoplaceError("branch_losses counts and losses must be >= 0")
+        parts[key + "s"] = n
+        detail[key] = {"each_db": loss, "count": n, "db": round(n * loss, 4)}
+        total += n * loss
+    return {"enabled": True, "total_db": round(total, 4), "parts": parts,
+            "detail": detail}
+
+
 # ------------------------------------------------------------- tap planning
 
 def _tap_devices(config):
@@ -535,6 +579,7 @@ def _parse_request(model, config, floor, request):
     head = req.get("headend") or {}
     remotes = _parse_remotes(config, ap, req.get("remotes"), req.get("feed_element_id"))
     taps = _parse_taps(config, ap, req.get("taps"), ways, max(cap, 2))
+    branch_hw = _parse_branch_losses(config, req.get("branch_losses"), len(ids))
     return {
         "ap": ap, "bands": ids, "antenna_id": antenna_id,
         "threshold_dbm": thr, "coverage_target_pct": pct, "nfpa": nfpa,
@@ -543,6 +588,7 @@ def _parse_request(model, config, floor, request):
         "use_repeater": bool(req.get("use_repeater", True)),
         "trunk": trunk, "branch": branch, "donor": donor, "ways": ways,
         "outline": outline, "headend": head, "remotes": remotes, "taps": taps,
+        "branch_hw": branch_hw,
         "feed_element_id": req.get("feed_element_id"),
     }
 
@@ -664,6 +710,10 @@ class _Chain:
         el = {"id": "%s_auto_a%d" % (self.fid, n), "type": "antenna",
               "label": "AP%d" % n, "antenna_id": self.p["antenna_id"],
               "x": x, "y": y, AUTO_FLAG: True}
+        bh = self.p["branch_hw"]
+        if bh["enabled"] and bh["total_db"]:
+            el["branch_loss_db"] = bh["total_db"]
+            el["branch_parts"] = dict(bh["parts"])
         self.elements.append(el)
         return {"id": el["id"], "x": x, "y": y, "kind": "antenna"}
 
@@ -1139,7 +1189,8 @@ def _eirps_from_solve(sol, band_ids):
         bd = sol["bands"].get(bid)
         if bd is None:
             raise AutoplaceError("band '%s' was not solved" % bid)
-        out[bid] = {a["element_id"]: (a["eirp_dbm"], a["in_dbm"], a["capped"])
+        out[bid] = {a["element_id"]: (a["eirp_dbm"],
+                                  a.get("port_uncapped_dbm", a["in_dbm"]), a["capped"])
                     for a in bd["antennas"]}
     return out
 
@@ -1631,6 +1682,10 @@ def autoplace_floor(model, config, floor_id, request):
         "elements_added": counts,
         "remotes": remotes_out,
         "taps": taps_out,
+        "branch_losses": ({"enabled": True, "per_antenna_db": p["branch_hw"]["total_db"],
+                           "parts_per_antenna": p["branch_hw"]["parts"],
+                           "detail": p["branch_hw"]["detail"]}
+                          if p["branch_hw"]["enabled"] else None),
         "headend": {"x_px": headend_xy[0], "y_px": headend_xy[1],
                     "feed_element_id": p["feed_element_id"]},
         "cascade": {"min_antenna_port_dbm": min_in,

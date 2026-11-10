@@ -407,31 +407,39 @@ def solve_cascade(model, config):
                 acfg = ants_cfg[el["antenna_id"]]
                 gain = _num(el.get("gain_db", acfg.get("gain_db", 2.0)))
                 max_port = _num(el.get("max_port_dbm", acfg.get("max_port_dbm", 20.0)))
-                port = min(arrival, max_port)
-                capped = arrival > max_port + 1e-9
+                # fixed branch hardware (connectors, jumper, diplexer) between
+                # the last run and the antenna port; 0 when not set
+                branch = _num(el.get("branch_loss_db"), 0.0)
+                at_port = arrival - branch
+                port = min(at_port, max_port)
+                capped = at_port > max_port + 1e-9
                 eirp = port + gain
-                if arrival < 0:
+                if at_port < 0:
                     band_warn.append(
                         "Antenna '%s': port power %.1f dBm is below the 0 dBm budget"
-                        % (label, arrival)
+                        % (label, at_port)
                     )
                 if capped:
                     band_warn.append(
                         "Antenna '%s': port power capped at %.1f dBm (in was %.1f dBm)"
-                        % (label, max_port, arrival)
+                        % (label, max_port, at_port)
                     )
-                node_rows.append(
-                    {"element_id": nid, "label": label, "type": t,
-                     "in_dbm": round(arrival, 3), "out_dbm": round(port, 3),
-                     "eirp_dbm": round(eirp, 3), "detail":
-                     "port %.2f dBm + %.1f dBi" % (port, gain)}
-                )
-                antennas_out.append(
-                    {"element_id": nid, "label": label,
-                     "floor_id": nd["floor_id"], "level": nd["level"],
-                     "in_dbm": round(arrival, 3), "port_dbm": round(port, 3),
-                     "eirp_dbm": round(eirp, 3), "capped": capped}
-                )
+                row = {"element_id": nid, "label": label, "type": t,
+                       "in_dbm": round(arrival, 3), "out_dbm": round(port, 3),
+                       "eirp_dbm": round(eirp, 3), "detail":
+                       "port %.2f dBm + %.1f dBi" % (port, gain)}
+                arow = {"element_id": nid, "label": label,
+                        "floor_id": nd["floor_id"], "level": nd["level"],
+                        "in_dbm": round(arrival, 3), "port_dbm": round(port, 3),
+                        "eirp_dbm": round(eirp, 3), "capped": capped}
+                if branch:
+                    row["branch_loss_db"] = round(branch, 3)
+                    row["detail"] = ("in %.2f - %.2f dB branch hardware = port %.2f dBm + %.1f dBi"
+                                     % (arrival, branch, port, gain))
+                    arow["branch_loss_db"] = round(branch, 3)
+                    arow["port_uncapped_dbm"] = round(at_port, 3)
+                node_rows.append(row)
+                antennas_out.append(arow)
                 edge_pow = None  # antennas terminate the chain
             else:  # pragma: no cover - build_graph rejects unknown types
                 edge_pow = None

@@ -117,6 +117,12 @@
     "omni_das": { "label": "Omni ceiling antenna", "gain_db": 2.0, "max_port_dbm": 20.0 },
     "panel_das": { "label": "Panel antenna", "gain_db": 7.0, "max_port_dbm": 20.0 }
   },
+  "branch_hardware_note": "Fixed loss between the end of the last cable run and the antenna port: connectors, a jumper and, where several bands share one antenna, a diplexer/combiner. The allowance per antenna branch = connectors*connector.loss_db + jumpers*jumper.loss_db + diplexers*diplexer.loss_db (dB) and is applied in the cascade to every auto antenna when the autoplace request sets branch_losses. Every number below is grade E (estimate): none is taken from a datasheet or a published source; replace with the selected product's insertion loss. connector.per_branch counts individual connectors (a jumper has two ends). diplexer.per_branch applies only when the request covers more than diplexer.when_bands_gt bands.",
+  "branch_hardware": {
+    "connector": { "label": "Connector (mated), each", "loss_db": 0.1, "per_branch": 2, "grade": "E", "ref": "estimate: representative mated-connector loss; no published value or datasheet cited" },
+    "jumper": { "label": "Jumper cable, each", "loss_db": 0.3, "per_branch": 1, "grade": "E", "ref": "estimate: short flexible jumper at the antenna; replace with the cable datasheet at the band frequency and length" },
+    "diplexer": { "label": "Diplexer / combiner, each", "loss_db": 0.5, "per_branch": 1, "when_bands_gt": 1, "grade": "E", "ref": "estimate: representative diplexer insertion loss; replace with the selected OEM part" }
+  },
   "repeater": { "label": "Off-air repeater (BDA)", "dl_gain_db": 65.0, "max_dl_out_dbm": 33.0, "ports": 2 },
   "remote_note": "Remote unit: an active element fed from the head end (repeater or source) by a fiber run, with its own downlink output cap per band. Modeled like the repeater: out = min(in + dl_gain_db, max_dl_out_dbm), per-band cap via max_dl_out_dbm_per_band. Every value below is grade E (no published figure, no vendor datasheet loaded): replace with the selected OEM remote spec. dl_gain_db 0 means the fiber link is level-neutral (the head-end port power is passed through, then capped); optical splitting and fiber loss are not modeled. Each band is capped independently (composite power sharing across bands is not modeled).",
   "remote": { "label": "Remote unit (fiber-fed active DAS)", "dl_gain_db": 0.0, "dl_gain_grade": "E", "dl_gain_ref": "estimate: level-neutral link; no OEM spec loaded",

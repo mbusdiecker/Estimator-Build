@@ -30,6 +30,7 @@ def generate_bom(model, config):
     tapper_count = {}
     coupler_count = {}
     antenna_count = {}
+    branch_parts = {}
     source_count = 0
     repeater_count = 0
     remote_count = 0
@@ -58,6 +59,8 @@ def generate_bom(model, config):
                 raise ValueError("antenna '%s' references unknown type '%s'"
                                  % (el.get("id"), aid))
             antenna_count[aid] = antenna_count.get(aid, 0) + 1
+            for k, v in (el.get("branch_parts") or {}).items():
+                branch_parts[k] = branch_parts.get(k, 0) + int(v)
         elif t == "source":
             source_count += 1
         elif t == "repeater":
@@ -98,6 +101,12 @@ def generate_bom(model, config):
         label = antennas[aid].get("label", aid)
         items.append({"category": "antenna", "item": label,
                       "qty": antenna_count[aid], "unit": "ea"})
+    hw = config.get("branch_hardware", {})
+    for key in ("connector", "jumper", "diplexer"):
+        if branch_parts.get(key + "s"):
+            items.append({"category": "branch hardware",
+                          "item": hw.get(key, {}).get("label", key),
+                          "qty": branch_parts[key + "s"], "unit": "ea"})
     if source_count:
         items.append({"category": "source",
                       "item": src_cfg.get("label", "Off-air source (donor)"),
