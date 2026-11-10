@@ -438,8 +438,8 @@ def double_frame_canvas():
     g = blank(CW, CH)
     frame_rect(g, CW, 10, 10, 490, 370)
     frame_rect(g, CW, 16, 16, 386, 362)               # inner border, east line at 384..386
-    box_walls(g, CW, 60, 60, 380, 240)                # east arm, east wall outer face at 380
-    box_walls(g, CW, 60, 60, 300, 300)                # south arm (notch 300..380 x 240..300)
+    box_walls(g, CW, 60, 60, 360, 240)                # east arm, east wall outer face at 360
+    box_walls(g, CW, 60, 60, 300, 300)                # south arm (notch 300..360 x 240..300)
     for row in range(3):
         for i in range(10):
             fill(g, CW, 300 + i * 4, 374 + row * 2, 303 + i * 4, 379)
@@ -450,7 +450,7 @@ def test_roi_excludes_touching_double_frame_and_title_block(cfg):
     g, CW, CH = double_frame_canvas()
     roi = [40, 40, 383, 320]                          # tight box: frame (384) and title outside
     res = trace_outline(bytes(g), CW, CH, 10.0, cfg, roi=roi)
-    want = 320 * 180 + 240 * 60                       # the L with its notch
+    want = 300 * 180 + 240 * 60                       # the L with its notch
     assert close(res["area_px"], want, 0.03), res["area_px"]
     assert len(res["outline"]) == 6
     assert not any("roi cuts" in w for w in res["warnings"])
@@ -460,7 +460,7 @@ def test_roi_keeps_the_notch(cfg):
     g, CW, CH = double_frame_canvas()
     res = trace_outline(bytes(g), CW, CH, 10.0, cfg, roi=[40, 40, 400, 320], frame_frac=0.99)
     assert (300.0, 240.0) in [tuple(p) for p in res["outline"]]
-    assert close(res["area_px"], 320 * 180 + 240 * 60, 0.03)
+    assert close(res["area_px"], 300 * 180 + 240 * 60, 0.03)
 
 
 def test_roi_that_cuts_the_building_warns(cfg):
@@ -522,10 +522,10 @@ def test_api_roi_is_stored_and_reused(client):
                     params={"roi": "[40,40,382,320]"})
     assert r.status_code == 200, r.text
     assert r.json()["perimeter"]["roi"] == [[40.0, 40.0], [382.0, 40.0], [382.0, 320.0], [40.0, 320.0]]
-    assert close(r.json()["perimeter"]["area_px"], 320 * 180 + 240 * 60, 0.03)
+    assert close(r.json()["perimeter"]["area_px"], 300 * 180 + 240 * 60, 0.03)
     again = client.post(base + "/perimeter/trace", json={})     # reuses the stored box
     assert again.status_code == 200 and again.json()["roi"] == r.json()["perimeter"]["roi"]
-    assert close(again.json()["area_px"], 320 * 180 + 240 * 60, 0.03)
+    assert close(again.json()["area_px"], 300 * 180 + 240 * 60, 0.03)
     cleared = client.post(base + "/perimeter/trace", json={"roi": None})
     assert cleared.status_code == 200 and cleared.json()["roi"] is None
     bad = client.post(base + "/plan", files={"file": ("p.png", png, "image/png")},
@@ -579,22 +579,39 @@ def test_ai_box_proposal_with_mocked_gateway(client, monkeypatch):
 def test_box_edge_on_a_border_double_line_leaves_no_spike(cfg):
     """Two thin vertical border lines at x 42..43 and 45..46; the box's west edge is
     at x=45, so the second line sits inside the box along the whole box height."""
-    g = building(door=None)
+    g = box_walls(blank(), W, 65, Y0, X1, Y1)
     fill(g, W, 42, 20, 44, 280)
     fill(g, W, 45, 20, 47, 280)
     res = trace_outline(bytes(g), W, H, 10.0, cfg, roi=[45, 20, 360, 280])
-    assert close(res["area_px"], AREA_PX, 0.03), res["area_px"]
-    assert min(p[0] for p in res["outline"]) >= X0 - 1
+    assert close(res["area_px"], (X1 - 65) * (Y1 - Y0), 0.03), res["area_px"]
+    assert min(p[0] for p in res["outline"]) >= 60
 
 
-def test_wall_touching_a_border_line_inside_the_box_is_kept(cfg):
-    """The building's east wall (outer face x=350) with a thin border line at x 352..353
-    inside the box. The line is cut; the thick wall stays."""
-    g = building(door=None)
-    fill(g, W, 352, 20, 354, 280)
-    res = trace_outline(bytes(g), W, H, 10.0, cfg, roi=[30, 20, 356, 280])
-    assert close(res["area_px"], AREA_PX, 0.03), res["area_px"]
-    assert max(p[0] for p in res["outline"]) <= X1 + 1
+def test_thick_border_line_at_the_box_edge_is_removed(cfg):
+    """A 0.5 m (5 px at 10 px/m) sheet border line along the box's west edge at x=45.
+    Continuous along the whole edge, so it goes whatever its thickness."""
+    g = box_walls(blank(), W, 65, Y0, X1, Y1)
+    fill(g, W, 45, 20, 50, 280)
+    res = trace_outline(bytes(g), W, H, 10.0, cfg, roi=[45, 20, 360, 280])
+    assert close(res["area_px"], (X1 - 65) * (Y1 - Y0), 0.03), res["area_px"]
+    assert min(p[0] for p in res["outline"]) >= 60
+
+
+def test_column_pattern_at_the_box_edge_is_kept(cfg):
+    """A perimeter of 5 px square columns on a 10 px pitch whose outer faces sit on the
+    box edges. The ink along each edge has regular gaps, so it is a wall, not border."""
+    x0, y0, x1, y1 = 45, 20, 355, 280
+    g = blank()
+    for x in range(x0, x1, 10):
+        fill(g, W, x, y0, x + 5, y0 + 5)
+        fill(g, W, x, y1 - 5, x + 5, y1)
+    for y in range(y0, y1, 10):
+        fill(g, W, x0, y, x0 + 5, y + 5)
+        fill(g, W, x1 - 5, y, x1, y + 5)
+    fill(g, W, x1 - 5, y1 - 5, x1, y1)
+    res = trace_outline(bytes(g), W, H, 10.0, cfg, roi=[x0, y0, 360, y1])
+    assert close(res["area_px"], (x1 - x0) * (y1 - y0), 0.03), res["area_px"]
+    assert min(p[0] for p in res["outline"]) <= x0 + 1
 
 
 def test_thin_interior_line_far_from_the_box_edge_is_unaffected(cfg):

@@ -59,6 +59,8 @@ DEFAULTS = {
     "roi_edge_m": 1.0,
     "roi_edge_px": 8,
     "roi_edge_share": 0.4,
+    "roi_border_gap_m": 0.3,
+    "roi_border_gap_px": 6,
     "gap_m": 1.0,
     "gap_frac_unknown": 0.03,
     "keep_regions": 1,
@@ -108,7 +110,8 @@ def perimeter_params(config, **over):
         raise PerimeterError("frame_min_span must be 0.2..1 and frame_margin_frac 0..0.5")
     if p["roi_cut_min_px"] < 1:
         raise PerimeterError("roi_cut_min_px must be at least 1")
-    if min(p["roi_line_m"], p["roi_line_px"], p["roi_edge_m"], p["roi_edge_px"]) < 0 \
+    if min(p["roi_line_m"], p["roi_line_px"], p["roi_edge_m"], p["roi_edge_px"],
+           p["roi_border_gap_m"], p["roi_border_gap_px"]) < 0 \
             or not 0 < p["roi_edge_share"] <= 1:
         raise PerimeterError("roi line and edge distances must be >= 0 and roi_edge_share in (0, 1]")
     if not 0 < p["frame_blank_frac"] <= 1 or p["frame_peel_max"] < 0:
@@ -633,6 +636,42 @@ def _clear_lines(ink, W, H, fixed_row, xa, xb, edge_cells, line_cells, share):
     return out
 
 
+def _clear_border_runs(ink, W, H, fixed_row, xa, xb, edge_cells, gap_cells, share):
+    """Sheet border along a horizontal edge: ink within edge_cells of the edge that is
+    continuous along at least share of the edge length (gaps of at most gap_cells) is
+    cleared in the band, whatever its thickness. Ink made of separate blocks with
+    regular gaps (a column pattern) is not continuous and stays. A solid wall this close
+    to the edge is removed too, so the box must sit at least roi_edge_m outside walls."""
+    out = bytearray(ink)
+    r0 = max(0, fixed_row - edge_cells)
+    r1 = min(H - 1, fixed_row + edge_cells)
+    if r0 > r1 or xa > xb:
+        return out
+    present = []
+    for x in range(xa, xb + 1):
+        col = ink[x::W][r0:r1 + 1]
+        present.append(1 in col)
+    segs = []
+    start = last = None
+    for i, v in enumerate(present):
+        if v:
+            if start is None:
+                start = i
+            elif i - last - 1 > gap_cells:
+                segs.append((start, last))
+                start = i
+            last = i
+    if start is not None:
+        segs.append((start, last))
+    need = share * (xb - xa + 1)
+    for a, b in segs:
+        if b - a + 1 >= need:
+            for x in range(xa + a, xa + b + 1):
+                for r in range(r0, r1 + 1):
+                    out[r * W + x] = 0
+    return out
+
+
 def _strip_roi_lines(ink, W, H, roi_poly, s, ppm, p):
     """Remove thin lines that run along an axis-aligned box edge (sheet-border lines
     inside the box). Metre distances use the scale; without one, the pixel values
@@ -641,9 +680,11 @@ def _strip_roi_lines(ink, W, H, roi_poly, s, ppm, p):
         ppm_w = ppm / s
         line_cells = max(1, int(round(p["roi_line_m"] * ppm_w)))
         edge_cells = max(1, int(round(p["roi_edge_m"] * ppm_w)))
+        gap_cells = max(line_cells, int(round(p["roi_border_gap_m"] * ppm_w)))
     else:
         line_cells = max(1, int(round(p["roi_line_px"] / s)))
         edge_cells = max(1, int(round(p["roi_edge_px"] / s)))
+        gap_cells = max(line_cells, int(round(p["roi_border_gap_px"] / s)))
     share = p["roi_edge_share"]
     n = len(roi_poly)
     out = bytearray(ink)
@@ -654,6 +695,7 @@ def _strip_roi_lines(ink, W, H, roi_poly, s, ppm, p):
             xa = max(0, int(min(a[0], b[0]) / s))
             xb = min(W - 1, int(max(a[0], b[0]) / s))
             out = _clear_lines(out, W, H, row, xa, xb, edge_cells, line_cells, share)
+            out = _clear_border_runs(out, W, H, row, xa, xb, edge_cells, gap_cells, share)
         elif abs(a[0] - b[0]) < 1e-9 and abs(a[1] - b[1]) > 1e-9:
             col = int(round(a[0] / s))
             ya = max(0, int(min(a[1], b[1]) / s))
@@ -663,6 +705,7 @@ def _strip_roi_lines(ink, W, H, roi_poly, s, ppm, p):
             for x in range(W):
                 tr[x * H:(x + 1) * H] = out[x::W]
             tr = _clear_lines(tr, H, W, col, ya, yb, edge_cells, line_cells, share)
+            tr = _clear_border_runs(tr, H, W, col, ya, yb, edge_cells, gap_cells, share)
             for x in range(W):
                 out[x::W] = tr[x * H:(x + 1) * H]
     return out
