@@ -56,6 +56,9 @@
     "donor_feeder_length_m": 2.0,
     "slack_m_per_run": 3.0,
     "floor_height_m": 4.0,
+    "tap_min_gain_db": 0.5,
+    "tap_min_gain_grade": "E",
+    "tap_min_gain_ref": "estimate: hysteresis for choosing a tap/coupler stage over equal splitters, so a device is used only when it lowers the worst per-antenna device loss (or the spread) by at least this much; tuning value, not a published figure",
     "max_remotes": 16,
     "max_remotes_grade": "E",
     "max_remotes_ref": "estimate: search ceiling for the remote-unit count sizer, not an engineering limit; raise it for very large floors"

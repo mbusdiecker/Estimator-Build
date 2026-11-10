@@ -202,3 +202,99 @@ def test_remote_config_values_are_graded(cfg):
     assert r["max_dl_out_grade"] == "E"
     assert cfg["autoplace"]["max_remotes_grade"] == "E"
     assert cfg["cables"]["fiber_sm"]["medium"] == "fiber"
+
+
+# ====================================================== 2. taps and couplers
+
+def test_tap_table_picks_coupler_only_when_it_balances_better(cfg):
+    from romtool.autoplace import _tap_table
+    tbl = _tap_table(cfg, 4, 40, 0.5)
+    eq = _tap_table(cfg, 4, 40, 0.5, use_taps=False)
+    # small trees stay on equal splitters (hand: 4 antennas = one 4-way, 7.5 dB)
+    for n in (2, 3, 4, 5, 8, 12):
+        assert tbl[n][2] == ("equal",), n
+    assert tbl[4][0] == pytest.approx(7.5)
+    # 10 antennas: the 10 dB coupler feeds one antenna, its 0.6 dB through port
+    # feeds a 9-antenna tree (3-way into 3-way = 11.0 dB): worst 11.6 dB vs 13.0
+    assert tbl[10][2] == ("tap", "coupler", "default", 1)
+    assert tbl[10][0] == pytest.approx(0.6 + 11.0)
+    assert tbl[10][1] == pytest.approx(10.0)
+    assert eq[10][0] == pytest.approx(13.0)
+    # the equal-only table is exactly the equal tree for every n
+    assert all(e[2] in (("equal",), ("leaf",)) for e in eq[1:])
+    # taps never raise the worst device loss over equal splitters
+    for n in range(2, 41):
+        assert tbl[n][0] <= eq[n][0] + 1e-9, n
+    # a hysteresis larger than any gain turns taps off
+    huge = _tap_table(cfg, 4, 40, 99.0)
+    assert all(t[2][0] != "tap" for t in huge[2:])
+
+
+def test_cascade_picks_tap_part_by_part_id(cfg):
+    c = copy.deepcopy(cfg)
+    c["parts"]["tappers"]["t6"] = {"label": "Tap 6 dB", "ways": 2,
+                                   "through_il_db": 1.2, "tap_loss_db": 6.0}
+    m = {"environment": "office", "floors": [{
+        "id": "f1", "level": 0, "ppm": 10.0, "w_px": 100, "h_px": 100, "walls": [],
+        "elements": [
+            {"id": "s", "type": "source", "subtype": "direct", "injection_dbm": 10.0},
+            {"id": "t", "type": "tapper", "part_id": "t6"},
+            {"id": "a1", "type": "antenna", "antenna_id": "omni_das", "x": 1, "y": 1},
+            {"id": "a2", "type": "antenna", "antenna_id": "omni_das", "x": 2, "y": 2},
+            {"id": "r0", "type": "cable_run", "from_id": "s", "to_id": "t",
+             "cable_id": "coax_1_2in", "length_m": 0.0},
+            {"id": "r1", "type": "cable_run", "from_id": "t", "to_id": "a1",
+             "cable_id": "coax_1_2in", "length_m": 0.0, "port": "tap"},
+            {"id": "r2", "type": "cable_run", "from_id": "t", "to_id": "a2",
+             "cable_id": "coax_1_2in", "length_m": 0.0, "port": "through"}]}]}
+    sol = solve_cascade(m, c)
+    assert sol["errors"] == []
+    ant = {a["element_id"]: a for a in sol["bands"]["B2_1900"]["antennas"]}
+    assert ant["a1"]["in_dbm"] == pytest.approx(10.0 - 6.0)
+    assert ant["a2"]["in_dbm"] == pytest.approx(10.0 - 1.2)
+    m["floors"][0]["elements"][1]["part_id"] = "nope"
+    assert any("part_id" in e for e in solve_cascade(m, c)["errors"])
+
+
+def test_taps_off_by_default(cfg):
+    m = make_model(900, 600)
+    res = autoplace_floor(m, cfg, "f1", request(threshold_dbm=-70.0))
+    assert res["taps"] is None
+    assert not els(m, "coupler") and not els(m, "tapper")
+    assert "couplers" not in res["elements_added"]
+
+
+def test_autoplace_taps_use_couplers_and_report_counts(cfg):
+    body = request(threshold_dbm=-70.0)
+    m0 = make_model(900, 600)
+    off = autoplace_floor(m0, cfg, "f1", copy.deepcopy(body))
+    m = make_model(900, 600)
+    on = autoplace_floor(m, cfg, "f1", dict(body, taps=True))
+    assert on["target_met"] and off["target_met"]
+    ea = on["elements_added"]
+    assert ea["couplers"] + ea["tappers"] >= 1
+    assert ea["splitters"] == len(els(m, "splitter"))
+    assert ea["couplers"] == len(els(m, "coupler"))
+    assert ea["tappers"] == len(els(m, "tapper"))
+    t = on["taps"]
+    assert t["device_worst_loss_db"]["tapped"] <= t["device_worst_loss_db"]["equal_splitters"] - 0.5
+    assert sum(t["parts_used"].values()) == ea["couplers"] + ea["tappers"]
+    # structure: each tap device has exactly one 'through' and one tap/coupled run
+    runs = els(m, "cable_run")
+    for dev in els(m, "coupler") + els(m, "tapper"):
+        out = [r for r in runs if r["from_id"] == dev["id"]]
+        assert sorted(r["port"] for r in out) == sorted(
+            ["through", "coupled" if dev["type"] == "coupler" else "tap"])
+        assert dev["part_id"] in cfg["parts"]["couplers" if dev["type"] == "coupler" else "tappers"]
+    sol = solve_cascade(m, cfg)
+    assert sol["errors"] == []
+    bom = generate_bom(m, cfg)["items"]
+    assert sum(i["qty"] for i in bom if i["category"] == "coupler") == ea["couplers"]
+    assert sum(i["qty"] for i in bom if i["category"] == "splitter") == ea["splitters"]
+    # deterministic
+    m2 = make_model(900, 600)
+    again = autoplace_floor(m2, cfg, "f1", dict(body, taps=True))
+    assert again["elements_added"] == ea and again["antennas"] == on["antennas"]
+    # invalid option
+    with pytest.raises(AutoplaceError):
+        autoplace_floor(make_model(600, 400), cfg, "f1", request(taps={"x": 1}))

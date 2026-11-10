@@ -65,6 +65,7 @@ DEFAULTS = {
     "floor_height_m": 4.0,
     "max_remotes": 16,
     "fiber_cable_id": "fiber_sm",
+    "tap_min_gain_db": 0.5,
 }
 
 SOURCE_KEYS = ("subtype", "donor_gain_db", "feeder_loss_db", "injection_dbm",
@@ -284,6 +285,115 @@ def _pct(cov, n_in):
     return round(100.0 * cov / n_in, 2) if n_in else None
 
 
+# ------------------------------------------------------------- tap planning
+
+def _tap_devices(config):
+    """Tap and coupler parts from config: (kind, part_id, through_il_db,
+    branch_loss_db), sorted for determinism."""
+    parts = config.get("parts") or {}
+    out = []
+    for kind, group, bkey in (("tapper", "tappers", "tap_loss_db"),
+                              ("coupler", "couplers", "coupled_loss_db")):
+        for pid in sorted(parts.get(group) or {}):
+            d = parts[group][pid]
+            try:
+                out.append((kind, pid, float(d["through_il_db"]), float(d[bkey])))
+            except (KeyError, TypeError, ValueError):
+                continue
+    return out
+
+
+def _equal_loss(n, ways, spl):
+    """(worst_db, best_db) device loss of the equal-splitter tree the chain
+    builder makes over n antennas (same bottom-up grouping, on abstract
+    nodes in index order)."""
+    items = [{"x": float(i), "y": 0.0, "id": i, "wb": (0.0, 0.0)} for i in range(n)]
+    while len(items) > ways:
+        groups = _partition(items, int(math.ceil(len(items) / float(ways))), ways)
+        nxt = []
+        for grp in groups:
+            if len(grp) == 1:
+                nxt.append(grp[0])
+                continue
+            il = spl[len(grp)]
+            nxt.append({"x": sum(g["x"] for g in grp) / len(grp), "y": 0.0,
+                        "id": min(g["id"] for g in grp),
+                        "wb": (il + max(g["wb"][0] for g in grp),
+                               il + min(g["wb"][1] for g in grp))})
+        items = nxt
+    if len(items) == 1:
+        return items[0]["wb"]
+    il = spl[len(items)]
+    return (il + max(g["wb"][0] for g in items), il + min(g["wb"][1] for g in items))
+
+
+def _tap_table(config, ways, nmax, min_gain_db, use_taps=True):
+    """Best distribution stage for a tree over n antennas, n = 1..nmax.
+
+    Entry n is (worst_db, best_db, plan): the highest and lowest device loss
+    from the tree input to any antenna (cable loss is not in the choice; the
+    cascade adds it afterwards). plan is ("leaf",), ("equal",) for the
+    equal-splitter tree the builder makes today, or ("tap", kind, part_id, m):
+    a tap/coupler whose coupled port feeds m antennas (a sub-tree) and whose
+    through port feeds the other n - m. An equal splitter costs the same loss
+    per branch however many antennas hang below it, so a coupler stage wins
+    when it feeds a light branch and passes most of the power on to a heavy
+    one: it lowers the worst port (the budget limit) and the spread. A tap
+    stage replaces the equal tree only when it lowers the worst loss by
+    min_gain_db, or ties it (within 0.05 dB) and lowers the spread by
+    min_gain_db; otherwise the layout is the existing equal-splitter tree.
+    Deterministic: fixed iteration and tie-break order."""
+    spl = {}
+    for w in range(2, ways + 1):
+        spl[w] = float(config["parts"]["splitters"]["%dway" % w]["il_db"])
+    devs = _tap_devices(config) if use_taps else []
+    tbl = [None, (0.0, 0.0, ("leaf",))]
+    for n in range(2, nmax + 1):
+        ew, eb = _equal_loss(n, ways, spl)
+        best_s = (None, (ew, eb, ("equal",)))
+        best_t = None
+        for kind, pid, thr, cpl in devs:
+            for m in range(1, n // 2 + 1):
+                a, b = tbl[m], tbl[n - m]
+                worst = max(cpl + a[0], thr + b[0])
+                best = min(cpl + a[1], thr + b[1])
+                key = (round(worst, 6), round(worst - best, 6), kind, pid, m)
+                if best_t is None or key < best_t[0]:
+                    best_t = (key, (worst, best, ("tap", kind, pid, m)))
+        pick = best_s[1]
+        if best_t is not None:
+            sw, ss = pick[0], pick[0] - pick[1]
+            tw, ts = best_t[1][0], best_t[1][0] - best_t[1][1]
+            if tw <= sw - min_gain_db + 1e-9 or (
+                    tw <= sw + 0.05 and ts <= ss - min_gain_db + 1e-9):
+                pick = best_t[1]
+        tbl.append(pick)
+    return tbl
+
+
+def _parse_taps(config, ap, raw, ways, nmax):
+    """`taps`: omitted/false (off, the default), true, or {min_gain_db}."""
+    if raw is None or raw is False:
+        return {"enabled": False}
+    if raw is True:
+        raw = {}
+    if not isinstance(raw, dict):
+        raise AutoplaceError("taps must be true or an object")
+    if raw.get("enabled") is False:
+        return {"enabled": False}
+    for k in raw:
+        if k not in ("min_gain_db", "enabled"):
+            raise AutoplaceError("taps option '%s' not allowed (use min_gain_db)" % k)
+    gain = _num(raw.get("min_gain_db", ap["tap_min_gain_db"]), "taps.min_gain_db")
+    if gain < 0:
+        raise AutoplaceError("taps.min_gain_db must be >= 0")
+    if not _tap_devices(config):
+        raise AutoplaceError("config parts has no tappers or couplers to use")
+    return {"enabled": True, "min_gain_db": gain,
+            "table": _tap_table(config, ways, nmax, gain),
+            "equal": _tap_table(config, ways, nmax, gain, use_taps=False)}
+
+
 # ------------------------------------------------------------------ requests
 
 def _parse_remotes(config, ap, raw, feed_element_id):
@@ -424,6 +534,7 @@ def _parse_request(model, config, floor, request):
 
     head = req.get("headend") or {}
     remotes = _parse_remotes(config, ap, req.get("remotes"), req.get("feed_element_id"))
+    taps = _parse_taps(config, ap, req.get("taps"), ways, max(cap, 2))
     return {
         "ap": ap, "bands": ids, "antenna_id": antenna_id,
         "threshold_dbm": thr, "coverage_target_pct": pct, "nfpa": nfpa,
@@ -431,7 +542,7 @@ def _parse_request(model, config, floor, request):
         "step": step, "cap": cap, "source": src, "rep": rep,
         "use_repeater": bool(req.get("use_repeater", True)),
         "trunk": trunk, "branch": branch, "donor": donor, "ways": ways,
-        "outline": outline, "headend": head, "remotes": remotes,
+        "outline": outline, "headend": head, "remotes": remotes, "taps": taps,
         "feed_element_id": req.get("feed_element_id"),
     }
 
@@ -522,22 +633,26 @@ class _Chain:
         self.slack = float(p["ap"]["slack_m_per_run"])
         self.elements = []
         self.counts = {"antenna": 0, "splitter": 0, "run": 0, "remote": 0,
-                       "fiber_run": 0}
+                       "fiber_run": 0, "tapper": 0, "coupler": 0}
+        self.tree_stats = []      # per distribution tree: (antennas, plan entry)
         self.remote_info = []
         self.fiber_m = 0.0
 
-    def _run(self, frm, to, cable_id, fiber=False):
+    def _run(self, frm, to, cable_id, fiber=False, port=None):
         d_px = abs(frm["x"] - to["x"]) + abs(frm["y"] - to["y"])
         length = round(d_px / self.ppm + self.slack, 2)
         self.counts["run"] += 1
         if fiber:
             self.counts["fiber_run"] += 1
             self.fiber_m += length
-        self.elements.append({
+        run = {
             "id": "%s_auto_r%d" % (self.fid, self.counts["run"]),
             "type": "cable_run", "label": "AR%d" % self.counts["run"],
             "from_id": frm["id"], "to_id": to["id"], "cable_id": cable_id,
-            "length_m": length, AUTO_FLAG: True})
+            "length_m": length, AUTO_FLAG: True}
+        if port:
+            run["port"] = port
+        self.elements.append(run)
         return length
 
     def _cable_for(self, node):
@@ -571,7 +686,49 @@ class _Chain:
         self.elements.append(el)
         return {"id": el["id"], "x": el["x"], "y": el["y"], "kind": "remote"}
 
+    def tap_device(self, kind, part_id, x, y):
+        self.counts[kind] += 1
+        n = self.counts[kind]
+        el = {"id": "%s_auto_%s%d" % (self.fid, "t" if kind == "tapper" else "c", n),
+              "type": kind, "label": ("ATP%d" if kind == "tapper" else "ACP%d") % n,
+              "part_id": part_id, "x": round(x, 1), "y": round(y, 1), AUTO_FLAG: True}
+        self.elements.append(el)
+        return {"id": el["id"], "x": el["x"], "y": el["y"], "kind": kind}
+
     def tree(self, ants, feed_xy=None):
+        """Distribution tree over antenna nodes; returns its root node (the
+        single antenna when only one). Equal splitters, or the tap-aware plan
+        when the request asks for taps."""
+        taps = self.p["taps"]
+        if taps["enabled"] and len(ants) > 1:
+            if feed_xy is None:
+                feed_xy = (sum(a["x"] for a in ants) / len(ants),
+                           sum(a["y"] for a in ants) / len(ants))
+            self.tree_stats.append((len(ants), taps["table"][len(ants)],
+                                    taps["equal"][len(ants)]))
+            return self._node(list(ants), feed_xy)
+        return self.tree_equal(ants)
+
+    def _node(self, items, feed_xy):
+        n = len(items)
+        if n == 1:
+            return items[0]
+        plan = self.p["taps"]["table"][n][2]
+        if plan[0] == "equal":
+            return self.tree_equal(items)
+        _, kind, pid, m = plan
+        fx, fy = feed_xy
+        order = sorted(items, key=lambda c: (abs(c["x"] - fx) + abs(c["y"] - fy),
+                                             c["x"], c["y"], c["id"]))
+        dev = self.tap_device(kind, pid, order[0]["x"], order[0]["y"])
+        coupled = self._node(order[:m], (dev["x"], dev["y"]))
+        through = self._node(order[m:], (dev["x"], dev["y"]))
+        self._run(dev, coupled, self._cable_for(coupled),
+                  port="tap" if kind == "tapper" else "coupled")
+        self._run(dev, through, self._cable_for(through), port="through")
+        return dev
+
+    def tree_equal(self, ants):
         """Equal-split splitter tree over antenna nodes; returns its root
         node (the single antenna when only one)."""
         ways = self.p["ways"]
@@ -630,7 +787,7 @@ class _Chain:
         source + repeater head-end) or an existing element dict to feed from."""
         p = self.p
         cur = [self.antenna(x, y) for x, y in positions]
-        root = self.tree(cur)
+        root = self.tree(cur, headend_xy)
         root_cable = self._cable_for(root)
 
         hx, hy = headend_xy
@@ -680,7 +837,7 @@ class _Chain:
                                                 a["id"]))
                 cx, cy = near["x"], near["y"]
             ru = self.remote(cx, cy)
-            root = self.tree(zone)
+            root = self.tree(zone, (ru["x"], ru["y"]))
             self._run(ru, root, self._cable_for(root))
             fiber_len = self._run(head, ru, p["remotes"]["fiber"], fiber=True)
             self.remote_info.append({
@@ -1377,6 +1534,28 @@ def autoplace_floor(model, config, floor_id, request):
     counts = {"antennas": final["chain"].counts["antenna"],
               "splitters": final["chain"].counts["splitter"],
               "cable_runs": final["chain"].counts["run"]}
+    taps_out = None
+    if p["taps"]["enabled"]:
+        ch = final["chain"]
+        counts["tappers"] = ch.counts["tapper"]
+        counts["couplers"] = ch.counts["coupler"]
+        stats = ch.tree_stats
+        used = {}
+        for e in ch.elements:
+            if e["type"] in ("tapper", "coupler"):
+                key = "%ss.%s" % (e["type"], e["part_id"])
+                used[key] = used.get(key, 0) + 1
+        taps_out = {
+            "enabled": True, "min_gain_db": p["taps"]["min_gain_db"],
+            "trees": len(stats), "parts_used": used,
+            "device_worst_loss_db": {
+                "tapped": round(max((s[1][0] for s in stats), default=0.0), 2),
+                "equal_splitters": round(max((s[2][0] for s in stats), default=0.0), 2)},
+            "device_spread_db": {
+                "tapped": round(max((s[1][0] - s[1][1] for s in stats), default=0.0), 2),
+                "equal_splitters": round(max((s[2][0] - s[2][1] for s in stats),
+                                             default=0.0), 2)},
+            "note": "device losses only (cable loss is added by the cascade)"}
     remotes_out = None
     if p["remotes"]["enabled"]:
         ch = final["chain"]
@@ -1451,6 +1630,7 @@ def autoplace_floor(model, config, floor_id, request):
         "antennas": ant_rows,
         "elements_added": counts,
         "remotes": remotes_out,
+        "taps": taps_out,
         "headend": {"x_px": headend_xy[0], "y_px": headend_xy[1],
                     "feed_element_id": p["feed_element_id"]},
         "cascade": {"min_antenna_port_dbm": min_in,

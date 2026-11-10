@@ -27,8 +27,8 @@ def generate_bom(model, config):
     cable_len = {}
     cable_runs = {}
     splitter_ways = {}
-    tapper_count = 0
-    coupler_count = 0
+    tapper_count = {}
+    coupler_count = {}
     antenna_count = {}
     source_count = 0
     repeater_count = 0
@@ -47,9 +47,11 @@ def generate_bom(model, config):
             ways = int(el.get("ways", 2))
             splitter_ways[ways] = splitter_ways.get(ways, 0) + 1
         elif t == "tapper":
-            tapper_count += 1
+            pid = el.get("part_id") or "default"
+            tapper_count[pid] = tapper_count.get(pid, 0) + 1
         elif t == "coupler":
-            coupler_count += 1
+            pid = el.get("part_id") or "default"
+            coupler_count[pid] = coupler_count.get(pid, 0) + 1
         elif t == "antenna":
             aid = el.get("antenna_id")
             if aid not in antennas:
@@ -85,13 +87,13 @@ def generate_bom(model, config):
         label = parts.get("splitters", {}).get(key, {}).get("label", "Splitter, %d-way" % ways)
         items.append({"category": "splitter", "item": label,
                       "qty": splitter_ways[ways], "unit": "ea"})
-    if tapper_count:
-        label = parts.get("tappers", {}).get("default", {}).get("label", "Tap (through + taps)")
-        items.append({"category": "tapper", "item": label, "qty": tapper_count, "unit": "ea"})
-    if coupler_count:
-        label = (parts.get("couplers", {}).get("default", {}).get("label")
+    for pid in sorted(tapper_count):
+        label = parts.get("tappers", {}).get(pid, {}).get("label", "Tap (through + taps)")
+        items.append({"category": "tapper", "item": label, "qty": tapper_count[pid], "unit": "ea"})
+    for pid in sorted(coupler_count):
+        label = (parts.get("couplers", {}).get(pid, {}).get("label")
                  or "Directional coupler")
-        items.append({"category": "coupler", "item": label, "qty": coupler_count, "unit": "ea"})
+        items.append({"category": "coupler", "item": label, "qty": coupler_count[pid], "unit": "ea"})
     for aid in sorted(antenna_count):
         label = antennas[aid].get("label", aid)
         items.append({"category": "antenna", "item": label,

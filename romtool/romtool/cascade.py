@@ -176,6 +176,14 @@ def build_graph(model, config):
                 errors.append(
                     "antenna '%s': unknown antenna_id '%s'" % (element_label(el), el.get("antenna_id"))
                 )
+        if t in ("tapper", "coupler"):
+            grp = config.get("parts", {}).get("tappers" if t == "tapper" else "couplers", {})
+            pid = el.get("part_id") or "default"
+            if pid not in grp and not (el.get("through_il_db") is not None
+                                       and (el.get("tap_loss_db") is not None
+                                            or el.get("coupled_loss_db") is not None)):
+                errors.append("%s '%s': unknown part_id '%s' (known: %s)"
+                              % (t, element_label(el), pid, ", ".join(sorted(grp)) or "none"))
         if t == "splitter":
             ways = el.get("ways", 2)
             key = "%dway" % ways
@@ -381,7 +389,7 @@ def solve_cascade(model, config):
                 )
             elif t in ("tapper", "coupler"):
                 key = "tappers" if t == "tapper" else "couplers"
-                dflt = parts.get(key, {}).get("default", {})
+                dflt = parts.get(key, {}).get(el.get("part_id") or "default", {})
                 if t == "tapper":
                     thru = _num(el.get("through_il_db", dflt.get("through_il_db", 0.8)))
                     tap = _num(el.get("tap_loss_db", dflt.get("tap_loss_db", 12.0)))
