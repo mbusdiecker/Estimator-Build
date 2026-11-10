@@ -73,6 +73,8 @@ from romtool.predict import PredictError, predict_floor
 from romtool.rflink import RfLinkError, draft_for_project
 from romtool.sanity import run_sanity
 from romtool.report import render_heatmap_png
+from romtool.drawings import (floor_layout_png, floor_layout_svg,
+                                 one_line_png, one_line_svg)
 from romtool.xlsx import encode_xlsx
 
 from . import db
@@ -2180,6 +2182,58 @@ def nfpa_report_png(pid: int, fid: str, band: str = Query(...), step: int = Quer
         headers={"Content-Disposition": 'inline; filename="nfpa-report-%s-%s-%s.png"'
                  % (pid, fid, band)},
     )
+
+
+# ---------------------------------------------------------------- drawings
+
+def _solved_model(pid):
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    cfg = _proj_config(model)
+    result = solve_cascade(model, cfg)
+    if result["errors"]:
+        raise HTTPException(status_code=422, detail={"errors": result["errors"]})
+    return proj, model, cfg, result
+
+
+@router.get("/projects/{pid}/one_line.svg")
+def one_line_svg_endpoint(pid: int):
+    proj, model, cfg, result = _solved_model(pid)
+    svg = one_line_svg(model, cfg, result, project_name=proj["name"])
+    return Response(content=svg.encode("utf-8"), media_type="image/svg+xml",
+                    headers={"Content-Disposition": 'inline; filename="one-line-%s.svg"' % pid})
+
+
+@router.get("/projects/{pid}/one_line.png")
+def one_line_png_endpoint(pid: int):
+    proj, model, cfg, result = _solved_model(pid)
+    payload = one_line_png(model, cfg, result, project_name=proj["name"])
+    return Response(content=payload, media_type="image/png",
+                    headers={"Content-Disposition": 'inline; filename="one-line-%s.png"' % pid})
+
+
+@router.get("/projects/{pid}/floors/{fid}/layout.svg")
+def floor_layout_svg_endpoint(pid: int, fid: str, include_image: bool = Query(True)):
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    _find_floor(model, fid)
+    svg = floor_layout_svg(model, _proj_config(model), fid,
+                           include_image=include_image, project_name=proj["name"])
+    return Response(content=svg.encode("utf-8"), media_type="image/svg+xml",
+                    headers={"Content-Disposition": 'inline; filename="layout-%s-%s.svg"'
+                             % (pid, fid)})
+
+
+@router.get("/projects/{pid}/floors/{fid}/layout.png")
+def floor_layout_png_endpoint(pid: int, fid: str, include_image: bool = Query(True)):
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    _find_floor(model, fid)
+    payload = floor_layout_png(model, _proj_config(model), fid,
+                               include_image=include_image, project_name=proj["name"])
+    return Response(content=payload, media_type="image/png",
+                    headers={"Content-Disposition": 'inline; filename="layout-%s-%s.png"'
+                             % (pid, fid)})
 
 
 # ---------------------------------------------------------------- BOM + exports
