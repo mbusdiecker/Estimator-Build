@@ -103,6 +103,8 @@ def model_basis(model, config):
                 continue
             meters = float(el.get("length_m") or 0.0)
             cid = el.get("cable_id")
+            if (config.get("cables", {}).get(cid) or {}).get("medium") == "fiber":
+                continue  # fiber footage is not coax labor; no rflink catalog line
             cables_total[cid] = cables_total.get(cid, 0.0) + meters
             from_fl = _floor_of(floors, el.get("from_id"))
             to_fl = _floor_of(floors, el.get("to_id"))

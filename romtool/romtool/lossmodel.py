@@ -1,6 +1,7 @@
 """Indoor propagation model selection for a floor + band.
 
-Three sources, in priority order:
+Three sources, in priority order (a stored floor clutter map, when there are
+no walls, replaces the uniform clutter term; see clutter_map.py):
 
 1. walls_drawn   - the floor has at least `building_types_min_walls` drawn walls
                    (default 1): the project environment's N (per-band override
@@ -58,7 +59,10 @@ def resolve_loss_model(model, config, floor, band, env):
         raise LossModelError("unknown building_type '%s' (known: %s)"
                              % (bt_id, ", ".join(sorted(types)) or "none"))
 
-    use_bt = bt_id is not None and n_walls < max(1, min_walls(config))
+    no_walls = n_walls < max(1, min_walls(config))
+    # a stored clutter map replaces the uniform clutter term (walls drawn win)
+    cmap = (floor or {}).get("clutter_map") if no_walls else None
+    use_bt = bt_id is not None and no_walls
     if use_bt:
         entry = types[bt_id]
         if bt_id in overrides:
@@ -66,7 +70,7 @@ def resolve_loss_model(model, config, floor, band, env):
         else:
             n, src = float(entry["n"]), "building_type"
         clutter = float(entry.get("clutter_db_per_m") or 0.0)
-        return {
+        res = {
             "source": "building_type",
             "n": n,
             "n_source": src,
@@ -75,7 +79,12 @@ def resolve_loss_model(model, config, floor, band, env):
             "grade_n": entry.get("n_grade"),
             "grade_clutter": entry.get("clutter_grade"),
             "reference_n": entry.get("n_ref"),
+            "clutter_map": None,
         }
+        if cmap:
+            res.update({"source": "clutter_map", "clutter_db_per_m": 0.0,
+                        "grade_clutter": "E", "clutter_map": cmap})
+        return res
 
     env_n = float(envs[env]["n"])
     if env in overrides:
@@ -83,12 +92,14 @@ def resolve_loss_model(model, config, floor, band, env):
     else:
         n, src = env_n, "environment"
     return {
-        "source": "walls_drawn" if n_walls else "environment",
+        "source": ("walls_drawn" if n_walls else
+                   ("clutter_map" if cmap else "environment")),
         "n": n,
         "n_source": src,
         "clutter_db_per_m": 0.0,
         "building_type": bt_id,
         "grade_n": None,
-        "grade_clutter": None,
+        "grade_clutter": "E" if cmap else None,
         "reference_n": None,
+        "clutter_map": cmap or None,
     }

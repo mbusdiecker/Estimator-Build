@@ -24,8 +24,9 @@ import math
 from collections import deque
 
 CABLE_TYPE = "cable_run"
-NODE_TYPES = ("source", "repeater", "splitter", "tapper", "coupler", "antenna")
-HUB_TYPES = ("source", "repeater", "splitter", "tapper", "coupler")
+NODE_TYPES = ("source", "repeater", "remote", "splitter", "tapper", "coupler",
+              "antenna")
+HUB_TYPES = ("source", "repeater", "remote", "splitter", "tapper", "coupler")
 PORT_THROUGH = "through"
 PORT_TAP = "tap"
 PORT_COUPLED = "coupled"
@@ -175,6 +176,14 @@ def build_graph(model, config):
                 errors.append(
                     "antenna '%s': unknown antenna_id '%s'" % (element_label(el), el.get("antenna_id"))
                 )
+        if t in ("tapper", "coupler"):
+            grp = config.get("parts", {}).get("tappers" if t == "tapper" else "couplers", {})
+            pid = el.get("part_id") or "default"
+            if pid not in grp and not (el.get("through_il_db") is not None
+                                       and (el.get("tap_loss_db") is not None
+                                            or el.get("coupled_loss_db") is not None)):
+                errors.append("%s '%s': unknown part_id '%s' (known: %s)"
+                              % (t, element_label(el), pid, ", ".join(sorted(grp)) or "none"))
         if t == "splitter":
             ways = el.get("ways", 2)
             key = "%dway" % ways
@@ -184,13 +193,13 @@ def build_graph(model, config):
                     "splitter '%s': no part defined for ways=%s and no il_db override"
                     % (element_label(el), ways)
                 )
-        if t == "repeater":
+        if t in ("repeater", "remote"):
             out_deg = len(children.get(nid, []))
-            ports = int(_num(el.get("ports", config.get("repeater", {}).get("ports", 2)), 2))
+            ports = int(_num(el.get("ports", config.get(t, {}).get("ports", 2 if t == "repeater" else 1)), 2))
             if out_deg > ports:
                 errors.append(
-                    "repeater '%s' has %d trunk branches but only %d port(s)"
-                    % (element_label(el), out_deg, ports)
+                    "%s '%s' has %d trunk branches but only %d port(s)"
+                    % (t, element_label(el), out_deg, ports)
                 )
 
     sources = [nid for nid, nd in nodes.items() if nd["el"]["type"] == "source"]
@@ -229,6 +238,16 @@ def _ambient_dbm(el, band):
     if amb is None:
         return _num(band_default)
     return _num(amb)
+
+
+def remote_max_out_dbm(el, rem_cfg, band_id):
+    """Downlink output cap for one band: element per-band, config per-band,
+    element value, config value, in that order."""
+    for src in (el.get("max_dl_out_dbm_per_band"),
+                rem_cfg.get("max_dl_out_dbm_per_band")):
+        if isinstance(src, dict) and band_id in src:
+            return _num(src[band_id], 30.0)
+    return _num(el.get("max_dl_out_dbm", rem_cfg.get("max_dl_out_dbm", 30.0)), 30.0)
 
 
 def _source_subtypes(config):
@@ -338,6 +357,24 @@ def solve_cascade(model, config):
                      "in_dbm": round(arrival, 3), "out_dbm": round(out, 3), "detail": detail}
                 )
                 edge_pow = out
+            elif t == "remote":
+                # fiber-fed active unit: level-neutral by default, own cap per band
+                rem_cfg = config.get("remote", {})
+                gain = _num(el.get("dl_gain_db", rem_cfg.get("dl_gain_db", 0.0)))
+                cap = remote_max_out_dbm(el, rem_cfg, bid)
+                raw = arrival + gain
+                out = min(raw, cap)
+                if raw > cap + 1e-9:
+                    band_warn.append(
+                        "Remote '%s': clamped, input %.1f + %.1f dB gain exceeds "
+                        "max out %.1f dBm" % (label, arrival, gain, cap)
+                    )
+                detail = "in %.2f + %.1f dB gain, max out %.1f dBm" % (arrival, gain, cap)
+                node_rows.append(
+                    {"element_id": nid, "label": label, "type": t,
+                     "in_dbm": round(arrival, 3), "out_dbm": round(out, 3), "detail": detail}
+                )
+                edge_pow = out
             elif t == "splitter":
                 ways = int(el.get("ways", 2))
                 part = parts.get("splitters", {}).get("%dway" % ways, {})
@@ -352,7 +389,7 @@ def solve_cascade(model, config):
                 )
             elif t in ("tapper", "coupler"):
                 key = "tappers" if t == "tapper" else "couplers"
-                dflt = parts.get(key, {}).get("default", {})
+                dflt = parts.get(key, {}).get(el.get("part_id") or "default", {})
                 if t == "tapper":
                     thru = _num(el.get("through_il_db", dflt.get("through_il_db", 0.8)))
                     tap = _num(el.get("tap_loss_db", dflt.get("tap_loss_db", 12.0)))
@@ -370,31 +407,39 @@ def solve_cascade(model, config):
                 acfg = ants_cfg[el["antenna_id"]]
                 gain = _num(el.get("gain_db", acfg.get("gain_db", 2.0)))
                 max_port = _num(el.get("max_port_dbm", acfg.get("max_port_dbm", 20.0)))
-                port = min(arrival, max_port)
-                capped = arrival > max_port + 1e-9
+                # fixed branch hardware (connectors, jumper, diplexer) between
+                # the last run and the antenna port; 0 when not set
+                branch = _num(el.get("branch_loss_db"), 0.0)
+                at_port = arrival - branch
+                port = min(at_port, max_port)
+                capped = at_port > max_port + 1e-9
                 eirp = port + gain
-                if arrival < 0:
+                if at_port < 0:
                     band_warn.append(
                         "Antenna '%s': port power %.1f dBm is below the 0 dBm budget"
-                        % (label, arrival)
+                        % (label, at_port)
                     )
                 if capped:
                     band_warn.append(
                         "Antenna '%s': port power capped at %.1f dBm (in was %.1f dBm)"
-                        % (label, max_port, arrival)
+                        % (label, max_port, at_port)
                     )
-                node_rows.append(
-                    {"element_id": nid, "label": label, "type": t,
-                     "in_dbm": round(arrival, 3), "out_dbm": round(port, 3),
-                     "eirp_dbm": round(eirp, 3), "detail":
-                     "port %.2f dBm + %.1f dBi" % (port, gain)}
-                )
-                antennas_out.append(
-                    {"element_id": nid, "label": label,
-                     "floor_id": nd["floor_id"], "level": nd["level"],
-                     "in_dbm": round(arrival, 3), "port_dbm": round(port, 3),
-                     "eirp_dbm": round(eirp, 3), "capped": capped}
-                )
+                row = {"element_id": nid, "label": label, "type": t,
+                       "in_dbm": round(arrival, 3), "out_dbm": round(port, 3),
+                       "eirp_dbm": round(eirp, 3), "detail":
+                       "port %.2f dBm + %.1f dBi" % (port, gain)}
+                arow = {"element_id": nid, "label": label,
+                        "floor_id": nd["floor_id"], "level": nd["level"],
+                        "in_dbm": round(arrival, 3), "port_dbm": round(port, 3),
+                        "eirp_dbm": round(eirp, 3), "capped": capped}
+                if branch:
+                    row["branch_loss_db"] = round(branch, 3)
+                    row["detail"] = ("in %.2f - %.2f dB branch hardware = port %.2f dBm + %.1f dBi"
+                                     % (arrival, branch, port, gain))
+                    arow["branch_loss_db"] = round(branch, 3)
+                    arow["port_uncapped_dbm"] = round(at_port, 3)
+                node_rows.append(row)
+                antennas_out.append(arow)
                 edge_pow = None  # antennas terminate the chain
             else:  # pragma: no cover - build_graph rejects unknown types
                 edge_pow = None
@@ -408,7 +453,7 @@ def solve_cascade(model, config):
                     role = role or PORT_TAP
                 elif t == "coupler":
                     role = role or PORT_COUPLED
-                if t in ("source", "repeater", "splitter"):
+                if t in ("source", "repeater", "remote", "splitter"):
                     branch_pow = edge_pow
                 elif t == "tapper":
                     branch_pow = arrival - (thru if role == PORT_THROUGH else tap)
