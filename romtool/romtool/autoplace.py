@@ -649,6 +649,26 @@ def _verify_step(floor, p, outline):
 
 # --------------------------------------------------------------- chain build
 
+def route_points(frm, to, axis="x"):
+    """Orthogonal (L-shaped) route between two points: one leg along `axis`
+    first, then the perpendicular leg. Returns [[x, y], ...] with one bend
+    point (none when the points share a row/column). Points are rounded to
+    0.1 px, the same resolution as element coordinates."""
+    x1, y1 = round(float(frm[0]), 1), round(float(frm[1]), 1)
+    x2, y2 = round(float(to[0]), 1), round(float(to[1]), 1)
+    pts = [[x1, y1]]
+    bend = [x2, y1] if axis == "x" else [x1, y2]
+    if bend != pts[0] and bend != [x2, y2]:
+        pts.append(bend)
+    pts.append([x2, y2])
+    return pts
+
+
+def route_length_px(route):
+    """Sum of the segment lengths of an orthogonal route, in px."""
+    return sum(abs(b[0] - a[0]) + abs(b[1] - a[1]) for a, b in zip(route, route[1:]))
+
+
 def _partition(items, groups, ways):
     """Split items into `groups` spatially compact groups of size <= ways."""
     if groups <= 1:
@@ -685,8 +705,9 @@ class _Chain:
         self.fiber_m = 0.0
 
     def _run(self, frm, to, cable_id, fiber=False, port=None):
-        d_px = abs(frm["x"] - to["x"]) + abs(frm["y"] - to["y"])
-        length = round(d_px / self.ppm + self.slack, 2)
+        route = route_points((frm["x"], frm["y"]), (to["x"], to["y"]),
+                             self.p.get("_axis", "x"))
+        length = round(route_length_px(route) / self.ppm + self.slack, 2)
         self.counts["run"] += 1
         if fiber:
             self.counts["fiber_run"] += 1
@@ -695,7 +716,7 @@ class _Chain:
             "id": "%s_auto_r%d" % (self.fid, self.counts["run"]),
             "type": "cable_run", "label": "AR%d" % self.counts["run"],
             "from_id": frm["id"], "to_id": to["id"], "cable_id": cable_id,
-            "length_m": length, AUTO_FLAG: True}
+            "length_m": length, "route": route, AUTO_FLAG: True}
         if port:
             run["port"] = port
         self.elements.append(run)
@@ -844,7 +865,8 @@ class _Chain:
         info = {}
         if feed is not None:
             fx, fy = float(feed.get("x", hx)), float(feed.get("y", hy))
-            d_px = abs(fx - root["x"]) + abs(fy - root["y"])
+            route = route_points((fx, fy), (root["x"], root["y"]),
+                                 self.p.get("_axis", "x"))
             extra = abs(int(feed["_level"]) - int(self.p["_level"])) * float(
                 p["ap"]["floor_height_m"])
             self.counts["run"] += 1
@@ -852,8 +874,9 @@ class _Chain:
                 "id": "%s_auto_r%d" % (self.fid, self.counts["run"]),
                 "type": "cable_run", "label": "AR%d" % self.counts["run"],
                 "from_id": feed["id"], "to_id": root["id"], "cable_id": p["trunk"],
-                "length_m": round(d_px / self.ppm + self.slack + extra, 2),
-                AUTO_FLAG: True})
+                "length_m": round(route_length_px(route) / self.ppm + self.slack
+                                  + extra, 2),
+                "route": route, AUTO_FLAG: True})
             info["feed"] = feed["id"]
             return root, info
 
@@ -1376,6 +1399,8 @@ def autoplace_floor(model, config, floor_id, request):
         grid_plan = _Grid(floor, plan_step, p["outline"], crit_polys)
     if grid_plan.n == 0:
         raise AutoplaceError("outline contains no grid points at step %d" % plan_step)
+    # trunk direction: runs travel the floor's long axis first, then the other
+    p["_axis"] = ("x" if (grid_plan.max_x >= grid_plan.max_y) else "y")
     vstep = _verify_step(floor, p, p["outline"])
     grid_final = grid_plan if plan_step <= vstep else None
 
@@ -1680,6 +1705,8 @@ def autoplace_floor(model, config, floor_id, request):
         "planning_eirp_dbm": {bid: round(v, 2) for bid, v in e_plan.items()},
         "antennas": ant_rows,
         "elements_added": counts,
+        "routing": {"trunk_axis": p["_axis"], "bend": "L-shaped, one bend point",
+                    "length_rule": "sum of segment lengths / ppm + slack_m_per_run"},
         "remotes": remotes_out,
         "taps": taps_out,
         "branch_losses": ({"enabled": True, "per_antenna_db": p["branch_hw"]["total_db"],

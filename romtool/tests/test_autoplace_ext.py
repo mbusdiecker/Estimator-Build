@@ -396,3 +396,88 @@ def test_branch_losses_off_by_default(cfg):
     assert all("branch_loss_db" not in a for a in els(m, "antenna"))
     assert not [i for i in generate_bom(m, cfg)["items"] if i["category"] == "branch hardware"]
 
+
+
+# ============================================================ 4. routing
+
+def test_route_points_are_l_shaped():
+    from romtool.autoplace import route_length_px, route_points
+    assert route_points((10, 20), (50, 80), "x") == [[10, 20], [50, 20], [50, 80]]
+    assert route_points((10, 20), (50, 80), "y") == [[10, 20], [10, 80], [50, 80]]
+    assert route_points((10, 20), (50, 20), "y") == [[10, 20], [50, 20]]   # aligned
+    assert route_points((10, 20), (10, 20), "x") == [[10, 20], [10, 20]]   # coincident
+    # hand: 40 px across + 60 px down = 100 px in either leg order
+    assert route_length_px(route_points((10, 20), (50, 80), "x")) == 100
+    assert route_length_px(route_points((10, 20), (50, 80), "y")) == 100
+
+
+def _check_routes(m, ppm=10.0, slack=3.0):
+    pos = {e["id"]: (e["x"], e["y"]) for fl in m["floors"] for e in fl["elements"]
+           if "x" in e}
+    seen = 0
+    for e in els(m, "cable_run"):
+        if not e.get("auto") or "route" not in e:
+            continue
+        seen += 1
+        r = e["route"]
+        assert len(r) in (2, 3)
+        assert tuple(r[0]) == pos[e["from_id"]] and tuple(r[-1]) == pos[e["to_id"]]
+        for a, b in zip(r, r[1:]):
+            assert a[0] == b[0] or a[1] == b[1]          # orthogonal segments
+        seg = sum(abs(b[0] - a[0]) + abs(b[1] - a[1]) for a, b in zip(r, r[1:]))
+        assert e["length_m"] == pytest.approx(round(seg / ppm + slack, 2), abs=0.005)
+    return seen
+
+
+def test_every_auto_run_stores_route_and_length_agrees(cfg):
+    m = make_model(900, 600)
+    res = autoplace_floor(m, cfg, "f1", request(threshold_dbm=-70.0))
+    runs = els(m, "cable_run")
+    routed = _check_routes(m)
+    # all runs except the co-located donor feeder (source -> repeater) have routes
+    assert routed == len(runs) - 1
+    donor = next(r for r in runs if r["cable_id"] == "lmr400")
+    assert "route" not in donor
+    # wide floor: trunk axis is x, so a run with a bend goes horizontal first
+    assert res["routing"]["trunk_axis"] == "x"
+    bent = [r for r in runs if "route" in r and len(r["route"]) == 3]
+    assert bent and all(r["route"][0][1] == r["route"][1][1] for r in bent)
+    # tall floor: vertical first
+    m2 = make_model(300, 900)
+    res2 = autoplace_floor(m2, cfg, "f1", request(threshold_dbm=-70.0))
+    assert res2["routing"]["trunk_axis"] == "y"
+    bent2 = [r for r in els(m2, "cable_run") if "route" in r and len(r["route"]) == 3]
+    assert bent2 and all(r["route"][0][0] == r["route"][1][0] for r in bent2)
+    _check_routes(m2)
+
+
+def test_routes_with_remotes_taps_and_fiber(cfg):
+    m = make_model(900, 600)
+    res = autoplace_floor(m, cfg, "f1", request(
+        threshold_dbm=-70.0, taps=True, remotes={"max_dl_out_dbm": 12.0}))
+    assert res["remotes"]["count"] >= 2
+    assert _check_routes(m) > 10
+    fib = [r for r in els(m, "cable_run") if r["cable_id"] == "fiber_sm"]
+    assert fib and all("route" in r for r in fib)
+    assert sum(r["length_m"] for r in fib) == pytest.approx(res["remotes"]["fiber_m"], abs=0.02)
+
+
+def test_feed_run_length_is_route_plus_slack_plus_riser(cfg):
+    m = {"environment": "office", "building_type": "office", "floors": [
+        {"id": "f0", "name": "F0", "level": 0, "ppm": 10.0, "w_px": 600, "h_px": 400,
+         "walls": [], "elements": [
+             {"id": "src", "type": "source", "subtype": "direct", "injection_dbm": 15.0,
+              "x": 100, "y": 300},
+             {"id": "rp", "type": "repeater", "x": 100, "y": 300},
+             {"id": "rr", "type": "cable_run", "from_id": "src", "to_id": "rp",
+              "cable_id": "lmr400", "length_m": 2.0}]},
+        {"id": "f1", "name": "F1", "level": 2, "ppm": 10.0, "w_px": 600, "h_px": 400,
+         "walls": [], "elements": []}]}
+    autoplace_floor(m, cfg, "f1", request(feed_element_id="rp"))
+    f1 = m["floors"][1]["elements"]
+    feed = next(e for e in f1 if e["type"] == "cable_run" and e["from_id"] == "rp")
+    seg = sum(abs(b[0] - a[0]) + abs(b[1] - a[1])
+              for a, b in zip(feed["route"], feed["route"][1:]))
+    assert feed["route"][0] == [100, 300]
+    # two levels up at floor_height_m = 4 m each
+    assert feed["length_m"] == pytest.approx(round(seg / 10.0 + 3.0 + 8.0, 2), abs=0.005)
