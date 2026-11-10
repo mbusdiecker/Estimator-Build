@@ -71,6 +71,25 @@
         "ref": "outside the building; no obstruction modeled" }
     }
   },
+  "perimeter": {
+    "grade": "E",
+    "ref": "estimate: no published figure for any value. Starting values were set by hand on synthetic plans (tests/test_perimeter.py) and checked on one real office plan (page 1 of a customer RFQ set, 36 x 24 in vector PDF); they are not calibrated across plans. dark_threshold 128 is mid-gray; work_max_side 800 bounds the work grid; ink_fraction 0.1 counts a work cell as ink when 10 percent of its pixels are dark (thin CAD hairlines survive the downsample); min_feature_m 0.6 drops text glyphs and ticks; frame_frac 0.85 drops a sheet border spanning the page; gap_m 1.0 closes door and window gaps up to about 2 m wide; gap_frac_unknown 0.03 is the pixel fallback (share of the short side, about one 0.9 m door at a 30 m plan width) when the scale is unknown; keep_regions 1 and region_min_frac 0.05 choose the building among separate footprints; max_footprint_frac 0.9 rejects a trace that leaked to most of the page; simplify_m 0.3 is the Douglas-Peucker tolerance; snap_deg 3 straightens near-axis edges.",
+    "dark_threshold": 128,
+    "work_max_side": 800,
+    "ink_fraction": 0.1,
+    "min_feature_m": 0.6,
+    "frame_frac": 0.85,
+    "gap_m": 1.0,
+    "gap_frac_unknown": 0.03,
+    "keep_regions": 1,
+    "region_min_frac": 0.05,
+    "max_footprint_frac": 0.9,
+    "simplify_m": 0.3,
+    "snap_deg": 3.0,
+    "pdf_dpi": 150,
+    "pdf_dpi_min": 72,
+    "pdf_dpi_max": 300
+  },
   "autoplace_note": "Defaults for POST /projects/{pid}/floors/{fid}/autoplace. Engineering values here are grade E (estimates, not measured or published): slack_m_per_run, donor feeder length, floor_height_m, max_plan_points, plan_margin_pct. public_safety_band_ids select the bands that get the NFPA two-tier rule instead of the single threshold.",
   "autoplace": {
     "public_safety_band_ids": ["VHF_150", "UHF_450", "PS700", "PS800"],

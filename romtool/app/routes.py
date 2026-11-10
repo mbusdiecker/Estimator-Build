@@ -45,8 +45,10 @@ from fastapi.responses import JSONResponse
 from romtool import ai as ai_mod
 from romtool import actuals as actuals_mod
 from romtool.autoplace import AutoplaceError, autoplace_floor
-from romtool.clutter_map import (ClutterMapError, apply_overrides, build_clutter_map,
-                                 decode_image)
+from romtool.clutter_map import (PNG_SIG, ClutterMapError, apply_overrides, build_clutter_map,
+                                 decode_image, encode_gray_png, render_pdf_page)
+from romtool.perimeter import (PerimeterError, edit_outline, polygon_area,
+                               scale_from_area, trace_floor)
 from romtool.bom import bom_csv, generate_bom
 from romtool.bidform import build_bid_form, bid_form_pdf, bid_form_xlsx
 from romtool.cascade import solve_cascade
@@ -1506,6 +1508,7 @@ def create_floor(pid: int, payload: dict = Body(...)):
         "name": payload.get("name") or "Floor %d" % (level_val if level_val is not None else level_default),
         "level": int(level_val) if level_val is not None else level_default,
         "ppm": float(_num(payload.get("ppm", 10.0))),
+        "ppm_source": "calibrated" if "ppm" in payload else "default",
         "w_px": int(_num(payload.get("w_px", 200))),
         "h_px": int(_num(payload.get("h_px", 150))),
         "image": None,
@@ -1533,6 +1536,9 @@ def patch_floor(pid: int, fid: str, payload: dict = Body(...)):
             floor[key] = payload[key]
     if "ppm" in floor:
         floor["ppm"] = float(_num(floor["ppm"]))
+    if "ppm" in payload:
+        floor["ppm_source"] = "calibrated"
+        floor.pop("ppm_area_m2", None)
     if "building_type" in payload:
         bt = _check_building_type(payload["building_type"])
         if bt is None:
@@ -1584,6 +1590,13 @@ def upload_floor_image(pid: int, fid: str, file: UploadFile = File(...)):
         w, h = _jpg_dims(data)
     else:
         _require(False, "only PNG or JPEG images supported")
+    _store_floor_image(floor, data, mime, w, h)
+    _save(pid, proj["name"], model)
+    return {"floor": _floor_public(floor)}
+
+
+def _store_floor_image(floor, data, mime, w, h):
+    """Store a plan image on the floor and set the floor's pixel size to it."""
     floor["image"] = {
         "mime": mime,
         "data_b64": base64.b64encode(data).decode("ascii"),
@@ -1592,8 +1605,6 @@ def upload_floor_image(pid: int, fid: str, file: UploadFile = File(...)):
     }
     floor["w_px"] = int(w)
     floor["h_px"] = int(h)
-    _save(pid, proj["name"], model)
-    return {"floor": _floor_public(floor)}
 
 
 def _floor_public(floor):
@@ -1734,6 +1745,220 @@ def delete_floor_clutter_map(pid: int, fid: str):
 
 
 # ---------------------------------------------------------------- walls
+
+# ---------------------------------------------- plan import and building perimeter
+
+SQFT_TO_M2 = 0.09290304
+PERIM_OPTION_KEYS = ("dark_threshold", "work_max_side", "ink_fraction", "min_feature_m",
+                     "frame_frac", "gap_m", "keep_regions", "region_min_frac",
+                     "max_footprint_frac", "simplify_m", "snap_deg")
+
+
+def _area_arg(area_m2, area_sqft):
+    """One of area_m2 / area_sqft (or neither) as square metres."""
+    if area_m2 is not None and area_sqft is not None:
+        raise HTTPException(status_code=422, detail="give area_m2 or area_sqft, not both")
+    if area_m2 is not None:
+        val = _num(area_m2)
+    elif area_sqft is not None:
+        val = _num(area_sqft) * SQFT_TO_M2
+    else:
+        return None
+    if not val > 0:
+        raise HTTPException(status_code=422, detail="the covered area must be above 0")
+    return float(val)
+
+
+def _known_ppm(floor):
+    """The floor's ppm when its scale is known (calibrated or from area), else None.
+    Floors saved before ppm_source existed count as known."""
+    if floor.get("ppm_source", "calibrated") == "default":
+        return None
+    return float(floor.get("ppm") or 0.0) or None
+
+
+def _set_scale(floor, ppm, source, area_m2=None):
+    floor["ppm"] = float(ppm)
+    floor["ppm_source"] = source
+    if area_m2 is not None:
+        floor["ppm_area_m2"] = float(area_m2)
+    else:
+        floor.pop("ppm_area_m2", None)
+
+
+def _apply_trace(floor, res, area_m2):
+    floor["outline"] = res["outline"]
+    if res["scale_source"] == "from_area":
+        _set_scale(floor, res["ppm"], "from_area", area_m2)
+    floor["perimeter"] = {
+        "method": "traced",
+        "warnings": res["warnings"],
+        "work": res["work"],
+        "params": res["params"],
+    }
+
+
+def _scale_public(floor):
+    return {"ppm": floor.get("ppm"), "source": floor.get("ppm_source", "calibrated"),
+            "area_m2": floor.get("ppm_area_m2")}
+
+
+def _perimeter_public(floor):
+    outline = floor.get("outline")
+    meta = floor.get("perimeter") or {}
+    ppm = _known_ppm(floor)
+    area_px = polygon_area(outline) if outline else 0.0
+    return {
+        "floor_id": floor.get("id"),
+        "outline": outline,
+        "method": meta.get("method"),
+        "area_px": round(area_px, 2) if outline else None,
+        "area_m2": round(area_px / (ppm * ppm), 2) if (outline and ppm) else None,
+        "scale": _scale_public(floor),
+        "warnings": meta.get("warnings", []),
+        "work": meta.get("work"),
+    }
+
+
+def _floor_image_gray(floor):
+    img = floor.get("image")
+    if not img or not img.get("data_b64"):
+        raise HTTPException(status_code=422, detail={
+            "errors": ["the floor has no plan image: POST .../plan first"]})
+    try:
+        return decode_image(base64.b64decode(img["data_b64"]))
+    except ClutterMapError as exc:
+        raise _clutter_error(exc)
+
+
+def _perim_error(exc):
+    return HTTPException(status_code=422, detail={"errors": [str(exc)]})
+
+
+@router.post("/projects/{pid}/floors/{fid}/plan")
+def import_floor_plan(
+        pid: int, fid: str, file: UploadFile = File(...),
+        page: int = Query(1, description="PDF page, 1-based"),
+        dpi: float = Query(None, description="PDF render DPI (config perimeter.pdf_dpi)"),
+        trace: bool = Query(True, description="trace the outer perimeter into floor.outline"),
+        area_m2: float = Query(None, description="covered area; sets ppm from the traced area"),
+        area_sqft: float = Query(None, description="covered area in square feet"),
+        dark_threshold: int = Query(None), gap_m: float = Query(None),
+        keep_regions: int = Query(None)):
+    """Store a PNG, JPEG or PDF plan as the floor's background image (the same storage
+    as /image; PDFs and JPEGs are stored as gray PNG), set the floor's pixel size to
+    the image, and trace the building's outer perimeter into floor.outline. Interior
+    walls are not traced."""
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    floor = _find_floor(model, fid)
+    cfg = _proj_config(model)
+    pc = cfg.get("perimeter") or {}
+    area = _area_arg(area_m2, area_sqft)
+    data = file.file.read()
+    _require(len(data) > 8, "empty upload")
+    try:
+        if data[:8] == PNG_SIG:
+            iw, ih, gray = decode_image(data)
+            stored = data
+        elif data[:2] == b"\xff\xd8":
+            iw, ih, gray = decode_image(data)
+            stored = encode_gray_png(iw, ih, gray)
+        elif data[:5] == b"%PDF-":
+            lo, hi = float(pc.get("pdf_dpi_min", 72)), float(pc.get("pdf_dpi_max", 300))
+            want = float(dpi if dpi is not None else pc.get("pdf_dpi", 150))
+            want = min(max(want, lo), hi)
+            iw, ih, gray, _used = render_pdf_page(data, page=page, dpi=want)
+            stored = encode_gray_png(iw, ih, gray)
+        else:
+            _require(False, "only PNG, JPEG or PDF plans are supported")
+    except ClutterMapError as exc:
+        raise _clutter_error(exc)
+    _store_floor_image(floor, stored, "image/png", iw, ih)
+
+    opts = {k: v for k, v in (("dark_threshold", dark_threshold), ("gap_m", gap_m),
+                              ("keep_regions", keep_regions)) if v is not None}
+    if trace:
+        try:
+            res = trace_floor(gray, iw, ih, _known_ppm(floor), cfg, area_m2=area, **opts)
+        except PerimeterError as exc:
+            raise _perim_error(exc)
+        _apply_trace(floor, res, area)
+    elif area is not None:
+        _require(floor.get("outline"), "area needs an outline: trace=true or set one first")
+        _set_scale(floor, scale_from_area(polygon_area(floor["outline"]), area),
+                   "from_area", area)
+    _save(pid, proj["name"], model)
+    return {"floor": _floor_public(floor), "perimeter": _perimeter_public(floor)}
+
+
+@router.get("/projects/{pid}/floors/{fid}/perimeter")
+def get_floor_perimeter(pid: int, fid: str):
+    floor = _find_floor(_load_or_404(pid)["model"], fid)
+    if not floor.get("outline"):
+        raise HTTPException(status_code=404, detail="floor has no perimeter outline")
+    return _perimeter_public(floor)
+
+
+@router.post("/projects/{pid}/floors/{fid}/perimeter/trace")
+def retrace_floor_perimeter(pid: int, fid: str, payload: dict = Body(default_factory=dict)):
+    """Trace again from the stored plan image. Replaces the outline (manual edits are
+    lost). Body: any of the perimeter option keys, plus area_m2 or area_sqft to set
+    the scale from the traced area."""
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    floor = _find_floor(model, fid)
+    payload = payload or {}
+    area = _area_arg(payload.get("area_m2"), payload.get("area_sqft"))
+    opts = {k: payload[k] for k in PERIM_OPTION_KEYS if payload.get(k) is not None}
+    iw, ih, gray = _floor_image_gray(floor)
+    try:
+        res = trace_floor(gray, iw, ih, _known_ppm(floor), _proj_config(model),
+                          area_m2=area, **opts)
+    except PerimeterError as exc:
+        raise _perim_error(exc)
+    _apply_trace(floor, res, area)
+    _save(pid, proj["name"], model)
+    return _perimeter_public(floor)
+
+
+@router.patch("/projects/{pid}/floors/{fid}/perimeter")
+def edit_floor_perimeter(pid: int, fid: str, payload: dict = Body(...)):
+    """Manual override. Body, one of:
+      {"points": [[x, y], ...]}   replace the outline (at least 3 points)
+      {"nudges": [{"index": i, "dx_m": .., "dy_m": ..}]}   move single vertices
+                                  (dx_px / dy_px without a scale)
+      {"clear": true}             remove the outline
+    Plus optionally {"area_m2"} or {"area_sqft"} to set ppm from the outline area."""
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    floor = _find_floor(model, fid)
+    payload = payload or {}
+    area = _area_arg(payload.get("area_m2"), payload.get("area_sqft"))
+    if payload.get("clear"):
+        floor.pop("outline", None)
+        floor.pop("perimeter", None)
+    elif "points" in payload or "nudges" in payload:
+        try:
+            ol = edit_outline(floor.get("outline"), ppm=_known_ppm(floor),
+                              points=payload.get("points"), nudges=payload.get("nudges"))
+        except PerimeterError as exc:
+            raise _perim_error(exc)
+        floor["outline"] = ol
+        meta = dict(floor.get("perimeter") or {})
+        meta["method"] = "manual"
+        floor["perimeter"] = meta
+    if area is not None:
+        if not floor.get("outline"):
+            raise HTTPException(status_code=422, detail={"errors": ["no outline to scale from"]})
+        try:
+            ppm = scale_from_area(polygon_area(floor["outline"]), area)
+        except PerimeterError as exc:
+            raise _perim_error(exc)
+        _set_scale(floor, ppm, "from_area", area)
+    _save(pid, proj["name"], model)
+    return _perimeter_public(floor)
+
 
 @router.post("/projects/{pid}/floors/{fid}/walls")
 def add_walls(pid: int, fid: str, payload: dict = Body(...)):

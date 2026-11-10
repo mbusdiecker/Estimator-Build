@@ -552,9 +552,11 @@ def _floor_scene(model, config, floor_id, k, include_image, project_name, png_no
         prims.append(_line([a, b], stroke=CYAN if glass else CHARCOAL, sw=2 * k))
 
     outline = fl.get("outline")
-    if outline and len(outline) >= 3:
-        prims.append(_poly([P(p[0], p[1]) for p in outline], fill=None, stroke=GRAY,
-                           sw=max(1, k), dash=(6 * k, 4 * k), closed=True))
+    has_outline = bool(outline and len(outline) >= 3)
+    if has_outline:
+        # building perimeter: bold and solid (traced from the plan or drawn by hand)
+        prims.append(_poly([P(p[0], p[1]) for p in outline], fill=None, stroke=NAVY,
+                           sw=max(3, 3 * k), closed=True))
 
     # cable runs (both ends on this floor), following stored route points
     cables_drawn = []
@@ -605,6 +607,8 @@ def _floor_scene(model, config, floor_id, k, include_image, project_name, png_no
             items.append(("sym", t, TYPE_LABELS[t]))
     for cid in cables_drawn:
         items.append(("cable", cid, _cable_label(cfg, cid)))
+    if has_outline:
+        items.append(("outline", "perimeter", "Building perimeter"))
     clut_cfg = (cfg.get("clutter_map") or {}).get("classes") or {}
     for cid in CLUTTER_ORDER:
         if cid in classes_seen:
@@ -625,6 +629,8 @@ def _floor_scene(model, config, floor_id, k, include_image, project_name, png_no
         elif kind == "cable":
             prims.append(_line([(x, y - 4), (x + 18, y - 4)], stroke=_cable_color(cfg, key),
                                sw=2, dash=(6, 4) if _is_fiber(cfg, key) else None))
+        elif kind == "outline":
+            prims.append(_line([(x, y - 4), (x + 18, y - 4)], stroke=NAVY, sw=3))
         else:
             color, alpha = CLUTTER_STYLE.get(key, (GRAY, 0.2))
             prims.append(_rect(x, y - 10, 14, 10, fill=color, stroke=GRAY, sw=1, op=alpha))

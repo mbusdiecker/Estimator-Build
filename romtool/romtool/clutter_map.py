@@ -206,6 +206,37 @@ def decode_image(data, floor_w_px=None, pdf_page=0):
     raise ClutterMapError("unsupported image: need a PNG (JPEG with Pillow, PDF with PyMuPDF)")
 
 
+def render_pdf_page(data, page=1, dpi=150.0, max_pixels=DEFAULT_MAX_PIXELS):
+    """Render one PDF page (1-based) to (w, h, gray, dpi_used) with PyMuPDF.
+
+    The DPI is lowered when the render would exceed max_pixels, so the result is
+    the requested DPI or the largest DPI under the cap."""
+    try:
+        import fitz  # PyMuPDF, optional
+    except ImportError:
+        raise ClutterMapError(
+            "PDF needs PyMuPDF, which is not installed. Run ROMtool with "
+            "`uv run --with pymupdf ...` or export the plan as a PNG.")
+    doc = fitz.open(stream=data, filetype="pdf")
+    if page < 1 or page > len(doc):
+        raise ClutterMapError("page %d is out of range (the PDF has %d pages)" % (page, len(doc)))
+    pg = doc[page - 1]
+    wpt, hpt = float(pg.rect.width), float(pg.rect.height)
+    if wpt <= 0 or hpt <= 0:
+        raise ClutterMapError("PDF page %d has no size" % page)
+    d = float(dpi)
+    cap = 72.0 * math.sqrt(float(max_pixels) / (wpt * hpt)) * 0.99   # rounding margin
+    if d > cap:
+        d = cap
+    zoom = d / 72.0
+    pix = pg.get_pixmap(matrix=fitz.Matrix(zoom, zoom), colorspace=fitz.csGRAY, alpha=False)
+    w, h = pix.width, pix.height
+    samples = bytes(pix.samples)
+    if pix.stride != w:
+        samples = b"".join(samples[y * pix.stride:y * pix.stride + w] for y in range(h))
+    return w, h, samples, round(d, 2)
+
+
 # ------------------------------------------------------------------ scoring
 
 def class_table(config):
