@@ -32,6 +32,7 @@ def generate_bom(model, config):
     antenna_count = {}
     source_count = 0
     repeater_count = 0
+    remote_count = 0
 
     for el in _elements(model):
         t = el.get("type")
@@ -59,6 +60,8 @@ def generate_bom(model, config):
             source_count += 1
         elif t == "repeater":
             repeater_count += 1
+        elif t == "remote":
+            remote_count += 1
         elif t is not None:
             raise ValueError("element '%s' has unknown type '%s'" % (el.get("id"), t))
 
@@ -71,8 +74,10 @@ def generate_bom(model, config):
             "category": "cable", "item": label,
             "qty": round(cable_len[cid] / M_PER_FT, 1), "unit": "ft",
         })
+        conn_label = (cables[cid].get("connector_label")
+                      or "N-type connectors (pairs per %s run)" % label)
         items.append({
-            "category": "connectors", "item": "N-type connectors (pairs per %s run)" % label,
+            "category": "connectors", "item": conn_label,
             "qty": 2 * cable_runs[cid], "unit": "ea",
         })
     for ways in sorted(splitter_ways):
@@ -99,6 +104,10 @@ def generate_bom(model, config):
         items.append({"category": "repeater",
                       "item": rep_cfg.get("label", "Off-air repeater (BDA)"),
                       "qty": repeater_count, "unit": "ea"})
+    if remote_count:
+        items.append({"category": "remote",
+                      "item": config.get("remote", {}).get("label", "Remote unit"),
+                      "qty": remote_count, "unit": "ea"})
 
     return {"items": items}
 

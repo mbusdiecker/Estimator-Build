@@ -24,8 +24,9 @@ import math
 from collections import deque
 
 CABLE_TYPE = "cable_run"
-NODE_TYPES = ("source", "repeater", "splitter", "tapper", "coupler", "antenna")
-HUB_TYPES = ("source", "repeater", "splitter", "tapper", "coupler")
+NODE_TYPES = ("source", "repeater", "remote", "splitter", "tapper", "coupler",
+              "antenna")
+HUB_TYPES = ("source", "repeater", "remote", "splitter", "tapper", "coupler")
 PORT_THROUGH = "through"
 PORT_TAP = "tap"
 PORT_COUPLED = "coupled"
@@ -184,13 +185,13 @@ def build_graph(model, config):
                     "splitter '%s': no part defined for ways=%s and no il_db override"
                     % (element_label(el), ways)
                 )
-        if t == "repeater":
+        if t in ("repeater", "remote"):
             out_deg = len(children.get(nid, []))
-            ports = int(_num(el.get("ports", config.get("repeater", {}).get("ports", 2)), 2))
+            ports = int(_num(el.get("ports", config.get(t, {}).get("ports", 2 if t == "repeater" else 1)), 2))
             if out_deg > ports:
                 errors.append(
-                    "repeater '%s' has %d trunk branches but only %d port(s)"
-                    % (element_label(el), out_deg, ports)
+                    "%s '%s' has %d trunk branches but only %d port(s)"
+                    % (t, element_label(el), out_deg, ports)
                 )
 
     sources = [nid for nid, nd in nodes.items() if nd["el"]["type"] == "source"]
@@ -229,6 +230,16 @@ def _ambient_dbm(el, band):
     if amb is None:
         return _num(band_default)
     return _num(amb)
+
+
+def remote_max_out_dbm(el, rem_cfg, band_id):
+    """Downlink output cap for one band: element per-band, config per-band,
+    element value, config value, in that order."""
+    for src in (el.get("max_dl_out_dbm_per_band"),
+                rem_cfg.get("max_dl_out_dbm_per_band")):
+        if isinstance(src, dict) and band_id in src:
+            return _num(src[band_id], 30.0)
+    return _num(el.get("max_dl_out_dbm", rem_cfg.get("max_dl_out_dbm", 30.0)), 30.0)
 
 
 def _source_subtypes(config):
@@ -338,6 +349,24 @@ def solve_cascade(model, config):
                      "in_dbm": round(arrival, 3), "out_dbm": round(out, 3), "detail": detail}
                 )
                 edge_pow = out
+            elif t == "remote":
+                # fiber-fed active unit: level-neutral by default, own cap per band
+                rem_cfg = config.get("remote", {})
+                gain = _num(el.get("dl_gain_db", rem_cfg.get("dl_gain_db", 0.0)))
+                cap = remote_max_out_dbm(el, rem_cfg, bid)
+                raw = arrival + gain
+                out = min(raw, cap)
+                if raw > cap + 1e-9:
+                    band_warn.append(
+                        "Remote '%s': clamped, input %.1f + %.1f dB gain exceeds "
+                        "max out %.1f dBm" % (label, arrival, gain, cap)
+                    )
+                detail = "in %.2f + %.1f dB gain, max out %.1f dBm" % (arrival, gain, cap)
+                node_rows.append(
+                    {"element_id": nid, "label": label, "type": t,
+                     "in_dbm": round(arrival, 3), "out_dbm": round(out, 3), "detail": detail}
+                )
+                edge_pow = out
             elif t == "splitter":
                 ways = int(el.get("ways", 2))
                 part = parts.get("splitters", {}).get("%dway" % ways, {})
@@ -408,7 +437,7 @@ def solve_cascade(model, config):
                     role = role or PORT_TAP
                 elif t == "coupler":
                     role = role or PORT_COUPLED
-                if t in ("source", "repeater", "splitter"):
+                if t in ("source", "repeater", "remote", "splitter"):
                     branch_pow = edge_pow
                 elif t == "tapper":
                     branch_pow = arrival - (thru if role == PORT_THROUGH else tap)

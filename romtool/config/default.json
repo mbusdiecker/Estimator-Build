@@ -55,7 +55,10 @@
     "donor_cable_id": "lmr400",
     "donor_feeder_length_m": 2.0,
     "slack_m_per_run": 3.0,
-    "floor_height_m": 4.0
+    "floor_height_m": 4.0,
+    "max_remotes": 16,
+    "max_remotes_grade": "E",
+    "max_remotes_ref": "estimate: search ceiling for the remote-unit count sizer, not an engineering limit; raise it for very large floors"
   },
   "floor_loss_db_per_floor": 15.4,
   "wall_loss_ref_mhz": 2000.0,
@@ -89,7 +92,9 @@
   "cables": {
     "lmr400": { "label": "Coax, 3/8 in class (LMR-400)", "loss_db_per_100m_ghz": { "0.7": 11.3, "0.9": 12.8, "2.0": 19.7, "3.0": 22.9, "4.0": 25.5 } },
     "coax_1_2in": { "label": "Coax, 1/2 in corrugated", "loss_db_per_100m_ghz": { "0.7": 8.5, "0.9": 9.5, "2.0": 14.4, "3.0": 16.2, "4.0": 18.2 } },
-    "coax_7_8in": { "label": "Coax, 7/8 in corrugated", "loss_db_per_100m_ghz": { "0.7": 5.2, "0.9": 5.8, "2.0": 8.9, "3.0": 10.0, "4.0": 11.0 } }
+    "coax_7_8in": { "label": "Coax, 7/8 in corrugated", "loss_db_per_100m_ghz": { "0.7": 5.2, "0.9": 5.8, "2.0": 8.9, "3.0": 10.0, "4.0": 11.0 } },
+    "fiber_sm": { "label": "Fiber, single-mode (head end to remote)", "medium": "fiber", "connector_label": "Fiber connectors (pairs per fiber run)", "loss_db_per_100m_ghz": { "0.7": 0.0, "0.9": 0.0, "2.0": 0.0, "3.0": 0.0, "4.0": 0.0 },
+      "loss_note": "Optical fiber is not part of the RF cascade: the RF loss anchors are 0 on purpose. The link is modeled by the remote element (dl_gain_db, max_dl_out_dbm). Only the footage is carried (BOM). Optical loss budget and link margin are not checked." }
   },
   "cable_low_freq_note": "Anchors start at 0.7 GHz; below that the 0.7 GHz value is clamped (conservative for VHF 150 / UHF 450 - real low-band loss is lower). Upper anchors 3.0/4.0 GHz added in phase 3 so n41 (2.6 GHz) and n77 C-band (3.8 GHz) cascade runs interpolate instead of clamping at the 2.0 GHz anchor; values are representative, edit per cable datasheet.",
   "parts": {
@@ -110,6 +115,10 @@
     "panel_das": { "label": "Panel antenna", "gain_db": 7.0, "max_port_dbm": 20.0 }
   },
   "repeater": { "label": "Off-air repeater (BDA)", "dl_gain_db": 65.0, "max_dl_out_dbm": 33.0, "ports": 2 },
+  "remote_note": "Remote unit: an active element fed from the head end (repeater or source) by a fiber run, with its own downlink output cap per band. Modeled like the repeater: out = min(in + dl_gain_db, max_dl_out_dbm), per-band cap via max_dl_out_dbm_per_band. Every value below is grade E (no published figure, no vendor datasheet loaded): replace with the selected OEM remote spec. dl_gain_db 0 means the fiber link is level-neutral (the head-end port power is passed through, then capped); optical splitting and fiber loss are not modeled. Each band is capped independently (composite power sharing across bands is not modeled).",
+  "remote": { "label": "Remote unit (fiber-fed active DAS)", "dl_gain_db": 0.0, "dl_gain_grade": "E", "dl_gain_ref": "estimate: level-neutral link; no OEM spec loaded",
+    "max_dl_out_dbm": 30.0, "max_dl_out_grade": "E", "max_dl_out_ref": "estimate: representative multi-band remote output per band; no OEM spec loaded, replace with the selected product",
+    "max_dl_out_dbm_per_band": {}, "ports": 1, "ports_grade": "E", "ports_ref": "estimate: one RF output feeding the zone distribution tree" },
   "source": {
     "label": "Off-air source (donor)",
     "subtype_default": "off_air",

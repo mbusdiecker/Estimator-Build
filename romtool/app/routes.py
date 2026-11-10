@@ -79,7 +79,8 @@ __version__ = "0.8.0"
 
 router = APIRouter(prefix="", tags=["romtool"])
 
-ELEMENT_TYPES = ("source", "repeater", "splitter", "tapper", "coupler", "antenna")
+ELEMENT_TYPES = ("source", "repeater", "remote", "splitter", "tapper", "coupler",
+                 "antenna")
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -192,7 +193,7 @@ def _new_id(prefix):
 
 def _auto_label(model, kind):
     counts = {"antenna": 0, "splitter": 0, "repeater": 0, "source": 0,
-              "tapper": 0, "coupler": 0, "cable_run": 0}
+              "tapper": 0, "coupler": 0, "cable_run": 0, "remote": 0}
     for _, el in _all_elements(model):
         if el.get("type") in counts:
             counts[el["type"]] += 1
@@ -202,6 +203,8 @@ def _auto_label(model, kind):
         return "SP%d" % (counts["splitter"] + 1)
     if kind == "cable_run":
         return "R%d" % (counts["cable_run"] + 1)
+    if kind == "remote":
+        return "RU%d" % (counts["remote"] + 1)
     if kind == "repeater":
         n = counts["repeater"]
         return "RPTR" if n == 0 else "RPTR%d" % (n + 1)
@@ -1758,7 +1761,8 @@ def _validate_element(model, cfg, el, creating):
     t = el.get("type")
     if t == "cable_run":
         nodes = {e["id"] for _, e in _all_elements(model)
-                 if e.get("type") in ("source", "repeater", "splitter", "tapper", "coupler", "antenna")}
+                 if e.get("type") in ("source", "repeater", "remote", "splitter", "tapper",
+                                      "coupler", "antenna")}
         for ref in ("from_id", "to_id"):
             _require(el.get(ref) in nodes,
                      "cable run %s must reference an existing chain element (%s)"
@@ -1815,7 +1819,7 @@ def add_element(pid: int, fid: str, payload: dict = Body(...)):
                 "from_id", "to_id", "port", "subtype", "donor_gain_db",
                 "feeder_loss_db", "dl_gain_db", "max_dl_out_dbm", "ports",
                 "gain_db", "max_port_dbm", "through_il_db", "tap_loss_db",
-                "coupled_loss_db", "ambient_dbm", "dl_gain_db_per_band",
+                "coupled_loss_db", "ambient_dbm", "dl_gain_db_per_band", "max_dl_out_dbm_per_band",
                 "injection_dbm"):
         if key in payload:
             el[key] = payload[key]
@@ -1850,7 +1854,7 @@ def patch_element(pid: int, eid: str, payload: dict = Body(...)):
                 "from_id", "to_id", "port", "label", "donor_gain_db",
                 "feeder_loss_db", "dl_gain_db", "max_dl_out_dbm", "ports",
                 "gain_db", "max_port_dbm", "through_il_db", "tap_loss_db",
-                "coupled_loss_db", "ambient_dbm", "dl_gain_db_per_band",
+                "coupled_loss_db", "ambient_dbm", "dl_gain_db_per_band", "max_dl_out_dbm_per_band",
                 "subtype", "injection_dbm")
     for key in editable:
         if key in payload:

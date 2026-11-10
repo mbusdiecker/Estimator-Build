@@ -40,7 +40,7 @@ import time
 from array import array
 
 from . import config as cfgmod
-from .cascade import solve_cascade
+from .cascade import remote_max_out_dbm, solve_cascade
 from .lossmodel import LossModelError, resolve_loss_model
 from .physics import scale_wall_loss_db
 from .geometry import build_wall_index, ray_wall_crossings
@@ -63,11 +63,14 @@ DEFAULTS = {
     "donor_feeder_length_m": 2.0,
     "slack_m_per_run": 3.0,
     "floor_height_m": 4.0,
+    "max_remotes": 16,
+    "fiber_cable_id": "fiber_sm",
 }
 
 SOURCE_KEYS = ("subtype", "donor_gain_db", "feeder_loss_db", "injection_dbm",
                "ambient_dbm")
 REPEATER_KEYS = ("dl_gain_db", "max_dl_out_dbm", "ports", "dl_gain_db_per_band")
+REMOTE_KEYS = ("dl_gain_db", "max_dl_out_dbm", "max_dl_out_dbm_per_band", "ports")
 
 _FILL_SAMPLES = 24
 _MIN_CRIT_POINTS = 12
@@ -283,6 +286,49 @@ def _pct(cov, n_in):
 
 # ------------------------------------------------------------------ requests
 
+def _parse_remotes(config, ap, raw, feed_element_id):
+    """`remotes`: omitted/false (off, the default), true (auto-size), an int
+    (fixed count) or a dict {count, max_count, fiber_cable_id, dl_gain_db,
+    max_dl_out_dbm, max_dl_out_dbm_per_band, ports, enabled}."""
+    if raw is None or raw is False:
+        return {"enabled": False}
+    if raw is True:
+        raw = {}
+    elif isinstance(raw, int) and not isinstance(raw, bool):
+        raw = {"count": raw}
+    if not isinstance(raw, dict):
+        raise AutoplaceError("remotes must be true, a count, or an object")
+    if raw.get("enabled") is False:
+        return {"enabled": False}
+    if not isinstance(config.get("remote"), dict):
+        raise AutoplaceError("config has no 'remote' element block")
+    if feed_element_id:
+        raise AutoplaceError("remotes need their own head-end: feed_element_id "
+                             "cannot be combined with remotes")
+    count = raw.get("count")
+    if count is not None:
+        count = int(_num(count, "remotes.count"))
+        if count < 1:
+            raise AutoplaceError("remotes.count must be >= 1")
+    max_count = int(_num(raw.get("max_count", ap["max_remotes"]), "remotes.max_count"))
+    if max_count < 1:
+        raise AutoplaceError("remotes.max_count must be >= 1")
+    fiber = raw.get("fiber_cable_id") or ap["fiber_cable_id"]
+    if fiber not in config.get("cables", {}):
+        raise AutoplaceError("fiber_cable_id '%s' is not in config cables" % fiber)
+    element = {}
+    for k in REMOTE_KEYS:
+        if k in raw:
+            element[k] = raw[k]
+    for k in raw:
+        if k not in REMOTE_KEYS + ("count", "max_count", "fiber_cable_id", "enabled"):
+            raise AutoplaceError("remotes option '%s' not allowed (use %s)"
+                                 % (k, ", ".join(REMOTE_KEYS + ("count", "max_count",
+                                                                "fiber_cable_id"))))
+    return {"enabled": True, "count": count, "max_count": max_count,
+            "fiber": fiber, "element": element}
+
+
 def _parse_request(model, config, floor, request):
     ap = _ap_cfg(config)
     req = request or {}
@@ -377,6 +423,7 @@ def _parse_request(model, config, floor, request):
         outline = None
 
     head = req.get("headend") or {}
+    remotes = _parse_remotes(config, ap, req.get("remotes"), req.get("feed_element_id"))
     return {
         "ap": ap, "bands": ids, "antenna_id": antenna_id,
         "threshold_dbm": thr, "coverage_target_pct": pct, "nfpa": nfpa,
@@ -384,7 +431,7 @@ def _parse_request(model, config, floor, request):
         "step": step, "cap": cap, "source": src, "rep": rep,
         "use_repeater": bool(req.get("use_repeater", True)),
         "trunk": trunk, "branch": branch, "donor": donor, "ways": ways,
-        "outline": outline, "headend": head,
+        "outline": outline, "headend": head, "remotes": remotes,
         "feed_element_id": req.get("feed_element_id"),
     }
 
@@ -474,17 +521,27 @@ class _Chain:
         self.p = p
         self.slack = float(p["ap"]["slack_m_per_run"])
         self.elements = []
-        self.counts = {"antenna": 0, "splitter": 0, "run": 0}
+        self.counts = {"antenna": 0, "splitter": 0, "run": 0, "remote": 0,
+                       "fiber_run": 0}
+        self.remote_info = []
+        self.fiber_m = 0.0
 
-    def _run(self, frm, to, cable_id):
+    def _run(self, frm, to, cable_id, fiber=False):
         d_px = abs(frm["x"] - to["x"]) + abs(frm["y"] - to["y"])
         length = round(d_px / self.ppm + self.slack, 2)
         self.counts["run"] += 1
+        if fiber:
+            self.counts["fiber_run"] += 1
+            self.fiber_m += length
         self.elements.append({
             "id": "%s_auto_r%d" % (self.fid, self.counts["run"]),
             "type": "cable_run", "label": "AR%d" % self.counts["run"],
             "from_id": frm["id"], "to_id": to["id"], "cable_id": cable_id,
             "length_m": length, AUTO_FLAG: True})
+        return length
+
+    def _cable_for(self, node):
+        return self.p["branch"] if node["kind"] == "antenna" else self.p["trunk"]
 
     def antenna(self, x, y):
         self.counts["antenna"] += 1
@@ -504,12 +561,21 @@ class _Chain:
         self.elements.append(el)
         return {"id": el["id"], "x": el["x"], "y": el["y"], "kind": "splitter"}
 
-    def build(self, positions, headend_xy, feed):
-        """Tree of splitters over `positions`. `feed` is None (build a
-        source + repeater head-end) or an existing element dict to feed from."""
-        p = self.p
-        ways = p["ways"]
-        cur = [self.antenna(x, y) for x, y in positions]
+    def remote(self, x, y):
+        self.counts["remote"] += 1
+        n = self.counts["remote"]
+        el = {"id": "%s_auto_u%d" % (self.fid, n), "type": "remote",
+              "label": "RU%d" % n, "x": round(x, 1), "y": round(y, 1),
+              AUTO_FLAG: True}
+        el.update(copy.deepcopy(self.p["remotes"]["element"]))
+        self.elements.append(el)
+        return {"id": el["id"], "x": el["x"], "y": el["y"], "kind": "remote"}
+
+    def tree(self, ants, feed_xy=None):
+        """Equal-split splitter tree over antenna nodes; returns its root
+        node (the single antenna when only one)."""
+        ways = self.p["ways"]
+        cur = list(ants)
         while len(cur) > ways:
             groups = _partition(cur, int(math.ceil(len(cur) / float(ways))), ways)
             nxt = []
@@ -520,23 +586,57 @@ class _Chain:
                 sp = self.splitter(sum(c["x"] for c in grp) / len(grp),
                                    sum(c["y"] for c in grp) / len(grp), len(grp))
                 for c in grp:
-                    self._run(sp, c, p["branch"] if c["kind"] == "antenna" else p["trunk"])
+                    self._run(sp, c, self._cable_for(c))
                 nxt.append(sp)
             cur = nxt
         if len(cur) == 1:
-            root = cur[0]
-        else:
-            root = self.splitter(sum(c["x"] for c in cur) / len(cur),
-                                 sum(c["y"] for c in cur) / len(cur), len(cur))
-            for c in cur:
-                self._run(root, c, p["branch"] if c["kind"] == "antenna" else p["trunk"])
-        root_cable = p["branch"] if root["kind"] == "antenna" else p["trunk"]
+            return cur[0]
+        root = self.splitter(sum(c["x"] for c in cur) / len(cur),
+                             sum(c["y"] for c in cur) / len(cur), len(cur))
+        for c in cur:
+            self._run(root, c, self._cable_for(c))
+        return root
+
+    def _head(self, headend_xy, n_remotes=0):
+        """Source (+ repeater) at the head-end; returns (source element,
+        the node the first run hangs from)."""
+        p = self.p
+        hx, hy = headend_xy
+        src_el = {"id": "%s_auto_src" % self.fid, "type": "source", "label": "ASRC",
+                  "x": hx, "y": hy, AUTO_FLAG: True}
+        src_el.update(copy.deepcopy(p["source"]))
+        self.elements.append(src_el)
+        head = {"id": src_el["id"], "x": hx, "y": hy, "kind": "source"}
+        if p["use_repeater"]:
+            rep_el = {"id": "%s_auto_rep" % self.fid, "type": "repeater",
+                      "label": "ARPTR", "x": hx, "y": hy, AUTO_FLAG: True}
+            rep_el.update(copy.deepcopy(p["rep"]))
+            if n_remotes and "ports" not in p["rep"]:
+                rep_el["ports"] = max(n_remotes, 2)  # one fiber port per remote
+            self.elements.append(rep_el)
+            self.counts["run"] += 1
+            self.elements.append({
+                "id": "%s_auto_r%d" % (self.fid, self.counts["run"]),
+                "type": "cable_run", "label": "AR%d" % self.counts["run"],
+                "from_id": src_el["id"], "to_id": rep_el["id"],
+                "cable_id": p["donor"],
+                "length_m": float(p["ap"]["donor_feeder_length_m"]),
+                AUTO_FLAG: True})
+            head = {"id": rep_el["id"], "x": hx, "y": hy, "kind": "repeater"}
+        return src_el, head
+
+    def build(self, positions, headend_xy, feed):
+        """Tree of splitters over `positions`. `feed` is None (build a
+        source + repeater head-end) or an existing element dict to feed from."""
+        p = self.p
+        cur = [self.antenna(x, y) for x, y in positions]
+        root = self.tree(cur)
+        root_cable = self._cable_for(root)
 
         hx, hy = headend_xy
         info = {}
         if feed is not None:
             fx, fy = float(feed.get("x", hx)), float(feed.get("y", hy))
-            src = {"id": feed["id"], "x": fx, "y": fy}
             d_px = abs(fx - root["x"]) + abs(fy - root["y"])
             extra = abs(int(feed["_level"]) - int(self.p["_level"])) * float(
                 p["ap"]["floor_height_m"])
@@ -550,34 +650,47 @@ class _Chain:
             info["feed"] = feed["id"]
             return root, info
 
-        src_el = {"id": "%s_auto_src" % self.fid, "type": "source", "label": "ASRC",
-                  "x": hx, "y": hy, AUTO_FLAG: True}
-        src_el.update(copy.deepcopy(p["source"]))
-        self.elements.append(src_el)
-        head = {"id": src_el["id"], "x": hx, "y": hy}
-        if p["use_repeater"]:
-            rep_el = {"id": "%s_auto_rep" % self.fid, "type": "repeater",
-                      "label": "ARPTR", "x": hx, "y": hy, AUTO_FLAG: True}
-            rep_el.update(copy.deepcopy(p["rep"]))
-            self.elements.append(rep_el)
-            self.counts["run"] += 1
-            self.elements.append({
-                "id": "%s_auto_r%d" % (self.fid, self.counts["run"]),
-                "type": "cable_run", "label": "AR%d" % self.counts["run"],
-                "from_id": src_el["id"], "to_id": rep_el["id"],
-                "cable_id": p["donor"],
-                "length_m": float(p["ap"]["donor_feeder_length_m"]),
-                AUTO_FLAG: True})
-            head = {"id": rep_el["id"], "x": hx, "y": hy}
-        d_px = abs(hx - root["x"]) + abs(hy - root["y"])
-        self.counts["run"] += 1
-        self.elements.append({
-            "id": "%s_auto_r%d" % (self.fid, self.counts["run"]),
-            "type": "cable_run", "label": "AR%d" % self.counts["run"],
-            "from_id": head["id"], "to_id": root["id"], "cable_id": root_cable,
-            "length_m": round(d_px / self.ppm + self.slack, 2), AUTO_FLAG: True})
+        src_el, head = self._head(headend_xy)
+        self._run(head, root, root_cable)
         info["source"] = src_el["id"]
         return root, info
+
+    def build_remotes(self, positions, headend_xy, n_remotes):
+        """Head-end (source + repeater) at one location, `n_remotes` remote
+        units fed by fiber, each with its own splitter tree over a zone of
+        antennas. Zones come from the same recursive bisection as the
+        splitter clustering; each remote sits at its zone's load centre (the
+        centroid of the zone's antennas; the nearest antenna when an outline
+        excludes the centroid)."""
+        p = self.p
+        ants = [self.antenna(x, y) for x, y in positions]
+        n_remotes = max(1, min(int(n_remotes), len(ants)))
+        if n_remotes == 1:
+            zones = [ants]
+        else:
+            zones = _partition(ants, n_remotes,
+                               int(math.ceil(len(ants) / float(n_remotes))))
+        _, head = self._head(headend_xy, n_remotes)
+        for zone in zones:
+            cx = sum(a["x"] for a in zone) / len(zone)
+            cy = sum(a["y"] for a in zone) / len(zone)
+            ol = p["outline"]
+            if ol is not None and not _inside(cx, cy, ol):
+                near = min(zone, key=lambda a: ((a["x"] - cx) ** 2 + (a["y"] - cy) ** 2,
+                                                a["id"]))
+                cx, cy = near["x"], near["y"]
+            ru = self.remote(cx, cy)
+            root = self.tree(zone)
+            self._run(ru, root, self._cable_for(root))
+            fiber_len = self._run(head, ru, p["remotes"]["fiber"], fiber=True)
+            self.remote_info.append({
+                "element_id": ru["id"], "label": "RU%d" % self.counts["remote"],
+                "x_px": ru["x"], "y_px": ru["y"],
+                "x_m": round(ru["x"] / self.ppm, 2),
+                "y_m": round(ru["y"] / self.ppm, 2),
+                "antennas": len(zone), "fiber_length_m": fiber_len,
+                "antenna_ids": [a["id"] for a in zone]})
+        return head
 
 
 # ------------------------------------------------------------------- planner
@@ -1069,15 +1182,54 @@ def autoplace_floor(model, config, floor_id, request):
     area_m2 = ((_poly_area(p["outline"]) if p["outline"] else float(w_px * h_px))
                / (ppm * ppm))
 
-    def install_and_solve(positions):
-        ch = _Chain(floor, ppm, p, config)
-        if positions:  # none needed when existing antennas already meet the target
-            ch.build(positions, headend_xy, feed)
+    def solve_chain(ch):
         floor["elements"] = list(base_elements) + ch.elements
         sol = solve_cascade(model, config)
         if sol["errors"]:
             raise AutoplaceError(["cascade: " + e for e in sol["errors"]])
+        return sol
+
+    def min_port_dbm(ch, sol):
+        ids = {e["id"] for e in ch.elements if e["type"] == "antenna"}
+        vals = [a.get("port_uncapped_dbm", a["in_dbm"])
+                for bid in p["bands"] for a in sol["bands"][bid]["antennas"]
+                if a["element_id"] in ids]
+        return min(vals) if vals else None
+
+    def install_remotes(positions):
+        """Smallest remote count (zones) whose link budget closes: every
+        antenna port at or above min_antenna_port_dbm on every band. A fixed
+        remotes.count skips the search. When no count closes (for example a
+        head-end level that is too low), grow only while the worst port
+        return the smallest count whose worst port is within 0.25 dB of the best."""
+        rem = p["remotes"]
+        n = len(positions)
+        r_lo = min(rem["count"] or 1, n)
+        r_hi = r_lo if rem["count"] else max(r_lo, min(rem["max_count"], n))
+        floor_dbm = float(ap["min_antenna_port_dbm"])
+        tried = []
+        for r in range(r_lo, r_hi + 1):
+            ch = _Chain(floor, ppm, p, config)
+            ch.build_remotes(positions, headend_xy, r)
+            sol = solve_chain(ch)
+            worst = min_port_dbm(ch, sol)
+            ch.closed = worst is None or worst >= floor_dbm - 1e-9
+            ch.worst_port_dbm = worst
+            if ch.closed or rem["count"]:
+                return ch, sol
+            tried.append((ch, sol, worst))
+        best = max(t[2] for t in tried)
+        ch, sol, _ = next(t for t in tried if t[2] >= best - 0.25)
+        floor["elements"] = list(base_elements) + ch.elements
         return ch, sol
+
+    def install_and_solve(positions):
+        if positions and p["remotes"]["enabled"]:
+            return install_remotes(positions)
+        ch = _Chain(floor, ppm, p, config)
+        if positions:  # none needed when existing antennas already meet the target
+            ch.build(positions, headend_xy, feed)
+        return ch, solve_chain(ch)
 
     fixed = _fixed_antennas(model, floor, base_elements)
 
@@ -1225,6 +1377,40 @@ def autoplace_floor(model, config, floor_id, request):
     counts = {"antennas": final["chain"].counts["antenna"],
               "splitters": final["chain"].counts["splitter"],
               "cable_runs": final["chain"].counts["run"]}
+    remotes_out = None
+    if p["remotes"]["enabled"]:
+        ch = final["chain"]
+        counts["remotes"] = ch.counts["remote"]
+        counts["fiber_runs"] = ch.counts["fiber_run"]
+        rem_el = {e["id"]: e for e in ch.elements if e["type"] == "remote"}
+        units = []
+        for ri in ch.remote_info:
+            u = dict(ri)
+            u.pop("antenna_ids", None)
+            u["out_dbm"] = {bid: next((n["out_dbm"] for n in sol["bands"][bid]["nodes"]
+                                       if n["element_id"] == ri["element_id"]), None)
+                            for bid in p["bands"]}
+            u["max_dl_out_dbm"] = {
+                bid: remote_max_out_dbm(rem_el[ri["element_id"]],
+                                        config.get("remote", {}), bid)
+                for bid in p["bands"]}
+            units.append(u)
+        closed = getattr(ch, "closed", True)
+        remotes_out = {
+            "count": ch.counts["remote"], "fixed_count": p["remotes"]["count"],
+            "fiber_m": round(ch.fiber_m, 2), "fiber_cable_id": p["remotes"]["fiber"],
+            "head_end": {"x_px": headend_xy[0], "y_px": headend_xy[1]},
+            "budget_closed": bool(closed),
+            "worst_antenna_port_dbm": (round(ch.worst_port_dbm, 2)
+                                       if getattr(ch, "worst_port_dbm", None) is not None
+                                       else None),
+            "units": units}
+        if not closed:
+            warnings.append(
+                "remotes: the link budget does not close at %d remote(s) "
+                "(worst antenna port %.1f dBm < %.1f dBm); raise the head-end "
+                "level or the remote output, or allow more remotes"
+                % (ch.counts["remote"], ch.worst_port_dbm, min_port))
     total_ants = sum(1 for fl in model.get("floors", [])
                      for el in fl.get("elements", []) if el.get("type") == "antenna")
 
@@ -1264,6 +1450,7 @@ def autoplace_floor(model, config, floor_id, request):
         "planning_eirp_dbm": {bid: round(v, 2) for bid, v in e_plan.items()},
         "antennas": ant_rows,
         "elements_added": counts,
+        "remotes": remotes_out,
         "headend": {"x_px": headend_xy[0], "y_px": headend_xy[1],
                     "feed_element_id": p["feed_element_id"]},
         "cascade": {"min_antenna_port_dbm": min_in,
