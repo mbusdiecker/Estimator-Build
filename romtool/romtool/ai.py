@@ -58,6 +58,7 @@ SCHEMAS = {
 _REQUIRED_KEYS = {
     "rfp_scan": ("requirements", "scope_matrix", "gaps"),
     "scenario_suggest": ("suggestions",),
+    "perimeter_roi": ("rect",),
     "bid_memo": ("memo",),
 }
 
@@ -147,7 +148,7 @@ def _content_to_json(content):
         raise AiResponseError("gateway content is not the documented JSON") from None
 
 
-def _chat(cfg, endpoint_key, user_text):
+def _chat(cfg, endpoint_key, user_text, user_content=None):
     """Send one completion for an endpoint; returns the parsed result dict."""
     prompts = cfg.get("prompts") or {}
     messages = [
@@ -158,7 +159,8 @@ def _chat(cfg, endpoint_key, user_text):
     instruction = prompts.get("%s_instruction" % endpoint_key)
     if instruction:
         messages.append({"role": "system", "content": instruction})
-    messages.append({"role": "user", "content": user_text})
+    messages.append({"role": "user",
+                     "content": user_content if user_content is not None else user_text})
     url = cfg["base_url"].rstrip("/") + "/chat/completions"
     body = {
         "model": cfg["model"], "messages": messages,
@@ -230,3 +232,31 @@ def _trim_recap(recap):
     out["line_quality_mix"] = kinds
     out["n_lines"] = len(lines)
     return out
+
+
+# ------------------------------------------------------- perimeter box proposal
+
+def propose_roi(png_bytes, width, height, cfg=None):
+    """Ask the gateway for the box around the building on a plan image (gray PNG,
+    width x height px). Returns {"rect": [x0, y0, x1, y1]} in those pixels, clamped
+    to the image. Image input goes in the user message as an image_url data URI."""
+    import base64
+    cfg = cfg or load_ai_config()
+    data_uri = "data:image/png;base64," + base64.b64encode(png_bytes).decode("ascii")
+    content = [
+        {"type": "text", "text": "Plan image, %d x %d px. Return the JSON object." % (width, height)},
+        {"type": "image_url", "image_url": {"url": data_uri}},
+    ]
+    result = _chat(cfg, "perimeter_roi", "plan image %dx%d" % (width, height),
+                   user_content=content)
+    rect = result.get("rect")
+    if (not isinstance(rect, list) or len(rect) != 4
+            or not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in rect)):
+        raise AiResponseError("gateway rect is not four numbers")
+    x0, x1 = sorted((float(rect[0]), float(rect[2])))
+    y0, y1 = sorted((float(rect[1]), float(rect[3])))
+    x0, x1 = max(0.0, x0), min(float(width), x1)
+    y0, y1 = max(0.0, y0), min(float(height), y1)
+    if x1 - x0 < 2 or y1 - y0 < 2:
+        raise AiResponseError("gateway rect is empty after clamping to the image")
+    return {"rect": [x0, y0, x1, y1], "model": cfg.get("model"), "gateway": cfg.get("base_url")}

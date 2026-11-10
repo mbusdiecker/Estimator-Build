@@ -53,6 +53,7 @@ DEFAULTS = {
     "frame_margin_frac": 0.03,
     "frame_blank_frac": 0.5,
     "frame_peel_max": 3,
+    "roi_cut_min_px": 2,
     "gap_m": 1.0,
     "gap_frac_unknown": 0.03,
     "keep_regions": 1,
@@ -100,6 +101,8 @@ def perimeter_params(config, **over):
         raise PerimeterError("frame_frac must be 0.2..1")
     if not 0.2 <= p["frame_min_span"] <= 1.0 or not 0 < p["frame_margin_frac"] <= 0.5:
         raise PerimeterError("frame_min_span must be 0.2..1 and frame_margin_frac 0..0.5")
+    if p["roi_cut_min_px"] < 1:
+        raise PerimeterError("roi_cut_min_px must be at least 1")
     if not 0 < p["frame_blank_frac"] <= 1 or p["frame_peel_max"] < 0:
         raise PerimeterError("frame_blank_frac must be in (0, 1] and frame_peel_max >= 0")
     if p["keep_regions"] < 1:
@@ -212,28 +215,53 @@ def _ink_grid(gray, iw, ih, s, W, H, dark_threshold, ink_fraction):
     return ink
 
 
-def _filter_ink(ink, W, H, min_feat_cells, frame_frac):
-    """Drop specks (bbox below min_feat_cells in both directions) and sheet frames."""
+def _filter_ink(ink, W, H, min_feat_cells, frame_frac, gap_cells):
+    """Drop sheet frames, then specks. A component smaller than min_feat_cells in
+    both directions is a speck only when it stands alone: no other ink lies within
+    gap_cells of it. Columns and short wall pieces that sit a gap apart therefore
+    stay, and so does a line of them. Returns (keep, frames, specks, content):
+    keep is the filtered ink; content is ink with the sheet frames removed (specks
+    included), used by the blank-margin test."""
     lab, sizes, boxes = _label(ink, W, H, eight=True)
-    keep_ids = set()
     frame_ids = set()
-    frames = specks = 0
+    small = []
+    keep_ids = set()
     for L in range(1, len(sizes)):
         x0, y0, x1, y1 = boxes[L]
         bw, bh = x1 - x0 + 1, y1 - y0 + 1
         if bw >= frame_frac * W and bh >= frame_frac * H:
-            frames += 1
             frame_ids.add(L)
         elif max(bw, bh) < min_feat_cells:
-            specks += 1
+            small.append(L)
         else:
             keep_ids.add(L)
-    keep = bytearray(1 if L in keep_ids else 0 for L in lab)
+    frames = len(frame_ids)
     content = bytearray(ink)
-    for L in frame_ids:
+    if frame_ids:
         for i in range(W * H):
-            if lab[i] == L:
+            if lab[i] in frame_ids:
                 content[i] = 0
+    specks = 0
+    if small:
+        # ink (frames removed) grown by half the gap: two components merge when they
+        # are within gap_cells of each other
+        grown = _dilate(content, W, H, max(1, gap_cells // 2))
+        glab, _, _ = _label(grown, W, H, eight=True)
+        first = {}
+        for i in range(W * H):
+            L = lab[i]
+            if L and L not in first and L not in frame_ids:
+                first[L] = i
+        group_count = {}
+        for L, i in first.items():
+            g = glab[i]
+            group_count[g] = group_count.get(g, 0) + 1
+        for L in small:
+            if L in first and group_count.get(glab[first[L]], 0) >= 2:
+                keep_ids.add(L)
+            else:
+                specks += 1
+    keep = bytearray(1 if L in keep_ids else 0 for L in lab)
     return keep, frames, specks, content
 
 
@@ -490,9 +518,95 @@ def _peel_round(keep_ink, content, W, H, d_cells, p):
     return found
 
 
+def normalize_roi(roi):
+    """Region of interest as a closed polygon [[x, y], ...] in image pixels, or None.
+    Accepts [x0, y0, x1, y1] (a rectangle), a list of at least 3 [x, y] points, or
+    {"rect": ...} / {"polygon": ...}."""
+    if roi is None:
+        return None
+    if isinstance(roi, dict):
+        if "rect" in roi:
+            roi = roi["rect"]
+        elif "polygon" in roi:
+            roi = roi["polygon"]
+        else:
+            raise PerimeterError("roi needs a rect or a polygon")
+    if isinstance(roi, (list, tuple)) and len(roi) == 4 and all(
+            isinstance(v, (int, float)) and not isinstance(v, bool) for v in roi):
+        x0, x1 = sorted((float(roi[0]), float(roi[2])))
+        y0, y1 = sorted((float(roi[1]), float(roi[3])))
+        if x1 - x0 < 2 or y1 - y0 < 2:
+            raise PerimeterError("roi rectangle is too small")
+        return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]
+    if isinstance(roi, (list, tuple)) and len(roi) >= 3 and all(
+            isinstance(p, (list, tuple)) and len(p) == 2 for p in roi):
+        pts = [[float(x), float(y)] for x, y in roi]
+        if polygon_area(pts) < 4:
+            raise PerimeterError("roi polygon has no area")
+        return pts
+    raise PerimeterError("roi must be [x0, y0, x1, y1] or a list of at least 3 [x, y] points")
+
+
+def apply_roi(gray, iw, ih, poly):
+    """Gray bytes with everything outside the polygon set to blank paper (255)."""
+    out = bytearray(b"\xff") * (iw * ih)
+    n = len(poly)
+    for y in range(ih):
+        cy = y + 0.5
+        xs = []
+        j = n - 1
+        for i in range(n):
+            x1, y1 = poly[j]
+            x2, y2 = poly[i]
+            if (y1 > cy) != (y2 > cy):
+                xs.append(x1 + (cy - y1) * (x2 - x1) / (y2 - y1))
+            j = i
+        xs.sort()
+        base = y * iw
+        for a, b in zip(xs[0::2], xs[1::2]):
+            xa = max(0, int(math.ceil(a - 0.5)))
+            xb = min(iw, int(math.floor(b - 0.5)) + 1)
+            if xb > xa:
+                out[base + xa:base + xb] = gray[base + xa:base + xb]
+    return bytes(out)
+
+
+def _roi_cut_warnings(gray, iw, ih, poly, dark_threshold, min_px):
+    """Warn when ink crosses a box edge: a wall or line runs through the box boundary.
+    Checked on the plan before the box masks it, one pixel inside and outside each
+    edge, sampled every pixel along the edge."""
+    warnings = []
+    n = len(poly)
+    for k in range(n):
+        a, b = poly[k], poly[(k + 1) % n]
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        length = math.hypot(dx, dy)
+        if length <= 0:
+            continue
+        nx, ny = -dy / length * 1.5, dx / length * 1.5
+        hits = 0
+        steps = int(length)
+        for t in range(steps + 1):
+            x = a[0] + dx * t / max(1, steps)
+            y = a[1] + dy * t / max(1, steps)
+            p1 = (int(x + nx), int(y + ny))
+            p2 = (int(x - nx), int(y - ny))
+            if not (0 <= p1[0] < iw and 0 <= p1[1] < ih and 0 <= p2[0] < iw and 0 <= p2[1] < ih):
+                continue
+            d1 = gray[p1[1] * iw + p1[0]] < dark_threshold
+            d2 = gray[p2[1] * iw + p2[0]] < dark_threshold
+            if d1 and d2:
+                hits += 1
+        if hits >= min_px:
+            warnings.append("roi cuts through ink along box edge %d (%d px): the building or a "
+                            "line runs through the box. Enlarge the box, or trace without it."
+                            % (k + 1, hits))
+    return warnings
+
+
 # ------------------------------------------------------------------ tracing
 
-def trace_outline(gray, iw, ih, ppm=None, config=None, **options):
+def trace_outline(gray, iw, ih, ppm=None, config=None, roi=None, **options):
     """Trace the outer perimeter of the building on a plan image.
 
     gray: iw*ih bytes (0 black .. 255 white). ppm: floor pixels per metre, or None
@@ -507,6 +621,10 @@ def trace_outline(gray, iw, ih, ppm=None, config=None, **options):
         raise PerimeterError("image is %d x %d px (limit %d px): lower the DPI or downscale"
                              % (iw, ih, DEFAULT_MAX_PIXELS))
     warnings = []
+    roi_poly = normalize_roi(roi)
+    gray_full = gray
+    if roi_poly:
+        gray = apply_roi(gray, iw, ih, roi_poly)
     s = max(1, -(-max(iw, ih) // p["work_max_side"]))
     W, H = -(-iw // s), -(-ih // s)
     if ppm:
@@ -524,7 +642,8 @@ def trace_outline(gray, iw, ih, ppm=None, config=None, **options):
         simplify_px = max(1.0, 0.5 * gap_cells * s)
 
     ink = _ink_grid(gray, iw, ih, s, W, H, p["dark_threshold"], p["ink_fraction"])
-    keep_ink, frames, specks, content = _filter_ink(ink, W, H, min_feat, p["frame_frac"])
+    keep_ink, frames, specks, content = _filter_ink(ink, W, H, min_feat, p["frame_frac"],
+                                                    gap_cells)
     if frames:
         warnings.append("ignored %d sheet-border line(s) spanning the page" % frames)
     d_cells = max(int(round(p["frame_margin_frac"] * min(W, H))), 2 * gap_cells)
@@ -582,6 +701,9 @@ def trace_outline(gray, iw, ih, ppm=None, config=None, **options):
     if len(simp) < 3:
         raise PerimeterError("traced outline has fewer than 3 points")
     snapped = _snap_axes(simp, p["snap_deg"])
+    if roi_poly:
+        warnings.extend(_roi_cut_warnings(gray_full, iw, ih, roi_poly, p["dark_threshold"],
+                                          p["roi_cut_min_px"]))
     area_px = polygon_area(snapped)
     area_m2 = area_px / (ppm * ppm) if ppm else None
     return {
@@ -608,16 +730,16 @@ def scale_from_area(area_px, area_m2):
     return math.sqrt(float(area_px) / float(area_m2))
 
 
-def trace_floor(gray, iw, ih, ppm_known, config, area_m2=None, **options):
+def trace_floor(gray, iw, ih, ppm_known, config, area_m2=None, roi=None, **options):
     """Trace with the scale in hand. ppm_known is the floor's calibrated ppm, or None
     when the scale is not known. With area_m2 the scale is set from the traced area
     (two passes, so the metre-based settings use the new scale). Returns the trace
     dict plus `ppm` (the final scale) and `scale_source` ("from_area", "known" or
     "unknown")."""
     if area_m2 is not None:
-        first = trace_outline(gray, iw, ih, None, config, **options)
+        first = trace_outline(gray, iw, ih, None, config, roi=roi, **options)
         ppm1 = scale_from_area(first["area_px"], area_m2)
-        res = trace_outline(gray, iw, ih, ppm1, config, **options)
+        res = trace_outline(gray, iw, ih, ppm1, config, roi=roi, **options)
         ppm2 = scale_from_area(res["area_px"], area_m2)
         res = dict(res)
         res["ppm"] = ppm2
@@ -625,7 +747,7 @@ def trace_floor(gray, iw, ih, ppm_known, config, area_m2=None, **options):
         res["scale_source"] = "from_area"
         res["ppm_area_m2"] = float(area_m2)
         return res
-    res = trace_outline(gray, iw, ih, ppm_known, config, **options)
+    res = trace_outline(gray, iw, ih, ppm_known, config, roi=roi, **options)
     res["scale_source"] = "known" if ppm_known else "unknown"
     return res
 

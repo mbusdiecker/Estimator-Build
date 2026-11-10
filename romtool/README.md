@@ -795,6 +795,29 @@ If the trace covers more than 90 percent of the page, the request returns 422.
 Without a scale the metre values use pixel fallbacks (`gap_frac_unknown` 0.03 of
 the short side) and a warning says so.
 
+**Box (region of interest).** The plan and trace endpoints take `roi`: a box
+`[x0,y0,x1,y1]` or a polygon `[[x,y],...]` in image pixels (a JSON string on the
+plan endpoint, a JSON field on the trace body). Everything outside the box is
+blank paper before thresholding, so sheet borders, title blocks and other
+drawings outside the box are ignored. The box is stored on the floor and a
+re-trace reuses it; `roi: null` clears it, and a new plan import without a box
+clears the stored one. If ink crosses a box edge (dark one pixel inside and one
+outside, at least `roi_cut_min_px` pixels), the result carries a warning: the
+building is cut by the box. Enlarge the box. In the UI, the **Building box**
+tool drags the box and traces inside it.
+
+**AI box proposal (optional, off).** `POST .../perimeter/propose-roi` sends a
+downscaled copy of the stored plan to the configured AI gateway, takes the box it
+returns and traces inside it. It needs `config/ai.json` `perimeter_roi.enabled`
+set to `true` and a working gateway; otherwise it returns 503. The manual box
+and the trace endpoint do not need it.
+
+**Speck rule.** A small ink component (under `min_feature_m` in both directions)
+is dropped only when no other ink lies within half a gap distance of it. Columns
+and short wall pieces a gap apart stay and form the wall line. Text and symbols
+standing alone are still dropped. Text that touches a wall is kept, so draw a box
+that leaves title blocks and dimension strings outside it.
+
 **Edit.** `PATCH .../perimeter` with `{"points": [[x, y], ...]}` replaces the
 outline, `{"nudges": [{"index", "dx_m", "dy_m"}]}` moves single vertices
 (`dx_px`/`dy_px` without a scale), `{"clear": true}` removes it, and

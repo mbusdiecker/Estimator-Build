@@ -15,8 +15,9 @@ from romtool.clutter_map import PNG_SIG, decode_png, encode_gray_png
 from romtool.config import load_config
 from romtool.drawings import floor_layout_svg
 from romtool.geometry import point_in_polygon
-from romtool.perimeter import (PerimeterError, edit_outline, perimeter_params,
-                               polygon_area, scale_from_area, trace_floor, trace_outline)
+from romtool.perimeter import (PerimeterError, edit_outline, normalize_roi,
+                               perimeter_params, polygon_area, scale_from_area,
+                               trace_floor, trace_outline)
 
 W, H = 400, 300
 X0, Y0, X1, Y1 = 50, 50, 350, 250          # 300 x 200 px box, outer face
@@ -104,16 +105,17 @@ def test_interior_walls_do_not_change_the_perimeter(cfg):
 def test_text_near_the_border_does_not_leak_in(cfg):
     base = trace_outline(bytes(building()), W, H, 10.0, cfg)
     g = building()
-    # 3 x 5 px glyphs, 1 px apart, 4 px outside the east wall (inside the gap-close radius)
+    # 3 x 5 px glyphs, 1 px apart, 25 px outside the east wall: beyond 2 gap distances,
+    # so the glyph groups never reach the wall (text touching a wall is kept; see the
+    # ROI test)
     for row, y in enumerate((100, 112, 124)):
         for i in range(6):
-            fill(g, W, X1 + 4 + i * 4, y, X1 + 7 + i * 4, y + 5)
+            fill(g, W, X1 + 25 + i * 4, y, X1 + 28 + i * 4, y + 5)
     # and glyphs just inside the north wall
     for i in range(6):
         fill(g, W, 120 + i * 4, Y0 + 5, 123 + i * 4, Y0 + 10)
     res = trace_outline(bytes(g), W, H, 10.0, cfg)
     assert res["outline"] == base["outline"]
-    assert res["work"]["specks_dropped"] >= 1
 
 
 def test_sheet_border_frame_is_ignored(cfg):
@@ -425,3 +427,149 @@ def test_api_plan_rejects_unknown_formats_and_missing_image(client):
     bad = client.post(base + "/plan", files={"file": ("x.gif", b"GIF89a....", "image/gif")})
     assert bad.status_code == 422
     assert client.post(base + "/perimeter/trace", json={}).status_code == 422
+
+
+# ------------------------------------------------------------ ROI, columns, AI
+
+def double_frame_canvas():
+    """500 x 380 sheet: double border (the inner line touches the building's east
+    wall, 4 px gap) and title-block text below the frame. Building: L with a notch."""
+    CW, CH = 500, 380
+    g = blank(CW, CH)
+    frame_rect(g, CW, 10, 10, 490, 370)
+    frame_rect(g, CW, 16, 16, 386, 362)               # inner border, east line at 384..386
+    box_walls(g, CW, 60, 60, 380, 240)                # east arm, east wall outer face at 380
+    box_walls(g, CW, 60, 60, 300, 300)                # south arm (notch 300..380 x 240..300)
+    for row in range(3):
+        for i in range(10):
+            fill(g, CW, 300 + i * 4, 374 + row * 2, 303 + i * 4, 379)
+    return g, CW, CH
+
+
+def test_roi_excludes_touching_double_frame_and_title_block(cfg):
+    g, CW, CH = double_frame_canvas()
+    roi = [40, 40, 383, 320]                          # tight box: frame (384) and title outside
+    res = trace_outline(bytes(g), CW, CH, 10.0, cfg, roi=roi)
+    want = 320 * 180 + 240 * 60                       # the L with its notch
+    assert close(res["area_px"], want, 0.03), res["area_px"]
+    assert len(res["outline"]) == 6
+    assert not any("roi cuts" in w for w in res["warnings"])
+
+
+def test_roi_keeps_the_notch(cfg):
+    g, CW, CH = double_frame_canvas()
+    res = trace_outline(bytes(g), CW, CH, 10.0, cfg, roi=[40, 40, 400, 320], frame_frac=0.99)
+    assert (300.0, 240.0) in [tuple(p) for p in res["outline"]]
+    assert close(res["area_px"], 320 * 180 + 240 * 60, 0.03)
+
+
+def test_roi_that_cuts_the_building_warns(cfg):
+    g = building()
+    res = trace_outline(bytes(g), W, H, 10.0, cfg, roi=[40, 40, 340, 270])
+    assert any("roi cuts through ink" in w for w in res["warnings"]), res["warnings"]
+
+
+def test_roi_polygon_and_rect_forms(cfg):
+    assert normalize_roi([1, 2, 30, 40]) == [[1.0, 2.0], [30.0, 2.0], [30.0, 40.0], [1.0, 40.0]]
+    assert normalize_roi({"polygon": [[0, 0], [10, 0], [0, 10]]})[2] == [0.0, 10.0]
+    assert normalize_roi(None) is None
+    with pytest.raises(PerimeterError):
+        normalize_roi([5, 5, 6, 6])                   # too small
+    with pytest.raises(PerimeterError):
+        normalize_roi("nope")
+    res = trace_outline(bytes(building()), W, H, 10.0, cfg,
+                        roi={"polygon": [[40, 40], [380, 40], [380, 280], [40, 280]]})
+    assert close(res["area_px"], AREA_PX, 0.03)
+
+
+def test_columns_only_exterior_traces_the_column_line(cfg):
+    """Exterior made of 5 px square columns on a 10 px pitch (5 px gaps). Each column
+    is below min_feature_m, but a column stands next to others, so it is kept and
+    the line closes."""
+    g = blank()
+    for x in range(X0, X1, 10):
+        fill(g, W, x, Y0, x + 5, Y0 + 5)
+        fill(g, W, x, Y1 - 5, x + 5, Y1)
+    for y in range(Y0, Y1, 10):
+        fill(g, W, X0, y, X0 + 5, y + 5)
+        fill(g, W, X1 - 5, y, X1, y + 5)
+    fill(g, W, X1 - 5, Y1 - 5, X1, Y1)                # corner column
+    res = trace_outline(bytes(g), W, H, 10.0, cfg)
+    assert close(res["area_px"], AREA_PX, 0.03), res["area_px"]
+    assert len(res["outline"]) == 4
+
+
+def test_isolated_speck_is_still_dropped(cfg):
+    g = building()
+    fill(g, W, 20, 20, 24, 24)                        # lone 4 px speck far from the building
+    res = trace_outline(bytes(g), W, H, 10.0, cfg)
+    assert res["work"]["specks_dropped"] >= 1
+    assert close(res["area_px"], AREA_PX, 0.03)
+
+
+def _roi_api_floor(client, name):
+    pid = _project(client, name)
+    fid = client.post("/projects/%d/floors" % pid,
+                      json={"name": "L1", "ppm": 10}).json()["floor"]["id"]
+    return pid, fid, "/projects/%d/floors/%s" % (pid, fid)
+
+
+def test_api_roi_is_stored_and_reused(client):
+    g, CW, CH = double_frame_canvas()
+    png = encode_gray_png(CW, CH, bytes(g))
+    pid, fid, base = _roi_api_floor(client, "ROI reuse")
+    r = client.post(base + "/plan", files={"file": ("p.png", png, "image/png")},
+                    params={"roi": "[40,40,382,320]"})
+    assert r.status_code == 200, r.text
+    assert r.json()["perimeter"]["roi"] == [[40.0, 40.0], [382.0, 40.0], [382.0, 320.0], [40.0, 320.0]]
+    assert close(r.json()["perimeter"]["area_px"], 320 * 180 + 240 * 60, 0.03)
+    again = client.post(base + "/perimeter/trace", json={})     # reuses the stored box
+    assert again.status_code == 200 and again.json()["roi"] == r.json()["perimeter"]["roi"]
+    assert close(again.json()["area_px"], 320 * 180 + 240 * 60, 0.03)
+    cleared = client.post(base + "/perimeter/trace", json={"roi": None})
+    assert cleared.status_code == 200 and cleared.json()["roi"] is None
+    bad = client.post(base + "/plan", files={"file": ("p.png", png, "image/png")},
+                      params={"roi": "not json"})
+    assert bad.status_code == 422
+
+
+def test_ai_box_proposal_is_off_by_default(client):
+    pid, fid, base = _roi_api_floor(client, "AI off")
+    png = encode_gray_png(W, H, bytes(building()))
+    assert client.post(base + "/plan", files={"file": ("p.png", png, "image/png")},
+                       params={"trace": "false"}).status_code == 200
+    r = client.post(base + "/perimeter/propose-roi", json={})
+    assert r.status_code == 503
+    assert "off" in r.text or "unreachable" in r.text
+
+
+def test_ai_box_proposal_with_mocked_gateway(client, monkeypatch):
+    import json as _json
+    from app import routes as routes_mod
+    from romtool import ai as ai_mod
+    pid, fid, base = _roi_api_floor(client, "AI on")
+    png = encode_gray_png(W, H, bytes(building()))
+    assert client.post(base + "/plan", files={"file": ("p.png", png, "image/png")},
+                       params={"trace": "false"}).status_code == 200
+    cfg = {"base_url": "http://gateway.test/v1", "model": "m", "api_key": None,
+           "temperature": 0.2, "max_tokens": 100, "timeout_seconds": 5,
+           "perimeter_roi": {"enabled": True, "max_side_px": 1024}, "prompts": {}}
+    seen = {}
+
+    def fake_post(url, payload, api_key=None, timeout=30.0):
+        seen["url"] = url
+        seen["images"] = sum(1 for m in payload["messages"]
+                             if isinstance(m["content"], list)
+                             for part in m["content"] if part.get("type") == "image_url")
+        return {"choices": [{"message": {"content": _json.dumps({"rect": [40, 40, 390, 290]})}}]}
+
+    monkeypatch.setattr(ai_mod, "load_ai_config", lambda path=None: cfg)
+    monkeypatch.setattr(ai_mod, "_http_post_json", fake_post)
+    r = client.post(base + "/perimeter/propose-roi", json={})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["proposed_roi"] == [40.0, 40.0, 390.0, 290.0]
+    assert seen["url"] == "http://gateway.test/v1/chat/completions" and seen["images"] == 1
+    assert close(body["area_px"], AREA_PX, 0.03)
+    assert body["roi"] == [[40.0, 40.0], [390.0, 40.0], [390.0, 290.0], [40.0, 290.0]]
+

@@ -133,6 +133,8 @@ function render() {
     }
   }
 
+  drawPerimeter(f);
+
   // heatmap overlay
   if (S.predict) drawHeatmap();
 
@@ -289,6 +291,7 @@ function nearestElement(mx, my, onlyChainNodes) {
 cv.addEventListener("mousemove", (ev) => {
   const [mx, my] = canvasPos(ev);
   S.hoverPt = [mx, my];
+  if (S.tool === "box" && S.boxDraft) { S.boxHover = [mx, my]; render(); return; }
   if (S.drag) {
     S.drag.el.x = mx; S.drag.el.y = my; render(); return;
   }
@@ -297,6 +300,7 @@ cv.addEventListener("mousemove", (ev) => {
 cv.addEventListener("mousedown", (ev) => {
   const [mx, my] = canvasPos(ev);
   if (S.tool === "wall") { S.wallDraft = [mx, my]; return; }
+  if (S.tool === "box") { S.boxDraft = [mx, my]; S.boxHover = [mx, my]; return; }
   if (S.tool === "select") {
     const hit = nearestElement(mx, my, false);
     if (hit) { S.drag = hit; S.sel = hit.el.id; S.selWall = null; inspect(hit.el); render(); }
@@ -304,6 +308,7 @@ cv.addEventListener("mousedown", (ev) => {
 });
 cv.addEventListener("mouseup", async (ev) => {
   const [mx, my] = canvasPos(ev);
+  if (S.tool === "box" && S.boxDraft) { await finishBox(mx, my); return; }
   if (S.tool === "wall" && S.wallDraft) {
     const [x1, y1] = S.wallDraft; S.wallDraft = null;
     if (Math.hypot(x1 - mx, y1 - my) > 2 / S.zoom) {
@@ -408,6 +413,7 @@ document.querySelectorAll(".tool[data-tool]").forEach((b) => {
     document.querySelectorAll(".tool").forEach((x) => x.classList.remove("active"));
     b.classList.add("active");
     toast(S.tool === "wall" ? "Drag on canvas to draw a wall (" + S.mat + ")" :
+          S.tool === "box" ? "Drag a box around the building; the outline is traced inside it" :
           S.tool === "cable" ? "Click chain element, then receiving element" :
           S.tool === "poly" ? "Click polygon corners; click near the first corner (or Finish) to close" :
           "Select tool");
@@ -487,6 +493,57 @@ async function deleteElement(id) {
 }
 
 /* ---------------- critical areas + NFPA report --------------------------- */
+function drawPerimeter(f) {
+  if (f.outline && f.outline.length >= 3) {
+    ctx.beginPath();
+    f.outline.forEach(([x, y], i) => {
+      const [sx, sy] = toScr(x, y);
+      if (i) ctx.lineTo(sx, sy); else ctx.moveTo(sx, sy);
+    });
+    ctx.closePath();
+    ctx.strokeStyle = "#05cdfb"; ctx.lineWidth = 3; ctx.stroke();
+  }
+  if (f.roi && f.roi.length >= 3 && !S.boxDraft) {
+    ctx.beginPath();
+    f.roi.forEach(([x, y], i) => {
+      const [sx, sy] = toScr(x, y);
+      if (i) ctx.lineTo(sx, sy); else ctx.moveTo(sx, sy);
+    });
+    ctx.closePath();
+    ctx.setLineDash([6, 4]); ctx.strokeStyle = "#868e92"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if (S.boxDraft && S.boxHover) {
+    const [a, b] = toScr(S.boxDraft[0], S.boxDraft[1]);
+    const [c, d] = toScr(S.boxHover[0], S.boxHover[1]);
+    ctx.setLineDash([6, 4]); ctx.strokeStyle = "#f37d28"; ctx.lineWidth = 2;
+    ctx.strokeRect(Math.min(a, c), Math.min(b, d), Math.abs(c - a), Math.abs(d - b));
+    ctx.setLineDash([]);
+  }
+}
+
+async function finishBox(mx, my) {
+  const [x0, y0] = S.boxDraft;
+  S.boxDraft = null; S.boxHover = null;
+  if (Math.abs(mx - x0) < 4 / S.zoom || Math.abs(my - y0) < 4 / S.zoom) { render(); return; }
+  const f = floor();
+  if (!f) { render(); return; }
+  const roi = [Math.min(x0, mx), Math.min(y0, my), Math.max(x0, mx), Math.max(y0, my)]
+    .map((v) => Math.round(v));
+  toast("Tracing inside the box...");
+  try {
+    const r = await api(P() + "/floors/" + S.floorId + "/perimeter/trace", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roi }),
+    });
+    f.outline = r.outline; f.roi = r.roi; f.perimeter = { method: r.method, warnings: r.warnings };
+    (r.warnings || []).forEach((w) => toast(w, true));
+    toast("Outline traced: " + (r.area_m2 != null ? Math.round(r.area_m2) + " m2" : "area unknown") +
+          ", " + r.outline.length + " points");
+  } catch (e) { toast(e.message, true); }
+  render();
+}
+
 async function commitPoly() {
   if (!S.polyDraft || S.polyDraft.length < 3) { toast("need at least 3 corners", true); return; }
   const label = prompt("Critical-area label (e.g. IT room):", "Critical area");

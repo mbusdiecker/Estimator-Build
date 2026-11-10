@@ -47,7 +47,7 @@ from romtool import actuals as actuals_mod
 from romtool.autoplace import AutoplaceError, autoplace_floor
 from romtool.clutter_map import (PNG_SIG, ClutterMapError, apply_overrides, build_clutter_map,
                                  decode_image, encode_gray_png, render_pdf_page)
-from romtool.perimeter import (PerimeterError, edit_outline, polygon_area,
+from romtool.perimeter import (PerimeterError, edit_outline, normalize_roi, polygon_area,
                                scale_from_area, trace_floor)
 from romtool.bom import bom_csv, generate_bom
 from romtool.bidform import build_bid_form, bid_form_pdf, bid_form_xlsx
@@ -1817,6 +1817,7 @@ def _perimeter_public(floor):
         "scale": _scale_public(floor),
         "warnings": meta.get("warnings", []),
         "work": meta.get("work"),
+        "roi": floor.get("roi"),
     }
 
 
@@ -1835,6 +1836,79 @@ def _perim_error(exc):
     return HTTPException(status_code=422, detail={"errors": [str(exc)]})
 
 
+def _roi_value(value):
+    """Box from a query string or body: JSON [x0,y0,x1,y1] or [[x,y],...]; None clears."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except ValueError:
+            raise HTTPException(status_code=422, detail={
+                "errors": ["roi must be JSON: [x0,y0,x1,y1] or [[x,y],...]"]})
+    try:
+        return normalize_roi(value)
+    except PerimeterError as exc:
+        raise _perim_error(exc)
+
+
+def _stored_roi(floor):
+    return floor.get("roi") or None
+
+
+PERIM_PROPOSE_SCHEMA = {
+    "request": {"plan": "stored floor image (no body needed)"},
+    "response": {"proposed_roi": [0, 0, 0, 0], "outline": "[[x, y], ...]",
+                 "warnings": ["..."]},
+    "enable": "config/ai.json perimeter_roi.enabled = true",
+}
+
+
+@router.post("/projects/{pid}/floors/{fid}/perimeter/propose-roi")
+def propose_floor_roi(pid: int, fid: str, payload: dict = Body(default_factory=dict)):
+    """Optional and off by default (config/ai.json perimeter_roi.enabled). Sends a
+    downscaled copy of the stored plan to the AI gateway, which returns the box around
+    the building; the trace runs inside that box and the box is stored on the floor.
+    503 when off or the gateway is unreachable; the manual box and the trace endpoint
+    work without it."""
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    floor = _find_floor(model, fid)
+    payload = payload or {}
+    area = _area_arg(payload.get("area_m2"), payload.get("area_sqft"))
+    try:
+        ai_cfg = ai_mod.load_ai_config()
+    except ai_mod.AiUnavailable as exc:
+        return _ai_503(PERIM_PROPOSE_SCHEMA, str(exc))
+    roi_cfg = ai_cfg.get("perimeter_roi") or {}
+    if not roi_cfg.get("enabled"):
+        return _ai_503(PERIM_PROPOSE_SCHEMA,
+                       "perimeter box proposal is off (config/ai.json perimeter_roi.enabled)")
+    iw, ih, gray = _floor_image_gray(floor)
+    max_side = int(roi_cfg.get("max_side_px") or 1024)
+    k = max(1, -(-max(iw, ih) // max_side))
+    sw, sh = -(-iw // k), -(-ih // k)
+    small = bytes(gray[y * iw + x] for y in range(0, ih, k) for x in range(0, iw, k))
+    try:
+        prop = ai_mod.propose_roi(encode_gray_png(sw, sh, small), sw, sh, ai_cfg)
+    except ai_mod.AiUnavailable as exc:
+        return _ai_503(PERIM_PROPOSE_SCHEMA, str(exc))
+    except ai_mod.AiResponseError as exc:
+        return _ai_502(PERIM_PROPOSE_SCHEMA, str(exc))
+    x0, y0, x1, y1 = prop["rect"]
+    box = [x0 * k, y0 * k, min(float(iw), x1 * k), min(float(ih), y1 * k)]
+    try:
+        res = trace_floor(gray, iw, ih, _known_ppm(floor), _proj_config(model),
+                          area_m2=area, roi=box)
+    except PerimeterError as exc:
+        raise _perim_error(exc)
+    floor["roi"] = normalize_roi(box)
+    _apply_trace(floor, res, area)
+    _save(pid, proj["name"], model)
+    return {**_perimeter_public(floor), "proposed_roi": box,
+            "proposal": {"model": prop["model"], "gateway": prop["gateway"]}}
+
+
 @router.post("/projects/{pid}/floors/{fid}/plan")
 def import_floor_plan(
         pid: int, fid: str, file: UploadFile = File(...),
@@ -1844,7 +1918,9 @@ def import_floor_plan(
         area_m2: float = Query(None, description="covered area; sets ppm from the traced area"),
         area_sqft: float = Query(None, description="covered area in square feet"),
         dark_threshold: int = Query(None), gap_m: float = Query(None),
-        keep_regions: int = Query(None)):
+        keep_regions: int = Query(None),
+        roi: str = Query(None, description="box to trace inside, image px: "
+                         "[x0,y0,x1,y1] or [[x,y],...] as JSON")):
     """Store a PNG, JPEG or PDF plan as the floor's background image (the same storage
     as /image; PDFs and JPEGs are stored as gray PNG), set the floor's pixel size to
     the image, and trace the building's outer perimeter into floor.outline. Interior
@@ -1878,9 +1954,15 @@ def import_floor_plan(
 
     opts = {k: v for k, v in (("dark_threshold", dark_threshold), ("gap_m", gap_m),
                               ("keep_regions", keep_regions)) if v is not None}
+    roi_poly = _roi_value(roi)
+    if roi_poly:
+        floor["roi"] = roi_poly
+    else:
+        floor.pop("roi", None)
     if trace:
         try:
-            res = trace_floor(gray, iw, ih, _known_ppm(floor), cfg, area_m2=area, **opts)
+            res = trace_floor(gray, iw, ih, _known_ppm(floor), cfg, area_m2=area,
+                              roi=roi_poly, **opts)
         except PerimeterError as exc:
             raise _perim_error(exc)
         _apply_trace(floor, res, area)
@@ -1912,12 +1994,18 @@ def retrace_floor_perimeter(pid: int, fid: str, payload: dict = Body(default_fac
     area = _area_arg(payload.get("area_m2"), payload.get("area_sqft"))
     opts = {k: payload[k] for k in PERIM_OPTION_KEYS if payload.get(k) is not None}
     iw, ih, gray = _floor_image_gray(floor)
+    roi_poly = _roi_value(payload["roi"]) if "roi" in payload else _stored_roi(floor)
     try:
         res = trace_floor(gray, iw, ih, _known_ppm(floor), _proj_config(model),
-                          area_m2=area, **opts)
+                          area_m2=area, roi=roi_poly, **opts)
     except PerimeterError as exc:
         raise _perim_error(exc)
     _apply_trace(floor, res, area)
+    if "roi" in payload:
+        if roi_poly:
+            floor["roi"] = roi_poly
+        else:
+            floor.pop("roi", None)
     _save(pid, proj["name"], model)
     return _perimeter_public(floor)
 
