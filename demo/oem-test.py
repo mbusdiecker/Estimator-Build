@@ -13,7 +13,8 @@ Pass bar (Matt): antenna count and BOM within 15% of the design on 8 of 10 jobs.
 """
 import copy, csv, json, math, os, statistics, sys, time
 
-ROMTOOL = r'C:\Users\MattBusdiecker\Documents\Estimator Build\romtool'
+ROMTOOL = os.environ.get('ROMTOOL_DIR', r'C:\Users\MattBusdiecker\Documents\Estimator Build\romtool')
+EXTRA = json.loads(os.environ.get('ROMTOOL_EXTRA', '{}'))   # extra autoplace request keys, e.g. {"remotes": true}
 sys.path.insert(0, ROMTOOL)
 from romtool.autoplace import AutoplaceError, autoplace_floor   # noqa: E402
 from romtool.bom import generate_bom                            # noqa: E402
@@ -39,6 +40,7 @@ def run_floor(cfg, job, sq_ft):
            "coverage_target_pct": job.get("coverage_target_pct", 95)}
     if "threshold_dbm" in job: req["threshold_dbm"] = job["threshold_dbm"]
     if "rsrp_offset_db" in job: req["rsrp_offset_db"] = job["rsrp_offset_db"]
+    req.update(EXTRA)
     res = autoplace_floor(model, cfg, "f1", req)
     bom = generate_bom(model, cfg)["items"]
     agg = {"antennas": len(res["antennas"]), "coax_half_ft": 0.0, "coax_other_ft": 0.0, "splitters": 0, "tappers": 0, "couplers": 0}
