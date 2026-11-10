@@ -45,6 +45,8 @@ from fastapi.responses import JSONResponse
 from romtool import ai as ai_mod
 from romtool import actuals as actuals_mod
 from romtool.autoplace import AutoplaceError, autoplace_floor
+from romtool.clutter_map import (ClutterMapError, apply_overrides, build_clutter_map,
+                                 decode_image)
 from romtool.bom import bom_csv, generate_bom
 from romtool.bidform import build_bid_form, bid_form_pdf, bid_form_xlsx
 from romtool.cascade import solve_cascade
@@ -1605,6 +1607,102 @@ def get_floor_image(pid: int, fid: str):
         content=base64.b64decode(img["data_b64"]),
         media_type=img.get("mime", "image/png"),
     )
+
+
+# ------------------------------------------------------------- clutter map
+
+def _clutter_error(exc):
+    return HTTPException(status_code=422, detail={"errors": [str(exc)]})
+
+
+def _map_summary(cmap):
+    return {k: v for k, v in cmap.items() if k not in ("auto_grid",)}
+
+
+@router.post("/projects/{pid}/floors/{fid}/clutter-map")
+def build_floor_clutter_map(
+        pid: int, fid: str, file: UploadFile = File(None),
+        cell_m: float = Query(None), dark_threshold: int = Query(None),
+        min_wall_len_m: float = Query(None), smooth_cells: int = Query(None),
+        core_fill_pct: float = Query(None), light_cpm: float = Query(None),
+        dense_cpm: float = Query(None), detect_exterior: bool = Query(None),
+        pdf_page: int = Query(0), keep_overrides: bool = Query(True)):
+    """Score a floor plan image (PNG; JPEG needs Pillow, PDF needs PyMuPDF)
+    into a clutter class per square at the floor's scale (ppm) and store it on
+    the floor. With no file, the floor's own image is used. Manual overrides of
+    the previous map are kept when the grid is unchanged."""
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    floor = _find_floor(model, fid)
+    cfg = _proj_config(model)
+    if file is not None:
+        data = file.file.read()
+    else:
+        img = floor.get("image")
+        if not img or not img.get("data_b64"):
+            raise HTTPException(status_code=422, detail={
+                "errors": ["no file uploaded and the floor has no image"]})
+        data = base64.b64decode(img["data_b64"])
+    try:
+        iw, ih, gray = decode_image(data, floor_w_px=floor.get("w_px"), pdf_page=pdf_page)
+        cmap = build_clutter_map(
+            gray, iw, ih, floor, cfg, outline=floor.get("outline"),
+            cell_m=cell_m, dark_threshold=dark_threshold, min_wall_len_m=min_wall_len_m,
+            smooth_cells=smooth_cells, core_fill_pct=core_fill_pct, light_cpm=light_cpm,
+            dense_cpm=dense_cpm, detect_exterior=detect_exterior)
+        old = floor.get("clutter_map")
+        if (keep_overrides and old and old.get("overrides")
+                and (old["rows"], old["cols"], old["cell_px"])
+                == (cmap["rows"], cmap["cols"], cmap["cell_px"])):
+            cmap["overrides"] = dict(old["overrides"])
+            from romtool.clutter_map import regrid
+            regrid(cmap)
+    except ClutterMapError as exc:
+        raise _clutter_error(exc)
+    floor["clutter_map"] = cmap
+    _save(pid, proj["name"], model)
+    return {"floor_id": fid, "clutter_map": _map_summary(cmap)}
+
+
+@router.get("/projects/{pid}/floors/{fid}/clutter-map")
+def get_floor_clutter_map(pid: int, fid: str):
+    floor = _find_floor(_load_or_404(pid)["model"], fid)
+    cmap = floor.get("clutter_map")
+    if not cmap:
+        raise HTTPException(status_code=404, detail="floor has no clutter map")
+    return {"floor_id": fid, "clutter_map": _map_summary(cmap)}
+
+
+@router.patch("/projects/{pid}/floors/{fid}/clutter-map")
+def patch_floor_clutter_map(pid: int, fid: str, payload: dict = Body(...)):
+    """Manual overrides per square. Body: {"set": [{"row", "col"} | {"x_m",
+    "y_m"} | {"rect_m": [x0, y0, x1, y1]}, "class": id or null/"auto" to clear],
+    "clear": [{...cell spec}], "clear_all": bool}."""
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    floor = _find_floor(model, fid)
+    cmap = floor.get("clutter_map")
+    if not cmap:
+        raise HTTPException(status_code=404, detail="floor has no clutter map")
+    try:
+        apply_overrides(cmap, _proj_config(model), float(floor.get("ppm", 10.0)),
+                        set_cells=payload.get("set"), clear_cells=payload.get("clear"),
+                        clear_all=bool(payload.get("clear_all", False)))
+    except (ClutterMapError, TypeError, ValueError) as exc:
+        raise _clutter_error(exc)
+    _save(pid, proj["name"], model)
+    return {"floor_id": fid, "clutter_map": _map_summary(cmap)}
+
+
+@router.delete("/projects/{pid}/floors/{fid}/clutter-map")
+def delete_floor_clutter_map(pid: int, fid: str):
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    floor = _find_floor(model, fid)
+    if not floor.pop("clutter_map", None):
+        raise HTTPException(status_code=404, detail="floor has no clutter map")
+    _save(pid, proj["name"], model)
+    return {"deleted": "clutter_map", "floor_id": fid}
 
 
 # ---------------------------------------------------------------- walls

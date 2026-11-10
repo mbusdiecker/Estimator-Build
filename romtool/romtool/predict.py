@@ -20,6 +20,7 @@ import math
 from . import config as cfgmod
 from .cascade import CascadeError, solve_cascade
 from .geometry import build_wall_index, polygon_membership, ray_wall_crossings
+from .clutter_map import ClutterField, ClutterMapError
 from .lossmodel import LossModelError, resolve_loss_model
 from .physics import composite_dbm, itu_p1238_pl_db, scale_wall_loss_db
 
@@ -159,6 +160,12 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
         raise PredictError(str(exc))
     n_exp, n_source = loss["n"], loss["n_source"]
     clutter_db_per_m = loss["clutter_db_per_m"]
+    field = None
+    if loss.get("clutter_map"):
+        try:
+            field = ClutterField(loss["clutter_map"], config, float(floor.get("ppm", 10.0)))
+        except ClutterMapError as exc:
+            raise PredictError(str(exc))
     wall_scale_db = float(band.get("wall_loss_scale_db") or 0.0)
     floor_loss = float(config.get("floor_loss_db_per_floor", 15.4))
     ref_mhz = float(config.get("wall_loss_ref_mhz", 2000.0))
@@ -188,6 +195,7 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
         if not same:
             dlevel = abs(int(ant["level"] or 0) - int(grid_level or 0))
             floor_term = floor_loss * dlevel
+        ent = field.entry(ax, ay, cache=False) if field is not None else None
         for ri in range(rows):
             y = ri * step
             dy = y - ay
@@ -200,6 +208,8 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
                 pl = const20 + n_exp * math.log10(max(d_m, 0.01)) - 28.0
                 if clutter_db_per_m:
                     pl += clutter_db_per_m * d_m
+                if ent is not None:
+                    pl += field.loss_at(ent, x, y, d_m)
                 if same:
                     for w in ray_wall_crossings(same_floor_walls, (ax, ay), (x, y)):
                         pl += mat_scaled[w[8]["material"]]
@@ -372,9 +382,14 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
         "project_environment": env,
         "n_exponent": n_exp,
         "n_exponent_source": n_source,
-        "loss_model": {k: loss[k] for k in ("source", "building_type",
-                                            "clutter_db_per_m", "grade_n",
-                                            "grade_clutter")},
+        "loss_model": dict(
+            {k: loss[k] for k in ("source", "building_type", "clutter_db_per_m",
+                                  "grade_n", "grade_clutter")},
+            **({"clutter_map": {"cell_m": loss["clutter_map"]["cell_m"],
+                                "cols": loss["clutter_map"]["cols"],
+                                "rows": loss["clutter_map"]["rows"],
+                                "mean_db_per_m": round(field.mean_db, 4)}}
+               if field is not None else {})),
         "wall_loss_scale_db": wall_scale_db,
         "model_warnings": model_warnings,
         "floor": {"id": floor_id, "name": floor.get("name"), "level": grid_level,

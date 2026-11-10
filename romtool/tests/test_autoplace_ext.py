@@ -481,3 +481,488 @@ def test_feed_run_length_is_route_plus_slack_plus_riser(cfg):
     assert feed["route"][0] == [100, 300]
     # two levels up at floor_height_m = 4 m each
     assert feed["length_m"] == pytest.approx(round(seg / 10.0 + 3.0 + 8.0, 2), abs=0.005)
+
+
+# ================================================== 5. clutter map from a plan
+
+import struct
+import zlib
+
+from romtool.clutter_map import (ClutterField, ClutterMapError, apply_overrides,
+                                 build_clutter_map, decode_image, decode_png,
+                                 encode_gray_png)
+from romtool.predict import predict_floor
+
+
+def _png(w, h, ctype, rows, depth=8, filters=None, plte=None):
+    """PNG encoder with selectable per-row filters (0 none, 1 sub, 2 up, 3 avg,
+    4 paeth) so the decoder's unfilter paths are exercised."""
+    ch = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[ctype]
+    bpp = max(1, ch * depth // 8)
+    out, prev = bytearray(), bytearray(len(rows[0]))
+    for y, row in enumerate(rows):
+        ft = (filters or [0] * h)[y]
+        line = bytearray()
+        for i, v in enumerate(row):
+            a = row[i - bpp] if i >= bpp else 0
+            b = prev[i]
+            c = prev[i - bpp] if i >= bpp else 0
+            if ft == 0:
+                pr = 0
+            elif ft == 1:
+                pr = a
+            elif ft == 2:
+                pr = b
+            elif ft == 3:
+                pr = (a + b) >> 1
+            else:
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                pr = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
+            line.append((v - pr) & 255)
+        out += bytes([ft]) + line
+        prev = bytearray(row)
+
+    def chunk(t, body):
+        return (struct.pack(">I", len(body)) + t + body
+                + struct.pack(">I", zlib.crc32(t + body) & 0xFFFFFFFF))
+    png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, depth, ctype, 0, 0, 0))
+    if plte:
+        png += chunk(b"PLTE", plte)
+    return png + chunk(b"IDAT", zlib.compress(bytes(out))) + chunk(b"IEND", b"")
+
+
+def test_png_decoder_handles_filters_and_color_types():
+    w, h = 7, 5
+    # gray, every filter type
+    rows = [bytes((x * 31 + y * 17) % 256 for x in range(w)) for y in range(h)]
+    png = _png(w, h, 0, rows, filters=[0, 1, 2, 3, 4])
+    assert decode_png(png) == (w, h, b"".join(rows))
+    # RGB -> luma (299 R + 587 G + 114 B) / 1000
+    rgb = [bytes(((x * 40 + c * 70 + y * 9) % 256) for x in range(w) for c in range(3))
+           for y in range(h)]
+    gw, gh, gray = decode_png(_png(w, h, 2, rgb, filters=[4, 3, 2, 1, 0]))
+    want = bytes((299 * r[3 * x] + 587 * r[3 * x + 1] + 114 * r[3 * x + 2]) // 1000
+                 for r in rgb for x in range(w))
+    assert gray == want
+    # RGBA: fully transparent pixels read as white, opaque black stays black
+    px = []
+    for x in range(w):
+        px += [0, 0, 0, 0 if x % 2 else 255]
+    rgba = [bytes(px) for _ in range(h)]
+    _, _, g2 = decode_png(_png(w, h, 6, rgba))
+    assert g2[:4] == bytes([0, 255, 0, 255])
+    # palette
+    pal = [bytes([0, 1, 1, 0, 1, 0, 1])] * h
+    _, _, g3 = decode_png(_png(w, h, 3, pal, plte=bytes([0, 0, 0, 255, 255, 255])))
+    assert g3[:7] == bytes([0, 255, 255, 0, 255, 0, 255])
+    # gray encoder round trip
+    gpx = bytes((i * 7) % 256 for i in range(12 * 9))
+    assert decode_png(encode_gray_png(12, 9, gpx)) == (12, 9, gpx)
+    with pytest.raises(ClutterMapError):
+        decode_png(b"not a png")
+
+
+def test_optional_decoders_fail_clearly_or_work():
+    import importlib.util
+    jpeg_head = b"\xff\xd8\xff\xe0" + b"\x00" * 20
+    if importlib.util.find_spec("PIL") is None:
+        with pytest.raises(ClutterMapError, match="Pillow"):
+            decode_image(jpeg_head)
+    else:
+        import io
+        from PIL import Image
+        buf = io.BytesIO()
+        Image.new("L", (8, 6), 200).save(buf, "JPEG")
+        w, h, g = decode_image(buf.getvalue())
+        assert (w, h) == (8, 6) and abs(g[0] - 200) <= 3
+    if importlib.util.find_spec("fitz") is None:
+        with pytest.raises(ClutterMapError, match="PyMuPDF"):
+            decode_image(b"%PDF-1.4\n")
+    with pytest.raises(ClutterMapError):
+        decode_image(b"GIF89a....")
+
+
+def _rect(g, w, x0, y0, x1, y1):
+    for y in range(y0, y1):
+        g[y * w + x0:y * w + x1] = b"\x00" * (x1 - x0)
+
+
+def plan_gray(w=1200, h=400, dense_to=None, t=2, outer=True):
+    """Plan with a dense-walled left half (3.5 m x 5 m rooms) and an open
+    right half, at 10 px/m."""
+    g = bytearray(b"\xff" * (w * h))
+    dense_to = w // 2 if dense_to is None else dense_to
+    if outer:
+        _rect(g, w, 0, 0, w, t)
+        _rect(g, w, 0, h - t, w, h)
+        _rect(g, w, 0, 0, t, h)
+        _rect(g, w, w - t, 0, w, h)
+    for x in range(35, dense_to, 35):
+        _rect(g, w, x, 0, x + t, h)
+    for y in range(50, h, 50):
+        _rect(g, w, 0, y, dense_to, y + t)
+    return g
+
+
+def make_floor(w=1200, h=400):
+    return {"id": "f1", "name": "F1", "level": 0, "ppm": 10.0, "w_px": w, "h_px": h,
+            "walls": [], "elements": []}
+
+
+def _classes(cm):
+    codes = cm["codes"]
+    return [[codes[ch] for ch in row] for row in cm["grid"]]
+
+
+def test_scoring_dense_half_open_half(cfg):
+    w, h = 1200, 400
+    cm = build_clutter_map(bytes(plan_gray(w, h)), w, h, make_floor(w, h), cfg)
+    cls = _classes(cm)
+    assert (cm["rows"], cm["cols"], cm["cell_m"]) == (14, 40, 3.0)
+    # a window well inside each half
+    dense = [c for row in cls[2:12] for c in row[2:17]]
+    openh = [c for row in cls[2:12] for c in row[24:38]]
+    assert dense.count("dense_rooms") >= 0.9 * len(dense)
+    assert openh.count("open") >= 0.9 * len(openh)
+    assert sum(cm["stats"].values()) == 14 * 40
+    assert cm["auto_grid"] == cm["grid"] and cm["overrides"] == {}
+
+
+def test_scoring_is_independent_of_wall_thickness(cfg):
+    w, h = 1200, 400
+    a = build_clutter_map(bytes(plan_gray(w, h, t=2)), w, h, make_floor(w, h), cfg)
+    b = build_clutter_map(bytes(plan_gray(w, h, t=4)), w, h, make_floor(w, h), cfg)
+    same = sum(x == y for ra, rb in zip(a["grid"], b["grid"]) for x, y in zip(ra, rb))
+    assert same >= 0.97 * 14 * 40
+
+
+def test_text_and_hatching_are_suppressed(cfg):
+    w, h = 600, 300
+    g = bytearray(b"\xff" * (w * h))
+    # "text": dense short strokes (2 px wide, 8 px tall) across a block of the plan
+    for y in range(40, 200, 12):
+        for x in range(40, 400, 6):
+            _rect(g, w, x, y, x + 2, y + 8)
+    # diagonal hatching
+    for k in range(0, 200, 5):
+        for s in range(60):
+            x, y = 420 + k // 2 + s, 40 + s
+            if 0 <= x < w and 0 <= y < h:
+                g[y * w + x] = 0
+    cm = build_clutter_map(bytes(g), w, h, make_floor(w, h), cfg)
+    cls = _classes(cm)
+    inner = [c for row in cls[2:6] for c in row[2:12]]
+    assert inner.count("open") == len(inner)
+    # the same ink as straight long strokes would score as walls
+    g2 = bytearray(b"\xff" * (w * h))
+    for x in range(40, 400, 6):
+        _rect(g2, w, x, 40, x + 2, 200)
+    cm2 = build_clutter_map(bytes(g2), w, h, make_floor(w, h), cfg)
+    assert "open" not in [c for row in _classes(cm2)[2:6] for c in row[4:10]]
+
+
+def test_exterior_and_core_classes(cfg):
+    w, h = 600, 300
+    g = bytearray(b"\xff" * (w * h))
+    # building shell with no ink outside: x 150..450, y 60..240, plus a solid core
+    _rect(g, w, 150, 60, 450, 62)
+    _rect(g, w, 150, 238, 450, 240)
+    _rect(g, w, 150, 60, 152, 240)
+    _rect(g, w, 448, 60, 450, 240)
+    _rect(g, w, 270, 120, 330, 180)
+    cm = build_clutter_map(bytes(g), w, h, make_floor(w, h), cfg)
+    cls = _classes(cm)
+    assert cls[0][0] == "exterior" and cls[-1][-1] == "exterior" and cls[5][1] == "exterior"
+    assert cls[5][10] == "core"            # centre of the solid block (x 300, y 150)
+    assert cls[5][7] in ("open", "light_office")   # inside the shell, not exterior
+    # detect_exterior off leaves everything empty as open
+    cm2 = build_clutter_map(bytes(g), w, h, make_floor(w, h), cfg, detect_exterior=False)
+    assert cm2["stats"]["exterior"] == 0
+    # an outline polygon marks everything outside it exterior
+    outline = [[150, 60], [450, 60], [450, 240], [150, 240]]
+    cm3 = build_clutter_map(bytes(g), w, h, make_floor(w, h), cfg, outline=outline,
+                            detect_exterior=False)
+    assert _classes(cm3)[0][0] == "exterior" and _classes(cm3)[5][10] != "exterior"
+
+
+def test_manual_overrides_per_square(cfg):
+    w, h = 600, 300
+    cm = build_clutter_map(bytes(plan_gray(w, h)), w, h, make_floor(w, h), cfg)
+    auto = cm["grid"][4][10]
+    apply_overrides(cm, cfg, 10.0, set_cells=[{"row": 4, "col": 10, "class": "core"}])
+    assert _classes(cm)[4][10] == "core" and cm["overrides"] == {"4,10": "core"}
+    assert cm["auto_grid"][4][10] == auto and cm["stats"]["core"] >= 1
+    # a point in metres: x 31 m, y 13 m falls in column 10, row 4
+    apply_overrides(cm, cfg, 10.0, set_cells=[{"x_m": 31.0, "y_m": 13.0, "class": "exterior"}])
+    assert _classes(cm)[4][10] == "exterior"
+    # a rectangle in metres (x 0-6 m, y 0-3 m = columns 0-2, rows 0-1)
+    apply_overrides(cm, cfg, 10.0, set_cells=[{"rect_m": [0, 0, 6, 3], "class": "open"}])
+    assert all(_classes(cm)[r][c] == "open" for r in (0, 1) for c in (0, 1, 2))
+    apply_overrides(cm, cfg, 10.0, clear_cells=[{"row": 4, "col": 10}])
+    assert cm["grid"][4][10] == auto
+    apply_overrides(cm, cfg, 10.0, clear_all=True)
+    assert cm["grid"] == cm["auto_grid"]
+    with pytest.raises(ClutterMapError):
+        apply_overrides(cm, cfg, 10.0, set_cells=[{"row": 0, "col": 0, "class": "lava"}])
+    with pytest.raises(ClutterMapError):
+        apply_overrides(cm, cfg, 10.0, set_cells=[{"row": 99, "col": 0, "class": "core"}])
+
+
+def test_clutter_config_values_are_graded_and_derived(cfg):
+    cm = cfg["clutter_map"]
+    assert set(cm["classes"]) == {"open", "light_office", "dense_rooms", "core", "exterior"}
+    for cid, c in cm["classes"].items():
+        assert c["grade"] == "E" and c["ref"] and c["code"], cid
+    bt = cfg["building_types"]
+    # starting values come from the calibrated building types
+    assert cm["classes"]["light_office"]["db_per_m"] == bt["office"]["clutter_db_per_m"]
+    assert cm["classes"]["dense_rooms"]["db_per_m"] == bt["hospital"]["clutter_db_per_m"]
+    assert cm["classes"]["core"]["db_per_m"] == bt["warehouse_open"]["clutter_db_per_m"]
+    assert cm["param_grade"] == "E" and cm["param_ref"]
+
+
+def _hand_map(codes_row, cell_px=30.0):
+    return {"version": 1, "cell_m": cell_px / 10.0, "cell_px": cell_px, "cols": len(codes_row),
+            "rows": 1, "ppm": 10.0,
+            "codes": {"o": "open", "l": "light_office", "d": "dense_rooms",
+                      "c": "core", "x": "exterior"},
+            "grid": [codes_row], "auto_grid": [codes_row], "overrides": {}}
+
+
+def test_field_trace_is_the_per_square_length_sum(cfg):
+    # four 3 m squares: open (0.1), open, core (1.0), open at 10 px/m
+    f = ClutterField(_hand_map("ooco"), cfg, 10.0)
+    # straight along the middle: 6 m open + 3 m core + 3 m open
+    assert f.trace(0, 15, 120, 15) == pytest.approx(6 * 0.1 + 3 * 1.0 + 3 * 0.1)
+    # ends inside squares: from x=15 (mid square 0) to x=105 (mid square 3)
+    assert f.trace(15, 15, 105, 15) == pytest.approx(4.5 * 0.1 + 3.0 + 1.5 * 0.1)
+    # reversed direction gives the same value
+    assert f.trace(105, 15, 15, 15) == pytest.approx(f.trace(15, 15, 105, 15))
+    # a diagonal inside one square: 0.1 dB/m x length
+    assert f.trace(2, 2, 14, 11) == pytest.approx(0.1 * math.hypot(12, 9) / 10.0)
+    # same point: zero
+    assert f.trace(40, 5, 40, 5) == 0.0
+    # exterior squares do not enter the mean / min
+    g = ClutterField(_hand_map("oxxc"), cfg, 10.0)
+    assert g.mean_db == pytest.approx(0.55) and g.min_db == 0.1 and g.max_db == 1.0
+
+
+def test_field_uniform_map_is_exact_everywhere(cfg):
+    f = ClutterField(_hand_map("llllllll"), cfg, 10.0)
+    ent = f.entry(37.0, 11.0, cache=False)
+    xs = [3.0, 100.0, 239.0, 120.5]
+    ys = [29.0, 5.0, 14.0, 0.0]
+    got = f.loss_list(ent, xs, ys)
+    for x, y, v in zip(xs, ys, got):
+        assert v == pytest.approx(0.3 * math.hypot(x - 37.0, y - 11.0) / 10.0, abs=1e-9)
+
+
+def _interp_errors(f, ax, ay, xs, ys):
+    ent = f.entry(ax, ay, cache=False)
+    out = []
+    for x in xs:
+        for y in ys:
+            d = math.hypot(x - ax, y - ay) / 10.0
+            out.append((d, abs(f.loss_at(ent, x, y, d) - f.trace(ax, ay, x, y))))
+    return out
+
+
+def test_field_interpolation_error_is_bounded(cfg):
+    # realistic plan: interpolated loss (lattice nodes + bilinear residual) vs the
+    # exact traversal. Measured: mean about 0.1 dB, max about 1.7 dB within 30 m of
+    # the antenna (a few dB at 100 m, where the signal is far below threshold).
+    w, h = 1200, 400
+    cm = build_clutter_map(bytes(plan_gray(w, h)), w, h, make_floor(w, h), cfg)
+    f = ClutterField(cm, cfg, 10.0)
+    for ax, ay in ((150.0, 100.0), (700.0, 200.0), (500.0, 60.0)):
+        errs = _interp_errors(f, ax, ay, range(1, 1200, 37), range(1, 400, 23))
+        assert sum(e for _, e in errs) / len(errs) < 0.3
+        assert max(e for d, e in errs if d <= 30.0) < 2.5
+    # adversarial: a random class per square (0.1 to 1.0 dB/m, no structure)
+    import random
+    rnd = random.Random(7)
+    rows, cols = 8, 12
+    grid = ["".join(rnd.choice("oolldc") for _ in range(cols)) for _ in range(rows)]
+    cm2 = _hand_map("o")
+    cm2.update({"cols": cols, "rows": rows, "grid": grid, "auto_grid": grid})
+    errs = _interp_errors(ClutterField(cm2, cfg, 10.0), 150.0, 100.0,
+                          range(1, 360, 13), range(1, 240, 11))
+    assert len(errs) > 300
+    assert sum(e for _, e in errs) / len(errs) < 0.6 and max(e for _, e in errs) < 4.0
+
+
+def _predict_pct(m, cfg, thr, step=4):
+    vals = predict_floor(m, cfg, "f1", "B2_1900", step_px=step)["values_dbm"]
+    return 100.0 * sum(1 for v in vals if v is not None and v >= thr - 1e-9) / len(vals)
+
+
+def test_predict_uniform_map_equals_uniform_building_type_clutter(cfg):
+    # a map of light_office everywhere (0.3 dB/m) must give the same prediction
+    # as the building type office (clutter 0.3 dB/m, N 30)
+    def model(with_map):
+        fl = make_floor(400, 300)
+        fl["elements"] = [
+            {"id": "s", "type": "source", "subtype": "direct", "injection_dbm": 10.0},
+            {"id": "a", "type": "antenna", "antenna_id": "omni_das", "x": 120.0, "y": 90.0},
+            {"id": "r", "type": "cable_run", "from_id": "s", "to_id": "a",
+             "cable_id": "coax_1_2in", "length_m": 5.0}]
+        if with_map:
+            fl["clutter_map"] = {**_hand_map("l" * 14, 30.0), "rows": 10,
+                                 "grid": ["l" * 14] * 10, "auto_grid": ["l" * 14] * 10}
+        return {"environment": "office", "building_type": "office", "floors": [fl]}
+    a = predict_floor(model(False), cfg, "f1", "B2_1900", step_px=5)
+    b = predict_floor(model(True), cfg, "f1", "B2_1900", step_px=5)
+    assert b["loss_model"]["source"] == "clutter_map" and a["loss_model"]["source"] == "building_type"
+    assert b["loss_model"]["clutter_map"]["mean_db_per_m"] == pytest.approx(0.3)
+    assert b["values_dbm"] == a["values_dbm"]
+    # without a map nothing changed: the building type path is untouched
+    assert a["loss_model"]["clutter_db_per_m"] == 0.3
+
+
+def test_predict_with_core_strip_matches_hand_math(cfg):
+    # antenna at x=15 px (mid first square) in a 1-row map: open, open, core, open
+    # at 10 px/m; point at x=105 px is 90 px = 9 m away: 4.5 m open + 3 m core + 1.5 m open
+    fl = make_floor(120, 30)
+    fl["elements"] = [
+        {"id": "s", "type": "source", "subtype": "direct", "injection_dbm": 10.0},
+        {"id": "a", "type": "antenna", "antenna_id": "omni_das", "x": 15.0, "y": 15.0},
+        {"id": "r", "type": "cable_run", "from_id": "s", "to_id": "a",
+         "cable_id": "coax_1_2in", "length_m": 0.0}]
+    fl["clutter_map"] = _hand_map("ooco")
+    m = {"environment": "office", "floors": [fl]}
+    pr = predict_floor(m, cfg, "f1", "B2_1900", step_px=15)
+    eirp = pr["antennas"][0]["eirp_dbm"]
+    pl = (20 * math.log10(1960.0) + 30.0 * math.log10(9.0) - 28.0
+          + (4.5 * 0.1 + 3.0 * 1.0 + 1.5 * 0.1))
+    cols = pr["grid"]["cols"]
+    idx = 1 * cols + 7          # row y=15, column x=105
+    assert pr["values_dbm"][idx] == pytest.approx(eirp - pl, abs=0.06)
+
+
+def test_walls_drawn_take_precedence_over_the_map(cfg):
+    fl = make_floor(400, 300)
+    fl["walls"] = [{"id": "w1", "x1": 200, "y1": 0, "x2": 200, "y2": 300, "material": "drywall"}]
+    fl["clutter_map"] = {**_hand_map("c" * 14, 30.0), "rows": 10,
+                         "grid": ["c" * 14] * 10, "auto_grid": ["c" * 14] * 10}
+    fl["elements"] = [
+        {"id": "s", "type": "source", "subtype": "direct", "injection_dbm": 10.0},
+        {"id": "a", "type": "antenna", "antenna_id": "omni_das", "x": 100.0, "y": 100.0},
+        {"id": "r", "type": "cable_run", "from_id": "s", "to_id": "a",
+         "cable_id": "coax_1_2in", "length_m": 5.0}]
+    m = {"environment": "office", "building_type": "office", "floors": [fl]}
+    with_map = predict_floor(m, cfg, "f1", "B2_1900", step_px=10)
+    del fl["clutter_map"]
+    without = predict_floor(m, cfg, "f1", "B2_1900", step_px=10)
+    assert with_map["loss_model"]["source"] == "walls_drawn"
+    assert "clutter_map" not in with_map["loss_model"]
+    assert with_map["values_dbm"] == without["values_dbm"]
+
+
+def _plan_model(cfg, with_map):
+    w, h = 1200, 400
+    fl = make_floor(w, h)
+    if with_map:
+        fl["clutter_map"] = build_clutter_map(bytes(plan_gray(w, h)), w, h, fl, cfg)
+    return {"environment": "office", "building_type": "office", "floors": [fl]}
+
+
+def test_dense_half_gets_more_antennas_with_a_clutter_map(cfg):
+    body = request(threshold_dbm=-66.0)
+
+    def halves(res, w=1200):
+        left = sum(1 for a in res["antennas"] if a["x_px"] < w / 2)
+        return left, res["antenna_count"] - left
+
+    plain = autoplace_floor(_plan_model(cfg, False), cfg, "f1", copy.deepcopy(body))
+    mapped_model = _plan_model(cfg, True)
+    mapped = autoplace_floor(mapped_model, cfg, "f1", copy.deepcopy(body))
+    pl_left, pl_right = halves(plain)
+    mp_left, mp_right = halves(mapped)
+    assert plain["target_met"] and mapped["target_met"]
+    assert abs(pl_left - pl_right) <= 2          # no map: the two halves are alike
+    assert mp_left >= mp_right + 3               # map: the dense half needs more
+    assert mapped["loss_model"]["B2_1900"]["source"] == "clutter_map"
+    assert plain["loss_model"]["B2_1900"]["source"] == "building_type"
+    # the placement is judged by the same prediction predict_floor makes
+    row = mapped["achieved"]["B2_1900"][0]
+    assert _predict_pct(mapped_model, cfg, -66.0) == pytest.approx(row["covered_pct"], abs=0.01)
+    # deterministic
+    again = autoplace_floor(_plan_model(cfg, True), cfg, "f1", copy.deepcopy(body))
+    assert again["antennas"] == mapped["antennas"]
+
+
+def test_autoplace_ignores_the_map_when_walls_are_drawn(cfg):
+    m = _plan_model(cfg, True)
+    m["floors"][0]["walls"] = [{"id": "w1", "x1": 600, "y1": 0, "x2": 600, "y2": 400,
+                                "material": "drywall"}]
+    res = autoplace_floor(m, cfg, "f1", request(threshold_dbm=-70.0))
+    assert res["loss_model"]["B2_1900"]["source"] == "walls_drawn"
+
+
+# -------------------------------------------------------------- clutter API
+
+def test_api_clutter_map_roundtrip(client, cfg):
+    png = encode_gray_png(1200, 400, bytes(plan_gray()))
+    pid = client.post("/projects", json={"name": "CM", "building_type": "office"}).json()["id"]
+    fid = client.post("/projects/%d/floors" % pid,
+                      json={"name": "L1", "ppm": 10, "w_px": 1200, "h_px": 400}).json()["floor"]["id"]
+    base = "/projects/%d/floors/%s/clutter-map" % (pid, fid)
+    assert client.get(base).status_code == 404
+    assert client.post(base).status_code == 422             # no file, no floor image
+    r = client.post(base, files={"file": ("plan.png", png, "image/png")}, params={"cell_m": 3})
+    assert r.status_code == 200, r.text
+    cm = r.json()["clutter_map"]
+    assert (cm["rows"], cm["cols"]) == (14, 40) and "auto_grid" not in cm
+    assert client.get(base).json()["clutter_map"]["stats"] == cm["stats"]
+    # overrides
+    p = client.patch(base, json={"set": [{"row": 5, "col": 5, "class": "core"}]})
+    assert p.status_code == 200 and p.json()["clutter_map"]["overrides"] == {"5,5": "core"}
+    assert p.json()["clutter_map"]["grid"][5][5] == "c"
+    assert client.patch(base, json={"set": [{"row": 5, "col": 5, "class": "lava"}]}).status_code == 422
+    # rebuild keeps the override when the grid is unchanged; cell_m change drops it
+    r2 = client.post(base, files={"file": ("plan.png", png, "image/png")})
+    assert r2.json()["clutter_map"]["overrides"] == {"5,5": "core"}
+    r3 = client.post(base, files={"file": ("plan.png", png, "image/png")}, params={"cell_m": 6})
+    assert r3.json()["clutter_map"]["overrides"] == {} and r3.json()["clutter_map"]["cols"] == 20
+    # bad inputs
+    assert client.post(base, files={"file": ("x.png", b"nope", "image/png")}).status_code == 422
+    assert client.post(base, files={"file": ("plan.png", png, "image/png")},
+                       params={"cell_m": 0.1}).status_code == 422
+    # autoplace and predict use it
+    client.post(base, files={"file": ("plan.png", png, "image/png")}, params={"cell_m": 3})
+    body = {"bands": ["B2_1900"], "threshold_dbm": -66.0, "source": SRC, "repeater": REP,
+            "step_px": 4}
+    ap = client.post("/projects/%d/floors/%s/autoplace" % (pid, fid), json=body)
+    assert ap.status_code == 200, ap.text
+    assert ap.json()["loss_model"]["B2_1900"]["source"] == "clutter_map"
+    pr = client.post("/projects/%d/floors/%s/predict?band=B2_1900&step=4" % (pid, fid)).json()
+    assert pr["loss_model"]["source"] == "clutter_map"
+    # delete
+    assert client.delete(base).status_code == 200
+    assert client.get(base).status_code == 404
+    assert client.delete(base).status_code == 404
+
+
+def test_api_clutter_map_from_the_floor_image(client):
+    png = encode_gray_png(300, 200, bytes(plan_gray(300, 200, dense_to=150)))
+    pid = client.post("/projects", json={"name": "CM2"}).json()["id"]
+    fid = client.post("/projects/%d/floors" % pid,
+                      json={"name": "L1", "ppm": 10}).json()["floor"]["id"]
+    up = client.post("/projects/%d/floors/%s/image" % (pid, fid),
+                     files={"file": ("plan.png", png, "image/png")})
+    assert up.status_code == 200
+    r = client.post("/projects/%d/floors/%s/clutter-map" % (pid, fid))
+    assert r.status_code == 200, r.text
+    assert (r.json()["clutter_map"]["rows"], r.json()["clutter_map"]["cols"]) == (7, 10)
+
+
+def test_pdf_plan_renders_at_the_floor_width():
+    fitz = pytest.importorskip("fitz")     # PyMuPDF is optional (uv run --with pymupdf)
+    doc = fitz.open()
+    page = doc.new_page(width=300, height=150)
+    page.draw_line((10, 10), (290, 10), width=2)
+    page.draw_line((10, 10), (10, 140), width=2)
+    w, h, gray = decode_image(doc.tobytes(), floor_w_px=600)
+    assert (w, h) == (600, 300)            # zoomed so the image width equals the floor width
+    assert gray[20 * w + 200] < 128 and gray[100 * w + 300] > 200   # on the top line (y 10 pt = 20 px) / blank

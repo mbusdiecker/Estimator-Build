@@ -41,6 +41,7 @@ from array import array
 
 from . import config as cfgmod
 from .cascade import remote_max_out_dbm, solve_cascade
+from .clutter_map import ClutterField, ClutterMapError
 from .lossmodel import LossModelError, resolve_loss_model
 from .physics import scale_wall_loss_db
 from .geometry import build_wall_index, ray_wall_crossings
@@ -180,7 +181,7 @@ class _Grid:
 class _Band:
     """Per-band propagation constants for the grid floor."""
 
-    def __init__(self, model, config, floor, band_id, env, ppm):
+    def __init__(self, model, config, floor, band_id, env, ppm, field=None):
         try:
             band = cfgmod.get_band(config, band_id)
         except KeyError:
@@ -195,6 +196,13 @@ class _Band:
             raise AutoplaceError(str(exc))
         self.n = self.loss["n"]
         self.clutter = self.loss["clutter_db_per_m"]
+        # clutter map: the per-square field replaces the uniform clutter term;
+        # seeding uses the map mean dB/m, candidate windows the smallest class
+        self.field = field if self.loss.get("clutter_map") else None
+        self.clutter_min = self.clutter
+        if self.field is not None:
+            self.clutter = self.field.mean_db
+            self.clutter_min = self.field.min_db
         self.expo = -self.n / 10.0
         wall_scale = float(band.get("wall_loss_scale_db") or 0.0)
         ref = float(config.get("wall_loss_ref_mhz", 2000.0))
@@ -208,11 +216,13 @@ class _Band:
         """Linear mW received at d = 1 m (before the distance and clutter terms)."""
         return 10.0 ** ((eirp - self.const20 + 28.0 - extra_db) / 10.0)
 
-    def radius_m(self, eirp, thr_dbm):
+    def radius_m(self, eirp, thr_dbm, clutter=None):
         """Distance (no walls) where one antenna's RSSI falls to thr_dbm."""
+        clutter = self.clutter if clutter is None else clutter
+
         def level(d):
             return (eirp - self.const20 - self.n * math.log10(d)
-                    - self.clutter * d + 28.0)
+                    - clutter * d + 28.0)
         if level(0.01) < thr_dbm:
             return 0.0
         lo, hi = 0.01, 3000.0
@@ -235,6 +245,15 @@ def _contrib(grid, b, ax, ay, eirp, extra_db, walls):
     expo = b.expo
     hyp = math.hypot
     xs, ys = grid.xs, grid.ys
+    if b.field is not None:
+        cl = b.field.loss_list(b.field.entry(ax, ay), xs, ys)
+        out = []
+        for x, y, c in zip(xs, ys, cl):
+            d = hyp(x - ax, y - ay) / ppm
+            if d < 0.01:
+                d = 0.01
+            out.append(k * d ** expo * 10.0 ** (-c / 10.0))
+        return out
     if walls:
         out = []
         mats = b.mats
@@ -950,7 +969,7 @@ class _Planner:
         for r in reqs:
             b = bands[r.band]
             rad = b.radius_m(eirp[r.band], r.thr_dbm)
-            cut = b.radius_m(eirp[r.band], r.thr_dbm - 10.0)
+            cut = b.radius_m(eirp[r.band], r.thr_dbm - 10.0, clutter=b.clutter_min)
             self.radius_m = rad if self.radius_m is None else min(self.radius_m, rad)
             self.cut_m[r.band] = max(self.cut_m.get(r.band, 0.0), cut)
         self.k = {bid: bands[bid].k_lin(eirp[bid]) for bid in bands}
@@ -1118,11 +1137,15 @@ class _Planner:
         ppm = self.ppm
         hyp = math.hypot
         total = 0.0
+        ent = None
         for r, _ in unmet:
             b = self.bands[r.band]
             k = self.k[r.band]
             expo = b.expo
-            cl = -b.clutter / 10.0
+            fld = b.field
+            if fld is not None and ent is None:
+                ent = fld.entry(ax, ay, cache=False)
+            cl = 0.0 if fld is not None else -b.clutter / 10.0
             cut_px = self.cut_m[r.band] * ppm
             arr = self.lin[r.band]
             thr = r.thr_lin
@@ -1140,6 +1163,8 @@ class _Planner:
                 v = k * d ** expo
                 if cl:
                     v *= 10.0 ** (cl * d)
+                if fld is not None:
+                    v *= 10.0 ** (-fld.loss_at(ent, xs[i], ys[i], d) / 10.0)
                 if self.walls:
                     loss = 0.0
                     for w in ray_wall_crossings(self.walls, (ax, ay), (xs[i], ys[i])):
@@ -1386,7 +1411,14 @@ def autoplace_floor(model, config, floor_id, request):
     crit_polys = [_prep_poly(ca.get("points", [])) for ca in crit
                   if len(ca.get("points", [])) >= 3]
 
-    bands = {bid: _Band(model, config, floor, bid, env, ppm) for bid in p["bands"]}
+    field = None
+    cmap = floor.get("clutter_map")
+    if cmap and len(floor.get("walls") or []) < max(1, int(config.get("building_types_min_walls", 1))):
+        try:
+            field = ClutterField(cmap, config, ppm)
+        except ClutterMapError as exc:
+            raise AutoplaceError(str(exc))
+    bands = {bid: _Band(model, config, floor, bid, env, ppm, field) for bid in p["bands"]}
     from .predict import _model_validity_warnings  # same validity note as predict
     for bid in p["bands"]:
         _model_validity_warnings(config, bands[bid].band, warnings)
@@ -1672,7 +1704,10 @@ def autoplace_floor(model, config, floor_id, request):
     loss_info = {bid: {"source": bands[bid].loss["source"],
                        "building_type": bands[bid].loss["building_type"],
                        "n": bands[bid].n,
-                       "clutter_db_per_m": bands[bid].clutter,
+                       "clutter_db_per_m": (0.0 if bands[bid].field is not None
+                                            else bands[bid].clutter),
+                       "clutter_map_mean_db_per_m": (round(bands[bid].clutter, 4)
+                                                     if bands[bid].field is not None else None),
                        "grade_n": bands[bid].loss["grade_n"],
                        "grade_clutter": bands[bid].loss["grade_clutter"]}
                  for bid in p["bands"]}
