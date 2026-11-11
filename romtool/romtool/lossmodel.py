@@ -20,13 +20,39 @@ building type has a value for it. N is unchanged. Unknown system types raise.
 Path loss then is
     PL = 20*log10(f_MHz) + N*log10(d_m) + clutter_db_per_m * d_m - 28
          (+ floor loss for other levels, + wall crossings when walls drawn)
+
+Zones (zones.py) apply to the no-walls case only. A floor with zones gets its
+clutter map with the zone classes applied (or a zones-only grid when it has
+no stored map); the building type clutter fills squares outside every zone.
+Zone ceiling heights change the distance term in predict and autoplace, not N.
 """
+
+from .zones import effective_clutter_map
 
 DEFAULT_MIN_WALLS = 1
 
 
 class LossModelError(Exception):
     pass
+
+
+def _bt_clutter_value(entry, system_type):
+    """Building type clutter dB/m, with the system-type value when it has one."""
+    by_system = entry.get("clutter_by_system") or {}
+    if system_type is not None and system_type in by_system:
+        return float(by_system[system_type])
+    return float(entry.get("clutter_db_per_m") or 0.0)
+
+
+def floor_clutter_map(model, config, floor, system_type=None):
+    """Clutter map used when the floor has no walls: the stored map with zones
+    applied, a zones-only grid, or None. Squares outside every zone fall back to
+    the building type clutter (0 when no building type is set)."""
+    bt_id = active_building_type(model, floor)
+    st = active_system_type(model, floor, system_type)
+    types = building_types(config)
+    fallback_db = _bt_clutter_value(types[bt_id], st) if bt_id in types else 0.0
+    return effective_clutter_map(floor or {}, config, fallback_db)
 
 
 def building_types(config):
@@ -81,8 +107,10 @@ def resolve_loss_model(model, config, floor, band, env, system_type=None):
                              % (st, ", ".join(known_systems) or "none"))
 
     no_walls = n_walls < max(1, min_walls(config))
-    # a stored clutter map replaces the uniform clutter term (walls drawn win)
-    cmap = (floor or {}).get("clutter_map") if no_walls else None
+    # a stored clutter map (with zones applied) replaces the uniform clutter
+    # term; walls drawn win. Squares outside every zone fall back to the
+    # building type clutter when the grid is built from zones alone.
+    cmap = floor_clutter_map(model, config, floor, system_type=st) if no_walls else None
     use_bt = bt_id is not None and no_walls
     if use_bt:
         entry = types[bt_id]

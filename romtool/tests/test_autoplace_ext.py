@@ -711,9 +711,15 @@ def test_manual_overrides_per_square(cfg):
 
 def test_clutter_config_values_are_graded_and_derived(cfg):
     cm = cfg["clutter_map"]
-    assert set(cm["classes"]) == {"open", "light_office", "dense_rooms", "core", "exterior"}
+    # the five scoring classes plus the zone classes (test_zones.py)
+    assert {"open", "light_office", "dense_rooms", "core", "exterior"} <= set(cm["classes"])
+    codes = [c["code"] for c in cm["classes"].values()]
+    assert len(codes) == len(set(codes))
     for cid, c in cm["classes"].items():
-        assert c["grade"] == "E" and c["ref"] and c["code"], cid
+        # grade C only where a calibrated building type value is the source
+        assert c["grade"] in ("E", "C") and c["ref"] and c["code"], cid
+        if c["grade"] == "C":
+            assert "calibrated" in c["ref"], cid
     bt = cfg["building_types"]
     # starting values come from the calibrated building types
     assert cm["classes"]["light_office"]["db_per_m"] == bt["office"]["clutter_db_per_m"]

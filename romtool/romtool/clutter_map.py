@@ -43,6 +43,10 @@ from .geometry import point_in_polygon
 
 PNG_SIG = b"\x89PNG\r\n\x1a\n"
 DEFAULT_MAX_PIXELS = 8000000
+# Zones-only grids (no image): squares outside every zone carry this code and
+# take the floor's building type clutter (fallback_db_per_m on the map).
+FALLBACK_CODE = "_"
+FALLBACK_ID = "building_type"
 
 
 class ClutterMapError(Exception):
@@ -560,6 +564,9 @@ class ClutterField:
         codes = cmap["codes"]
         db = {}
         for ch, cid in codes.items():
+            if cid == FALLBACK_ID:
+                db[ch] = float(cmap.get("fallback_db_per_m") or 0.0)
+                continue
             if cid not in classes:
                 raise ClutterMapError("clutter class '%s' is not in config" % cid)
             db[ch] = float(classes[cid].get("db_per_m") or 0.0)
