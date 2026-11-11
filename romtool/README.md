@@ -503,9 +503,9 @@ plus a complete bid package:
 
 **Building-type default loss.** Set `building_type` on a project or floor
 (floor wins; `POST/PATCH /projects`, `POST/PATCH .../floors`). Allowed ids are
-the keys of `building_types` in `config/default.json`: office, hospital,
-warehouse_open, school_campus, hotel_residential, parking_garage,
-stadium_venue, retail_mall. When a floor has no walls drawn, predict and
+the keys of `building_types` in `config/default.json`: office, office_open,
+office_standard, office_dense, hospital, warehouse_open, school_campus,
+hotel_residential, parking_garage, stadium_venue, retail_mall. When a floor has no walls drawn, predict and
 autoplace use that type's N and optional `clutter_db_per_m`:
 `PL = 20log10(f) + N*log10(d) + clutter*d - 28`. With walls drawn, or no
 building type, behavior is unchanged (environment N plus wall crossings).
@@ -515,9 +515,29 @@ the same numbers as `environments`; re-check against the edition you cite).
 Grade E is an estimate with no published coefficient, set to an analog and
 flagged for calibration: hospital 30 and school_campus 30 (office analog),
 warehouse_open, parking_garage and stadium_venue 22 (commercial analog).
-`clutter_db_per_m` is 0.0 for every type (grade E, not calibrated). A band can
-override N per building type with `n_exponent_overrides.<building_type>`.
+`clutter_db_per_m` is calibrated (grade C) for office, hotel_residential,
+hospital and warehouse_open; the other types are 0.0 or grade E estimates. A
+band can override N per building type with `n_exponent_overrides.<building_type>`.
 `predict` returns `loss_model` showing which source applied.
+
+**Office subtypes.** `office` stays the generic type and the fallback when the
+layout is unknown. Pick a subtype that matches the layout: `office_open` for
+open plan (atria, halls, open furniture; clutter 0.1 dB/m, grade E),
+`office_standard` for a standard corporate layout (0.3 dB/m, the calibrated
+office value, grade C), and `office_dense` for dense private offices, cubes or
+labs (0.6 dB/m, grade E). All three use the office N (30, grade P). The open and
+dense clutter values are starting points taken from the `clutter_map` classes
+and are not calibrated.
+
+**System type.** `system_type` is one of `das`, `dran` or `bda` (the list is
+`system_types` in config). Set it on the project, on a floor (the floor wins
+over the project) or in the autoplace request (the request wins over both).
+When the building type has a `clutter_by_system` value for that system, the
+loss model uses it in place of `clutter_db_per_m` and reports
+`clutter_source: building_type_system`. Otherwise the building type's own
+clutter applies. No building type has `clutter_by_system` values yet, so the
+setting changes nothing until calibration adds them. An unknown system type
+returns 422 from the project, floor and autoplace endpoints.
 
 **Autoplace.** `POST /projects/{pid}/floors/{fid}/autoplace` with
 `bands` (required), `antenna_id`, `threshold_dbm` and `coverage_target_pct`
@@ -721,6 +741,113 @@ Limits:
   96 m x 74 m plate, autoplaced with remotes and taps requested at -63 dBm
   (B2_1900 and B12_700). Each floor picks one coupler stage (7 and 10 antennas).
   The 12 dB tap does not win at these counts.
+
+## Plan import and building perimeter
+
+Module: `romtool/perimeter.py` (stdlib only). Config block `perimeter` in
+`config/default.json`, grade E with a reference.
+
+**Import.** `POST /projects/{pid}/floors/{fid}/plan` takes a multipart `file`
+(PNG, JPEG or PDF), `page` (PDF, 1-based, default 1) and `dpi` (PDF, default
+`perimeter.pdf_dpi` 150, lowered so the render stays under 8 megapixels). The
+plan is stored as the floor's background image through the same storage as
+`/image`; PDF and JPEG plans are stored as gray PNG. The floor's pixel size
+becomes the image size. JPEG needs Pillow and PDF needs PyMuPDF, both imported
+only when used.
+
+**Scale.** `ppm_source` on each floor is `calibrated` (set by the project or
+PATCH), `from_area` (set by a covered area) or `default` (floor created with no
+ppm). Floors saved before this change count as calibrated. An area is given as
+`area_m2` or `area_sqft` on the plan and trace endpoints, or on
+`PATCH .../perimeter`. The scale is then ppm = sqrt(outline area in px / area
+m2). With an area, the trace runs twice so the metre-based settings use the new
+scale.
+
+**Trace.** `POST .../plan` traces by default (`trace=false` only stores the
+image). `POST .../perimeter/trace` re-traces from the stored image and replaces
+the outline, so manual edits are lost. Steps:
+1. Ink: pixels below `dark_threshold` (128). A work cell of up to 800 cells a
+   side is ink when 10 percent of its pixels are dark.
+2. Specks and frames: ink components smaller than `min_feature_m` (0.6 m) in
+   both directions are dropped (text, symbols, ticks). A component spanning 85
+   percent of the page in both directions is dropped as a sheet border
+   (`frame_frac`).
+   Frame peeling (up to `frame_peel_max` 3 rounds): a closed ink ring spanning
+   at least `frame_min_span` (50 percent) of the page in both directions is a
+   sheet frame when content lies inside it and at least `frame_blank_frac`
+   (50 percent) of its inside ring cells have no other ink within
+   `frame_margin_frac` (3 percent of the short side, at least 2 gap distances).
+   Furniture and columns count as content, specks included. Peeled rings are
+   removed and the flood fill runs again, so a double border peels in two rounds.
+   The result reports `frames_peeled`.
+3. Gap close: ink is dilated by `gap_m` (1.0 m), so door and window gaps up to
+   about 2 m close.
+4. Flood fill from the image border. Everything not reached is footprint, so
+   interior walls, holes and courtyards are ignored.
+5. Regions: the largest `keep_regions` (1) footprints with at least 5 percent
+   of the largest area are kept. Several kept regions give their convex hull,
+   with a warning.
+6. Erosion by the same radius moves the boundary back to the outer face of the
+   walls. The outer loop is followed along cell corners, simplified with
+   Douglas-Peucker (`simplify_m` 0.3 m), and edges within 3 degrees of
+   horizontal or vertical are straightened.
+If the trace covers more than 90 percent of the page, the request returns 422.
+Without a scale the metre values use pixel fallbacks (`gap_frac_unknown` 0.03 of
+the short side) and a warning says so.
+
+**Box (region of interest).** The plan and trace endpoints take `roi`: a box
+`[x0,y0,x1,y1]` or a polygon `[[x,y],...]` in image pixels (a JSON string on the
+plan endpoint, a JSON field on the trace body). Everything outside the box is
+blank paper before thresholding, so sheet borders, title blocks and other
+drawings outside the box are ignored. The box is stored on the floor and a
+re-trace reuses it; `roi: null` clears it, and a new plan import without a box
+clears the stored one. If ink crosses a box edge (dark one pixel inside and one
+outside, at least `roi_cut_min_px` pixels), the result carries a warning: the
+building is cut by the box. Enlarge the box. In the UI, the **Building box**
+tool drags the box and traces inside it.
+
+**AI box proposal (optional, off).** `POST .../perimeter/propose-roi` sends a
+downscaled copy of the stored plan to the configured AI gateway, takes the box it
+returns and traces inside it. It needs `config/ai.json` `perimeter_roi.enabled`
+set to `true` and a working gateway; otherwise it returns 503. The manual box
+and the trace endpoint do not need it.
+
+**Speck rule.** A small ink component (under `min_feature_m` in both directions)
+is dropped only when no other ink lies within half a gap distance of it. Columns
+and short wall pieces a gap apart stay and form the wall line. Text and symbols
+standing alone are still dropped. Text that touches a wall is kept, so draw a box
+that leaves title blocks and dimension strings outside it.
+
+**Edit.** `PATCH .../perimeter` with `{"points": [[x, y], ...]}` replaces the
+outline, `{"nudges": [{"index", "dx_m", "dy_m"}]}` moves single vertices
+(`dx_px`/`dy_px` without a scale), `{"clear": true}` removes it, and
+`{"area_m2"}` or `{"area_sqft"}` sets the scale from the current outline. The
+method becomes `manual`. `GET .../perimeter` returns the outline, area, scale
+and warnings.
+
+**Use.** The outline is `floor.outline`, so autoplace (antennas stay inside it),
+the clutter-map exterior and the floor layout all use it. The layout draws the
+plan image, a bold solid perimeter and the equipment. Walls are drawn only when
+the floor has walls.
+
+**Limits.**
+- The outer loop is the largest closed ink loop. A drawn plate, site or sheet
+  rectangle that closes around the building, or a building whose exterior is
+  not closed by walls or thin lines, is traced instead of the building. Check
+  the overlay after each trace. A manual outline is the fix.
+- An open exterior (a gap wider than about 2 m) gives a thin outline of the
+  walls that remain. Only the area is checked, against the page size.
+- Solid text blocks or text touching a wall stay in the trace. Diagonal or curved
+  exteriors are followed on the work grid, not exactly.
+- Scale from area is only as good as the outline it is measured from.
+- The work grid is at most 800 cells a side, so the trace is accurate to about
+  one work cell, which is about 1/800 of the image's larger side.
+- Peeling needs the frame to be a ring of its own. A frame whose ink touches
+  the building's exterior (a rectangle drawn against the building) forms one
+  connected component with it and is not peeled. Use a manual outline there.
+- Pure-Python decoding and tracing take several seconds on a full-size page.
+- Floors with a clutter map keep the old map after a new plan. Run the
+  clutter-map endpoint again.
 
 ## Non-goals (per SPEC)
 

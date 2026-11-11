@@ -7,7 +7,13 @@
   "timeout_seconds": 30,
   "temperature": 0.2,
   "max_tokens": 1600,
+  "perimeter_roi": {
+    "enabled": false,
+    "max_side_px": 1024,
+    "comment": "Off by default. When true, POST .../perimeter/propose-roi sends a downscaled plan image to the gateway and traces inside the box it returns. Never required."
+  },
   "prompts": {
+    "perimeter_roi_instruction": "This is a floor plan of one building floor. Find the box that encloses the building exterior walls only: exclude the sheet border, title block, legends, scale bars, north arrows and dimension strings, and include a small margin outside the exterior walls. Output JSON with exactly key: rect (list of four numbers [x0, y0, x1, y1] in the pixel coordinates of the image given).",
     "system": "You are the estimating assistant inside ROMtool, an in-building wireless (DAS/ERCES) estimator. Answer with STRICT JSON only - no markdown fences, no prose outside the JSON.",
     "rfp_scan_instruction": "Extract the requirements/scope matrix for this RFP excerpt. Output JSON with exactly these keys: requirements (list of {id, category, text, source_excerpt}), scope_matrix (list of {requirement_id, in_scope (boolean), catalog_zones (list of ROMtool zone prefixes like E, G, H), note}), gaps (list of {id, text, reason} for requirements the RFP leaves ambiguous or unstated that an estimator must clarify), assumptions (list of strings).",
     "scenario_suggest_instruction": "From this estimate recap suggest 2-4 what-if scenario overlays an estimator would want to price. Output JSON with exactly key: suggestions (list of {name, rationale, overlay, impact_hint}). Valid overlay keys: access_overrides ({location_id: access method}), factor_overrides (deep-merged estimating config overrides), qty_overrides ({location_id: {catalog_id: qty}}), quote_swap ({line_key: {quote_id: id}}). Ground the rationale in the recap: zone shares, quality mix, crew loading, escalation.",
