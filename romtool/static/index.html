@@ -22,6 +22,15 @@
     <label class="lbl">Band <select id="bandSel"></select></label>
     <label class="chk"><input type="checkbox" id="chkHeatmap"> Heatmap</label>
     <span class="sep"></span>
+    <label class="lbl">Grade <select id="gradeSel" title="Parts grade for the BOM and iBwave export">
+      <option value="carrier">Carrier grade</option>
+      <option value="enterprise">Enterprise grade</option>
+      <option value="budget">Budget</option>
+    </select></label>
+    <label class="lbl" id="brandLbl">Brand <select id="brandSel" title="Budget brand option">
+      <option value="techwave">Techwave</option>
+      <option value="cheapest">Cheapest compliant</option>
+    </select></label>
     <button id="btnBom">Refresh BOM</button>
     <a id="lnkCsv" href="#" download>BOM CSV</a>
     <a id="lnkJson" href="#" download>BOM JSON</a>
@@ -81,6 +90,8 @@
     <div id="nfpas" class="kpis">Tier 2 evaluates inside critical-area polygons (99% min by default).</div>
     <div class="ptitle">Inspector</div>
     <div id="insp" class="insp">Nothing selected.</div>
+    <div class="ptitle">Bands checked for the grade</div>
+    <div id="bandBox" class="kpis">-</div>
     <div class="ptitle">BOM (parts only, no pricing)</div>
     <div id="bomBox" class="bom">-</div>
   </aside>

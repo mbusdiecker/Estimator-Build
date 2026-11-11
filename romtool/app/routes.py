@@ -50,7 +50,9 @@ from romtool.clutter_map import (PNG_SIG, ClutterMapError, apply_overrides, buil
 from romtool.perimeter import (PerimeterError, edit_outline, normalize_roi, polygon_area,
                                scale_from_area, trace_floor)
 from romtool.bom import bom_csv, generate_bom
-from romtool.builders import BUILDER_NAMES, build_lines, builder_items
+from romtool.builders import BUILDER_NAMES, build_lines
+from romtool.grades import GradeError, check_bands, check_budget_brand, check_grade
+from romtool.grades import grade_items, project_items, settings_for
 from romtool.ibwave import ibwave_csv, ibwave_sheet, ibwave_table
 from romtool.bidform import build_bid_form, bid_form_pdf, bid_form_xlsx
 from romtool.cascade import solve_cascade
@@ -300,8 +302,43 @@ def patch_project(pid: int, payload: dict = Body(...)):
             model["system_type"] = st
     if "config_overrides" in payload:
         model["config_overrides"] = payload["config_overrides"] or {}
+    if "grade" in payload:
+        model["grade"] = _grade_check(check_grade, payload["grade"])
+    if "budget_brand" in payload:
+        model["budget_brand"] = _grade_check(check_budget_brand, payload["budget_brand"])
+    if "bands" in payload:
+        if payload["bands"] is None:
+            model.pop("bands", None)
+        else:
+            model["bands"] = _grade_check(lambda v: check_bands(v, _proj_config(model)),
+                                          payload["bands"])
     proj = _save(pid, model.get("name", proj["name"]), model)
     return _public_project(proj)
+
+
+def _grade_check(fn, value):
+    try:
+        return fn(value)
+    except GradeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+def _grade_settings(model, cfg, grade=None, budget_brand=None):
+    """Grade settings for a project; request values override stored ones."""
+    try:
+        return settings_for(model, cfg, grade=grade, budget_brand=budget_brand)
+    except GradeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+def _graded_items(model, cfg, grade=None, budget_brand=None):
+    """(settings, items, notes) for the project BOM, graded."""
+    settings = _grade_settings(model, cfg, grade, budget_brand)
+    try:
+        items, _overlay, notes = project_items(model, cfg, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return settings, items, notes
 
 
 @router.delete("/projects/{pid}")
@@ -2450,7 +2487,10 @@ def autoplace(pid: int, fid: str, payload: dict = Body(default_factory=dict)):
         _save(pid, proj["name"], model)
     result["saved"] = not dry
     try:
-        result["bom"] = generate_bom(model, cfg)["items"]
+        # Same grade as GET /bom, so the two lists agree.
+        settings = _grade_settings(model, cfg)
+        result["bom"], _overlay, _notes = grade_items(generate_bom(model, cfg)["items"],
+                                                      cfg, settings)
     except ValueError as exc:  # pragma: no cover - chain just solved
         result["bom"] = []
         result["warnings"].append("bom: %s" % exc)
@@ -2647,44 +2687,36 @@ def floor_layout_png_endpoint(pid: int, fid: str, include_image: bool = Query(Tr
 
 # ---------------------------------------------------------------- BOM + exports
 
-def _project_bom_items(model, cfg):
-    """Element BOM lines plus the lines of every builder stored on the project."""
-    return generate_bom(model, cfg)["items"] + builder_items(model, cfg)
-
-
 @router.get("/projects/{pid}/bom")
-def project_bom(pid: int):
+def project_bom(pid: int, grade: str = Query(None), budget_brand: str = Query(None)):
     proj = _load_or_404(pid)
     model = proj["model"]
-    cfg = _proj_config(model)
-    try:
-        return {"project_id": pid, "items": _project_bom_items(model, cfg)}
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+    settings, items, notes = _graded_items(model, _proj_config(model), grade, budget_brand)
+    return {"project_id": pid, "grade": settings["grade"],
+            "budget_brand": settings["budget_brand"], "bands": settings["bands"],
+            "items": items, "grade_notes": notes}
 
 
 @router.get("/exports/projects/{pid}/bom.csv")
-def export_bom_csv(pid: int):
+def export_bom_csv(pid: int, grade: str = Query(None), budget_brand: str = Query(None)):
     proj = _load_or_404(pid)
-    try:
-        text = bom_csv(_project_bom_items(proj["model"], _proj_config(proj["model"])))
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+    _settings, items, _notes = _graded_items(proj["model"], _proj_config(proj["model"]),
+                                             grade, budget_brand)
     return Response(
-        content=text,
+        content=bom_csv(items),
         media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="bom-%s.csv"' % pid},
     )
 
 
 @router.get("/exports/projects/{pid}/bom.json")
-def export_bom_json(pid: int):
+def export_bom_json(pid: int, grade: str = Query(None), budget_brand: str = Query(None)):
     proj = _load_or_404(pid)
-    try:
-        body = {"project_id": pid, "project": proj["name"],
-                "items": _project_bom_items(proj["model"], _proj_config(proj["model"]))}
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+    settings, items, notes = _graded_items(proj["model"], _proj_config(proj["model"]),
+                                           grade, budget_brand)
+    body = {"project_id": pid, "project": proj["name"], "grade": settings["grade"],
+            "budget_brand": settings["budget_brand"], "items": items,
+            "grade_notes": notes}
     return Response(
         content=json.dumps(body, indent=1),
         media_type="application/json",
@@ -2694,47 +2726,63 @@ def export_bom_json(pid: int):
 
 # ---------------------------------------------------------------- assembly builders
 
+def _graded_lines(lines, cfg, settings):
+    """Builder lines with the grade applied (same rules as the BOM)."""
+    graded, _overlay, _notes = grade_items(lines, cfg, settings)
+    return graded
+
+
 @router.get("/projects/{pid}/builders")
-def list_builders(pid: int):
+def list_builders(pid: int, grade: str = Query(None), budget_brand: str = Query(None)):
     proj = _load_or_404(pid)
     model = proj["model"]
     cfg = _proj_config(model)
+    settings = _grade_settings(model, cfg, grade, budget_brand)
     stored = model.get("builders") or {}
     out = {}
     try:
         for name in BUILDER_NAMES:
             if name in stored:
+                lines = build_lines(name, stored[name], cfg, model=model)
                 out[name] = {"inputs": stored[name],
-                             "lines": build_lines(name, stored[name], cfg, model=model)}
+                             "lines": _graded_lines(lines, cfg, settings)}
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
-    return {"project_id": pid, "available": list(BUILDER_NAMES), "builders": out}
+    return {"project_id": pid, "available": list(BUILDER_NAMES), "builders": out,
+            "grade": settings["grade"], "budget_brand": settings["budget_brand"]}
 
 
 @router.post("/projects/{pid}/builders/{name}")
-def set_builder(pid: int, name: str, payload: dict = Body(default_factory=dict)):
+def set_builder(pid: int, name: str, payload: dict = Body(default_factory=dict),
+                grade: str = Query(None), budget_brand: str = Query(None)):
     proj = _load_or_404(pid)
     model = proj["model"]
     if name not in BUILDER_NAMES:
         raise HTTPException(status_code=404, detail="unknown builder '%s' (known: %s)"
                             % (name, ", ".join(BUILDER_NAMES)))
+    cfg = _proj_config(model)
+    settings = _grade_settings(model, cfg, grade, budget_brand)
     try:
-        lines = build_lines(name, payload, _proj_config(model), model=model)
+        lines = build_lines(name, payload, cfg, model=model)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     model.setdefault("builders", {})[name] = dict(payload)
     _save(pid, proj["name"], model)
-    return {"project_id": pid, "builder": name, "inputs": payload, "lines": lines}
+    return {"project_id": pid, "builder": name, "inputs": payload,
+            "lines": _graded_lines(lines, cfg, settings)}
 
 
 # ---------------------------------------------------------------- iBwave equipment list
 
 @router.get("/projects/{pid}/bom_ibwave.csv")
-def export_bom_ibwave_csv(pid: int, by_floor: bool = Query(False)):
+def export_bom_ibwave_csv(pid: int, by_floor: bool = Query(False),
+                          grade: str = Query(None), budget_brand: str = Query(None)):
     proj = _load_or_404(pid)
+    cfg = _proj_config(proj["model"])
+    settings = _grade_settings(proj["model"], cfg, grade, budget_brand)
     try:
-        header, rows = ibwave_table(proj["model"], _proj_config(proj["model"]),
-                                    by_floor=by_floor)
+        header, rows = ibwave_table(proj["model"], cfg, by_floor=by_floor,
+                                    settings=settings)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return Response(
@@ -2745,11 +2793,14 @@ def export_bom_ibwave_csv(pid: int, by_floor: bool = Query(False)):
 
 
 @router.get("/projects/{pid}/bom_ibwave.xlsx")
-def export_bom_ibwave_xlsx(pid: int, by_floor: bool = Query(False)):
+def export_bom_ibwave_xlsx(pid: int, by_floor: bool = Query(False),
+                           grade: str = Query(None), budget_brand: str = Query(None)):
     proj = _load_or_404(pid)
+    cfg = _proj_config(proj["model"])
+    settings = _grade_settings(proj["model"], cfg, grade, budget_brand)
     try:
-        header, rows = ibwave_table(proj["model"], _proj_config(proj["model"]),
-                                    by_floor=by_floor)
+        header, rows = ibwave_table(proj["model"], cfg, by_floor=by_floor,
+                                    settings=settings)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return Response(

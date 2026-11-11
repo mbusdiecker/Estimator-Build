@@ -15,6 +15,7 @@ import io
 
 from romtool.bom import generate_bom
 from romtool.builders import builder_items, load_parts_catalog
+from romtool.grades import grade_items
 
 HEADER = ["Type", "Manufacturer", "", "Model", "Description", "", "", "Inventory#", "Qty"]
 FLOOR_HEADER = "Floor"
@@ -25,8 +26,12 @@ class IBwaveError(ValueError):
     """A BOM line has no catalog part, or its unit does not match the part."""
 
 
-def ibwave_table(model, config, by_floor=False, catalog=None):
-    """Return (header, rows) for the equipment list."""
+def ibwave_table(model, config, by_floor=False, catalog=None, settings=None):
+    """Return (header, rows) for the equipment list.
+
+    settings (from grades.settings_for) applies the grade: graded lines use the
+    part chosen for that grade and budget brand. Without settings the catalog
+    roles are used as before."""
     cat = catalog or load_parts_catalog()
     floors = model.get("floors", [])
 
@@ -44,6 +49,15 @@ def ibwave_table(model, config, by_floor=False, catalog=None):
         for it in builder_items(model, config, cat):
             lines.append(("", it))
 
+    if settings is not None:
+        # Grading can add adapter lines, so each line carries its floor label
+        # through the call instead of being matched by position.
+        tagged = [dict(it, _floor=label) for label, it in lines]
+        graded, overlay, _notes = grade_items(tagged, config, settings, cat)
+        lines = [(g.pop("_floor", ""), g) for g in graded]
+        cat = dict(cat)
+        cat.update(overlay)
+
     floor_order = {}
     for label in [fl.get("name") or fl.get("id") or "" for fl in floors] + [SITE]:
         floor_order.setdefault(label, len(floor_order))
@@ -53,7 +67,7 @@ def ibwave_table(model, config, by_floor=False, catalog=None):
     for floor, it in lines:
         if it["unit"] == "m":
             continue  # the ft row carries the same cable
-        role = it.get("role")
+        role = it.get("graded_role") or it.get("role")
         if role not in cat:
             raise IBwaveError("no catalog part for role %r (line %r); add it to "
                               "config/parts_catalog.json" % (role, it.get("item")))
