@@ -886,6 +886,99 @@ curl -s -X POST $BASE/projects/1/builders/rooftop -H "Content-Type: application/
 | `power` | `load_amps`, `runtime_hours`, `string_ah` | Battery strings and rectifiers from the O-zone sizing (`power_plant_counts` in `romtool/estimate.py`). Defaults come from `config/rflink.json` (booster load) and `config/estimating.json` (string size and rectifier size). The chosen parts do not match the default string and rectifier sizes; see the catalog notes. |
 | `monitoring` | `annunciators` | One annunciator panel per unit and alarm wiring at the configured length per unit. A placeholder count. |
 
+## Area zones (mixed-use floors, ceiling height and pathway)
+
+A floor can hold named zones: a rectangle or polygon with a zone class. A zone
+sets the clutter for the squares it covers, so an office with an attached racked
+warehouse scores correctly without drawing walls, and it sets the ceiling height
+of antennas inside it. Zone values are mostly grade E estimates.
+
+### Using zones
+
+- In the UI, pick the **Zone** tool. Set the class, name, height and pathway in the
+  Zones panel first. Drag a rectangle, or click corners and close the shape with
+  **Finish polygon** or a click on the first corner.
+- Select a zone with the Select tool to edit its name, class, height or pathway in
+  the inspector, or to delete it (Delete key or **Delete zone**).
+- API: `GET` and `POST` on `/projects/{pid}/floors/{fid}/zones`, and `PATCH` and
+  `DELETE` on `.../zones/{zid}`. `POST` takes one zone or `{"zones": [...]}`. Body
+  fields: `name`, `class`, `rect` as `[x0, y0, x1, y1]` or `points` as
+  `[[x, y], ...]` in floor canvas px (the coordinates of walls, antennas and critical
+  areas), and the optional overrides `height_band`, `ceiling_height_m` and `pathway`.
+  A `null` override clears it. Each zone gets an `id`. Responses show the effective
+  `ceiling_height_m`, `height_band` and `pathway`, and `height_source` and
+  `pathway_source` say where each came from.
+- `GET /config` returns the zone classes under `clutter_map.classes`, the height bands
+  under `clutter_map.ceiling_height_bands` and the pathways under
+  `clutter_map.cable_pathways`.
+
+### Zone classes
+
+Zone classes are clutter classes in `config/default.json` (`clutter_map.classes`).
+The ten classes below are new. The five scoring classes (open, light_office,
+dense_rooms, core, exterior) are unchanged. Grade C means the dB/m value is the
+calibrated building type value. Grade E values are starting values taken from the
+named building type and are not calibrated.
+
+| Class | Code | dB/m | Grade | Source of the value | Default height | Default pathway |
+| --- | --- | --- | --- | --- | --- | --- |
+| warehouse_racked | r | 1.0 | C | building_types.warehouse_open (4 ANS warehouse designs) | Over 20 ft (lift) | Open ceiling / exposed |
+| high_bay_open | h | 0.1 | E | starting value of class open (no high-bay source) | Over 20 ft (lift) | Open ceiling / exposed |
+| office_open | a | 0.1 | E | building_types.office_open | Up to 10 ft | J-hook above drop ceiling |
+| office_standard | s | 0.3 | C | building_types.office_standard (12 ANS office designs) | Up to 10 ft | J-hook above drop ceiling |
+| office_dense | e | 0.6 | E | building_types.office_dense | Up to 10 ft | J-hook above drop ceiling |
+| hospital_rooms | p | 0.6 | C | building_types.hospital (12 ANS hospital designs) | Up to 10 ft | Hard lid ceiling |
+| hotel_rooms | t | 0.4 | C | building_types.hotel_residential (4 ANS designs) | Up to 10 ft | Conduit pull |
+| retail | i | 0.0 | E | building_types.retail_mall (not calibrated) | 10 to 15 ft | Cable tray |
+| parking_garage | g | 0.0 | E | building_types.parking_garage (not calibrated) | Up to 10 ft | Open ceiling / exposed |
+| stadium_bowl | y | 0.0 | E | building_types.stadium_venue (not calibrated) | Over 20 ft (lift) | Cable tray |
+
+Each class code is one character and unique. `_` is reserved for the fallback
+square of a zones-only grid.
+
+Height bands (`clutter_map.ceiling_height_bands`, all grade E): Up to 10 ft is 3.0 m,
+10 to 15 ft is 3.8 m (midpoint), 15 to 20 ft is 5.3 m (midpoint), and Over 20 ft (lift)
+is 7.6 m (25 ft). Pathways (`clutter_map.cable_pathways`): J-hook above drop ceiling,
+Cable tray, Conduit pull, Open ceiling / exposed, Hard lid ceiling, Vertical riser,
+Exterior / rooftop.
+
+### What a zone changes
+
+- Clutter. A square takes the zone class when its centre lies in the zone. Later
+  zones win where zones overlap. Zones also override the automatic square class and
+  any manual square override in the same area. Squares outside every zone keep the
+  floor's automatic clutter class. A floor with zones and no clutter map gets a grid
+  built from the zones alone (`cell_m` squares, no image needed). Squares outside
+  every zone take the floor's building type clutter, or 0 when no building type is
+  set. As with the clutter map, zones apply only when the floor has no walls drawn.
+- Antenna height. An antenna inside a zone sits at the zone's ceiling height. The
+  distance term in predict and autoplace uses the slant distance
+  `sqrt(d_h^2 + dv^2)`, where `d_h` is the horizontal distance and `dv` is the ceiling
+  height minus `autoplace.floor_height_m` (4.0 m). The path exponent N and the clutter
+  term (horizontal path) are unchanged. Antennas outside every zone, and all antennas
+  on a floor without zones, have `dv` = 0 and predict the same values as before.
+  Antennas on other floors get no height offset. Heights apply with or without walls.
+- Autoplace result. Each entry in `antennas` gives `zone_id`, `zone_name`,
+  `zone_class`, `ceiling_height_m`, `height_band`, `pathway` and `height_offset_m`.
+  Seed spacing uses the zone height that reaches least far. The coverage window uses
+  the height that reaches furthest, so no contribution is cut early.
+- Pathway. Recorded and reported only. It does not change RF results or BOM quantities.
+- Drawings. `layout.svg` and `layout.png` fill each zone by class, outline it, and
+  label it with name, class and height. The legend lists the zone classes present.
+
+### Limits
+
+- Only the warehouse, office standard, hospital and hotel values come from ANS
+  calibration (grade C). Every other zone value is a starting estimate. Zone ceiling
+  heights are estimates, not measurements. Calibrate against closed jobs before relying
+  on zone counts.
+- Height enters as one vertical term in the distance. There is no per-band height,
+  no reflection or ceiling geometry, and the floor baseline (4.0 m) is grade E.
+- An antenna takes the zone its point sits in. A zone smaller than one square covers
+  no square, and the map reports that as a warning.
+- Zones are rectangles or polygons in floor canvas px. They are not drawn on the plan
+  image and do not move with it. Holes and curved boundaries are not supported.
+
 ## Non-goals (per SPEC)
 
 Ray tracing, capacity modeling, .ibw interop, auth, pricing fields, systemd

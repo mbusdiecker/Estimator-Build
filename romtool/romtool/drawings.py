@@ -23,6 +23,7 @@ from xml.sax.saxutils import escape
 
 from .clutter_map import ClutterMapError, decode_png
 from .report import FONT, WHITE, draw_disc, encode_png, make_canvas, put_px, text_width
+from .zones import resolve_zones
 
 
 class DrawingError(ValueError):
@@ -56,6 +57,12 @@ CABLE_DEFAULT = GRAY
 CLUTTER_STYLE = {"open": (BRIGHT, 0.18), "light_office": (LIGHT, 0.5),
                  "dense_rooms": (ORANGE, 0.22), "core": (CHARCOAL, 0.4),
                  "exterior": (GRAY, 0.12)}
+# zone fills by zone class (translucent; outlined in navy)
+ZONE_STYLE = {"warehouse_racked": (BLUE, 0.22), "high_bay_open": (CYAN, 0.2),
+              "office_open": (LIGHT, 0.5), "office_standard": (LIGHT, 0.7),
+              "office_dense": (CHARCOAL, 0.25), "hospital_rooms": (ORANGE, 0.22),
+              "hotel_rooms": (ORANGE, 0.12), "retail": (BRIGHT, 0.14),
+              "parking_garage": (GRAY, 0.25), "stadium_bowl": (BLUE, 0.12)}
 
 NODE_STYLE = {
     "source": {"fill": NAVY, "text": WHITE_HEX, "stroke": NAVY},
@@ -543,6 +550,25 @@ def _floor_scene(model, config, floor_id, k, include_image, project_name, png_no
                 x0, y0 = P(c * cell, r * cell)
                 prims.append(_rect(x0, y0, cell * k, cell * k, fill=color, op=alpha))
 
+    # area zones: fill by class, outline, label with name, class and ceiling height
+    zones = resolve_zones(fl.get("zones") or [], cfg)
+    zone_classes = []
+    for z in zones:
+        color, alpha = ZONE_STYLE.get(z["class"], (GRAY, 0.2))
+        if z["class"] not in zone_classes:
+            zone_classes.append(z["class"])
+        pts = z["points"]
+        prims.append(_begin("zone", z.get("id")))
+        prims.append(_poly([P(p[0], p[1]) for p in pts], fill=color, stroke=NAVY,
+                           sw=max(1.0, float(k)), op=alpha, closed=True))
+        lx, ly = P(sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts))
+        height = ("%s m" % _n(z["ceiling_height_m"])) if z.get("ceiling_height_m") is not None \
+            else "height n/a"
+        prims.append(_txt(lx, ly, "%s (%s, %s)" % (z.get("name") or z.get("id"),
+                                                   z.get("class_label"), height),
+                          size=10, fill=NAVY, anchor="middle"))
+        prims.append(_end())
+
     prims.append(_rect(ox, oy, dw, dh, fill=None, stroke=GRAY, sw=1))
 
     for wall in fl.get("walls") or []:
@@ -613,6 +639,8 @@ def _floor_scene(model, config, floor_id, k, include_image, project_name, png_no
     for cid in CLUTTER_ORDER:
         if cid in classes_seen:
             items.append(("swatch", cid, (clut_cfg.get(cid) or {}).get("label", cid)))
+    for cid in zone_classes:
+        items.append(("zone", cid, "Zone: %s" % (clut_cfg.get(cid) or {}).get("label", cid)))
     cols = max(1, (canvas_w - 2 * FLOOR_PAD) // 230)
     legend_rows = int(math.ceil(len(items) / float(cols))) if items else 0
     m_per = _nice_scale_m(ppm, k, max_px=max(60, canvas_w - 2 * FLOOR_PAD - 20))
@@ -631,6 +659,9 @@ def _floor_scene(model, config, floor_id, k, include_image, project_name, png_no
                                sw=2, dash=(6, 4) if _is_fiber(cfg, key) else None))
         elif kind == "outline":
             prims.append(_line([(x, y - 4), (x + 18, y - 4)], stroke=NAVY, sw=3))
+        elif kind == "zone":
+            color, alpha = ZONE_STYLE.get(key, (GRAY, 0.2))
+            prims.append(_rect(x, y - 10, 14, 10, fill=color, stroke=NAVY, sw=1, op=alpha))
         else:
             color, alpha = CLUTTER_STYLE.get(key, (GRAY, 0.2))
             prims.append(_rect(x, y - 10, 14, 10, fill=color, stroke=GRAY, sw=1, op=alpha))

@@ -42,7 +42,9 @@ from array import array
 from . import config as cfgmod
 from .cascade import remote_max_out_dbm, solve_cascade
 from .clutter_map import ClutterField, ClutterMapError
-from .lossmodel import LossModelError, resolve_loss_model, system_types
+from .lossmodel import (LossModelError, floor_clutter_map, resolve_loss_model,
+                        system_types)
+from .zones import height_offset_fn, height_offset_range, resolve_zones, zone_at
 from .physics import scale_wall_loss_db
 from .geometry import build_wall_index, ray_wall_crossings
 
@@ -213,17 +215,25 @@ class _Band:
         self.floor_loss = float(config.get("floor_loss_db_per_floor", 15.4))
         self.ppm = ppm
         self.band = band
+        # zone ceiling heights: dv_at(x, y) in metres (None = no zones), and the
+        # floor's range of dv used for the seed radius (max) and the window (min)
+        self.dv_at = None
+        self.dv_min = 0.0
+        self.dv_max = 0.0
 
     def k_lin(self, eirp, extra_db=0.0):
         """Linear mW received at d = 1 m (before the distance and clutter terms)."""
         return 10.0 ** ((eirp - self.const20 + 28.0 - extra_db) / 10.0)
 
-    def radius_m(self, eirp, thr_dbm, clutter=None):
-        """Distance (no walls) where one antenna's RSSI falls to thr_dbm."""
+    def radius_m(self, eirp, thr_dbm, clutter=None, dv=0.0):
+        """Distance (no walls) where one antenna's RSSI falls to thr_dbm. dv is
+        the antenna's height offset (m); the N term uses the slant distance."""
         clutter = self.clutter if clutter is None else clutter
+        dv2 = dv * dv
 
         def level(d):
-            return (eirp - self.const20 - self.n * math.log10(d)
+            d3 = math.sqrt(d * d + dv2) if dv2 else d
+            return (eirp - self.const20 - self.n * math.log10(d3)
                     - clutter * d + 28.0)
         if level(0.01) < thr_dbm:
             return 0.0
@@ -239,45 +249,45 @@ class _Band:
         return lo
 
 
-def _contrib(grid, b, ax, ay, eirp, extra_db, walls):
+def _contrib(grid, b, ax, ay, eirp, extra_db, walls, dv=None):
     """Linear mW contribution of one antenna at every grid point (same math as
-    predict_floor: P.1238 distance term, clutter, wall crossings or floor loss)."""
+    predict_floor: P.1238 distance term, clutter, wall crossings or floor loss).
+    dv is the antenna's zone height offset in metres; None takes it from the
+    band's zone field at (ax, ay), 0.0 means no height offset (other floors)."""
     ppm = b.ppm
     k = b.k_lin(eirp, extra_db)
     expo = b.expo
+    if dv is None:
+        dv = b.dv_at(ax, ay) if b.dv_at is not None else 0.0
+    dv2 = dv * dv
     hyp = math.hypot
     xs, ys = grid.xs, grid.ys
+    # horizontal distance in m (clutter path); the N term uses the slant distance
+    dist = [max(hyp(x - ax, y - ay) / ppm, 0.01) for x, y in zip(xs, ys)]
+    if dv2:
+        pw = [(d * d + dv2) ** (0.5 * expo) for d in dist]
+    else:
+        pw = [d ** expo for d in dist]
     if b.field is not None:
         cl = b.field.loss_list(b.field.entry(ax, ay), xs, ys)
-        out = []
-        for x, y, c in zip(xs, ys, cl):
-            d = hyp(x - ax, y - ay) / ppm
-            if d < 0.01:
-                d = 0.01
-            out.append(k * d ** expo * 10.0 ** (-c / 10.0))
-        return out
+        return [k * p * 10.0 ** (-c / 10.0) for p, c in zip(pw, cl)]
     if walls:
         out = []
         mats = b.mats
         cl = -b.clutter / 10.0
-        for x, y in zip(xs, ys):
-            d = hyp(x - ax, y - ay) / ppm
-            if d < 0.01:
-                d = 0.01
+        for x, y, p, d in zip(xs, ys, pw, dist):
             loss = 0.0
             for w in ray_wall_crossings(walls, (ax, ay), (x, y)):
                 loss += mats[w[8]["material"]]
-            v = k * d ** expo * 10.0 ** (-loss / 10.0)
+            v = k * p * 10.0 ** (-loss / 10.0)
             if cl:
                 v *= 10.0 ** (cl * d)
             out.append(v)
         return out
     if b.clutter:
         cl = -b.clutter / 10.0
-        return [k * (d if d > 0.01 else 0.01) ** expo * 10.0 ** (cl * d)
-                for d in (hyp(x - ax, y - ay) / ppm for x, y in zip(xs, ys))]
-    return [k * (d if d > 0.01 else 0.01) ** expo
-            for d in (hyp(x - ax, y - ay) / ppm for x, y in zip(xs, ys))]
+        return [k * p * 10.0 ** (cl * d) for p, d in zip(pw, dist)]
+    return [k * p for p in pw]
 
 
 class _Req:
@@ -997,8 +1007,11 @@ class _Planner:
         self.cut_m = {}
         for r in reqs:
             b = bands[r.band]
-            rad = b.radius_m(eirp[r.band], r.thr_dbm)
-            cut = b.radius_m(eirp[r.band], r.thr_dbm - 10.0, clutter=b.clutter_min)
+            # seed spacing uses the lowest-reaching height (max dv); the window
+            # bound uses the highest-reaching one (min dv) so no contribution is cut
+            rad = b.radius_m(eirp[r.band], r.thr_dbm, dv=b.dv_max)
+            cut = b.radius_m(eirp[r.band], r.thr_dbm - 10.0, clutter=b.clutter_min,
+                             dv=b.dv_min)
             self.radius_m = rad if self.radius_m is None else min(self.radius_m, rad)
             self.cut_m[r.band] = max(self.cut_m.get(r.band, 0.0), cut)
         self.k = {bid: bands[bid].k_lin(eirp[bid]) for bid in bands}
@@ -1174,6 +1187,8 @@ class _Planner:
             fld = b.field
             if fld is not None and ent is None:
                 ent = fld.entry(ax, ay, cache=False)
+            dv = b.dv_at(ax, ay) if b.dv_at is not None else 0.0
+            dv2 = dv * dv
             cl = 0.0 if fld is not None else -b.clutter / 10.0
             cut_px = self.cut_m[r.band] * ppm
             arr = self.lin[r.band]
@@ -1189,7 +1204,10 @@ class _Planner:
                 d = hyp(dx, dy) / ppm
                 if d < 0.01:
                     d = 0.01
-                v = k * d ** expo
+                if dv2:
+                    v = k * (d * d + dv2) ** (0.5 * expo)
+                else:
+                    v = k * d ** expo
                 if cl:
                     v *= 10.0 ** (cl * d)
                 if fld is not None:
@@ -1306,7 +1324,7 @@ def _lin_from(grid, bands, floor, fixed, eirps, auto_ants=()):
                 continue
             extra_db = 0.0 if same else b.floor_loss * dlevel
             vals = _contrib(grid, b, x, y, eirp[0], extra_db,
-                            walls if same else None)
+                            walls if same else None, dv=None if same else 0.0)
             lin[bid] = [a + v for a, v in zip(lin[bid], vals)]
     return lin
 
@@ -1441,7 +1459,7 @@ def autoplace_floor(model, config, floor_id, request):
                   if len(ca.get("points", [])) >= 3]
 
     field = None
-    cmap = floor.get("clutter_map")
+    cmap = floor_clutter_map(model, config, floor, p["system_type"])
     if cmap and len(floor.get("walls") or []) < max(1, int(config.get("building_types_min_walls", 1))):
         try:
             field = ClutterField(cmap, config, ppm)
@@ -1449,6 +1467,11 @@ def autoplace_floor(model, config, floor_id, request):
             raise AutoplaceError(str(exc))
     bands = {bid: _Band(model, config, floor, bid, env, ppm, field,
                         system_type=p["system_type"]) for bid in p["bands"]}
+    # zone ceiling heights for this floor's antennas (None when no zones)
+    dv_fn = height_offset_fn(floor, config)
+    dv_lo, dv_hi = height_offset_range(floor, config)
+    for b in bands.values():
+        b.dv_at, b.dv_min, b.dv_max = dv_fn, dv_lo, dv_hi
     from .predict import _model_validity_warnings  # same validity note as predict
     for bid in p["bands"]:
         _model_validity_warnings(config, bands[bid].band, warnings)
@@ -1661,12 +1684,22 @@ def autoplace_floor(model, config, floor_id, request):
         warnings.append("target not met on the verification grid")
 
     ant_rows = []
+    zones_r = resolve_zones(floor.get("zones") or [], config)
+    base_h = float(ap["floor_height_m"])
     for e in final["chain"].elements:
         if e["type"] != "antenna":
             continue
+        z = zone_at(zones_r, e["x"], e["y"]) if zones_r else None
         ant_rows.append({
             "element_id": e["id"], "label": e["label"], "x_px": e["x"], "y_px": e["y"],
             "x_m": round(e["x"] / ppm, 2), "y_m": round(e["y"] / ppm, 2),
+            "zone_id": z["id"] if z else None,
+            "zone_name": z["name"] if z else None,
+            "zone_class": z["class"] if z else None,
+            "ceiling_height_m": (z["ceiling_height_m"] if z else base_h),
+            "height_band": z["height_band"] if z else None,
+            "pathway": z["pathway"] if z else None,
+            "height_offset_m": (round(z["ceiling_height_m"] - base_h, 2) if z else 0.0),
             "eirp_dbm": {bid: eirps[bid][e["id"]][0] for bid in p["bands"]}})
 
     counts = {"antennas": final["chain"].counts["antenna"],

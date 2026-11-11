@@ -23,6 +23,7 @@ from .geometry import build_wall_index, polygon_membership, ray_wall_crossings
 from .clutter_map import ClutterField, ClutterMapError
 from .lossmodel import LossModelError, resolve_loss_model
 from .physics import composite_dbm, itu_p1238_pl_db, scale_wall_loss_db
+from .zones import height_offset_fn
 
 
 class PredictError(Exception):
@@ -185,6 +186,7 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
     lin = [0.0] * n_pts
     best_val = [None] * n_pts
     best_id = [""] * n_pts
+    dv_at = height_offset_fn(floor, config)
 
     for ant in antennas:
         ax, ay = ant["x_px"], ant["y_px"]
@@ -196,6 +198,9 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
             dlevel = abs(int(ant["level"] or 0) - int(grid_level or 0))
             floor_term = floor_loss * dlevel
         ent = field.entry(ax, ay, cache=False) if field is not None else None
+        # zone ceiling height: slant distance in the N term (same floor only)
+        dv = dv_at(ax, ay) if (dv_at is not None and same) else 0.0
+        dv2 = dv * dv
         for ri in range(rows):
             y = ri * step
             dy = y - ay
@@ -205,7 +210,8 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
                 x = ci * step
                 dx = x - ax
                 d_m = math.sqrt(dx * dx + dy2) / ppm
-                pl = const20 + n_exp * math.log10(max(d_m, 0.01)) - 28.0
+                d3 = math.sqrt(d_m * d_m + dv2) if dv2 else d_m
+                pl = const20 + n_exp * math.log10(max(d3, 0.01)) - 28.0
                 if clutter_db_per_m:
                     pl += clutter_db_per_m * d_m
                 if ent is not None:
