@@ -45,6 +45,7 @@
       <button class="tool" data-tool="cable">Cable</button>
       <button class="tool" data-tool="poly">Critical area</button>
       <button class="tool" data-tool="box">Building box</button>
+      <button class="tool" data-tool="zone">Zone</button>
     </div>
     <button id="btnFinishPoly" class="mini" hidden>Finish polygon</button>
     <label class="lbl">Wall material <select id="matSel"></select></label>
@@ -62,6 +63,13 @@
     <label class="lbl"><span id="waysHint">Splitter</span> ways
       <select id="waysSel"><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>
     </label>
+    <div class="ptitle">Zones (new zone settings)</div>
+    <label class="lbl">Zone class <select id="zoneClassSel"></select></label>
+    <label class="lbl">Name <input id="zoneName" size="14" placeholder="auto"></label>
+    <label class="lbl">Height <select id="zoneHeightSel"></select></label>
+    <label class="lbl">Custom height (m) <input id="zoneHeightM" size="5"></label>
+    <label class="lbl">Pathway <select id="zonePathSel"></select></label>
+    <div id="zoneList" class="kpis">No zones on this floor.</div>
     <div class="ptitle">Heatmap legend</div>
     <div id="legend"></div>
   </aside>

@@ -85,6 +85,15 @@ footer a { color:var(--accent); }
 </ol>
 <p>Typical uses: fire command center, IT/riser rooms, areas of refuge. The example ground floor carries one ("IT room (critical)", the northwest room). Polygons count at the grid-point level &mdash; they do not change the RF; they scope where tier 2 is judged. Edit or add more later: nothing else needs to change.</p>
 
+<h2 id="zones">Area zones</h2>
+<p>Zones mark parts of a floor that differ, such as a racked warehouse attached to an office. Each zone has a class, which sets its clutter (dB/m) and its default ceiling height band and cable pathway.</p>
+<ol>
+  <li>Set the class, name, height and pathway in the <b>Zones</b> panel on the left. Pick <b>Zone</b> in the tool palette.</li>
+  <li>Drag a rectangle over the plan, or click corners and close the shape with <b>Finish polygon</b> or a click on the first corner.</li>
+  <li>To change a zone, select it with the <b>Select</b> tool. The inspector edits its name, class, height and pathway. <b>Delete zone</b> removes it.</li>
+</ol>
+<p>Squares whose centre lies in a zone take the zone's clutter. Later zones win where they overlap. Squares outside every zone keep the automatic clutter map, or the building type when the floor has no clutter map. An antenna inside a zone sits at that zone's ceiling height, which changes its predicted level and autoplace coverage. Zone heights are estimates. Pathways are recorded only.</p>
+
 <h2 id="s5b">Building box and perimeter</h2>
 <p>The <b>Building box</b> tool traces the building outline from the floor plan. Drag a rectangle around the building (leave a margin, keep the title block and sheet border outside), and ROMtool traces the outer walls inside it and draws the outline in cyan. The box is stored with the floor, so a re-trace uses it. If the outline runs along a box edge, the building is cut by the box: enlarge the box. Autoplace keeps antennas inside the outline. Plan import and the trace are also available through the API (<code>POST .../plan</code>, <code>POST .../perimeter/trace</code>).</p>
 <h2 id="s6">6. Place the element chain</h2>

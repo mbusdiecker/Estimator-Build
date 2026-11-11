@@ -11,6 +11,7 @@ const S = {
   tool: "select", elTool: null, mat: "drywall",
   wallDraft: null, cableFrom: null, polyDraft: null, selCa: null,
   sel: null, selWall: null,
+  zoneDraft: null, zoneHover: null, zonePoly: null, zoneWasDrag: false, selZone: null,
   drag: null, hoverPt: null, calib: null, imgCache: {}, zoom: 6,
 };
 
@@ -139,6 +140,8 @@ function render() {
   // heatmap overlay
   if (S.predict) drawHeatmap();
 
+  drawZones(f);
+
   // critical-area polygons (magenta, fill + outline; current floor solid)
   for (const fl of S.project.model.floors) {
     if (fl.id !== S.floorId) continue;
@@ -198,6 +201,24 @@ function render() {
     ctx.strokeStyle = "#e060e0"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
     ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = "#e060e0";
+    for (const [px, py] of pts) ctx.fillRect(px - 2, py - 2, 4, 4);
+  }
+
+  // ghost zone: rectangle drag or polygon in progress
+  if (S.zoneDraft && S.zoneHover) {
+    const [a, b] = toScr(S.zoneDraft[0], S.zoneDraft[1]);
+    const [c, d] = toScr(S.zoneHover[0], S.zoneHover[1]);
+    ctx.setLineDash([6, 4]); ctx.strokeStyle = "#05cdfb"; ctx.lineWidth = 2;
+    ctx.strokeRect(Math.min(a, c), Math.min(b, d), Math.abs(c - a), Math.abs(d - b));
+    ctx.setLineDash([]);
+  }
+  if (S.zonePoly && S.zonePoly.length && S.hoverPt) {
+    const pts = S.zonePoly.map((p) => toScr(p[0], p[1])).concat([toScr(S.hoverPt[0], S.hoverPt[1])]);
+    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+    for (const [px, py] of pts.slice(1)) ctx.lineTo(px, py);
+    ctx.strokeStyle = "#05cdfb"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "#05cdfb";
     for (const [px, py] of pts) ctx.fillRect(px - 2, py - 2, 4, 4);
   }
 
@@ -293,15 +314,17 @@ cv.addEventListener("mousemove", (ev) => {
   const [mx, my] = canvasPos(ev);
   S.hoverPt = [mx, my];
   if (S.tool === "box" && S.boxDraft) { S.boxHover = [mx, my]; render(); return; }
+  if (S.tool === "zone" && S.zoneDraft) { S.zoneHover = [mx, my]; render(); return; }
   if (S.drag) {
     S.drag.el.x = mx; S.drag.el.y = my; render(); return;
   }
-  if (S.tool === "wall" || S.tool === "cable" || S.tool === "poly") render();
+  if (S.tool === "wall" || S.tool === "cable" || S.tool === "poly" || S.tool === "zone") render();
 });
 cv.addEventListener("mousedown", (ev) => {
   const [mx, my] = canvasPos(ev);
   if (S.tool === "wall") { S.wallDraft = [mx, my]; return; }
   if (S.tool === "box") { S.boxDraft = [mx, my]; S.boxHover = [mx, my]; return; }
+  if (S.tool === "zone") { S.zoneDraft = [mx, my]; S.zoneHover = [mx, my]; S.zoneWasDrag = false; return; }
   if (S.tool === "select") {
     const hit = nearestElement(mx, my, false);
     if (hit) { S.drag = hit; S.sel = hit.el.id; S.selWall = null; inspect(hit.el); render(); }
@@ -310,6 +333,7 @@ cv.addEventListener("mousedown", (ev) => {
 cv.addEventListener("mouseup", async (ev) => {
   const [mx, my] = canvasPos(ev);
   if (S.tool === "box" && S.boxDraft) { await finishBox(mx, my); return; }
+  if (S.tool === "zone" && S.zoneDraft) { await finishZoneRect(mx, my); return; }
   if (S.tool === "wall" && S.wallDraft) {
     const [x1, y1] = S.wallDraft; S.wallDraft = null;
     if (Math.hypot(x1 - mx, y1 - my) > 2 / S.zoom) {
@@ -331,6 +355,18 @@ cv.addEventListener("mouseup", async (ev) => {
 });
 cv.addEventListener("click", async (ev) => {
   const [mx, my] = canvasPos(ev);
+  if (S.tool === "zone") {
+    if (S.zoneWasDrag) { S.zoneWasDrag = false; return; }  // click that ended a rectangle drag
+    if (!S.zonePoly) S.zonePoly = [];
+    if (S.zonePoly.length >= 3) {
+      const [x0, y0] = S.zonePoly[0];
+      if (Math.hypot(x0 - mx, y0 - my) < 8 / S.zoom) { await commitZonePoly(); return; }
+    }
+    S.zonePoly.push([Math.round(mx), Math.round(my)]);
+    $("btnFinishPoly").hidden = S.zonePoly.length < 3;
+    render();
+    return;
+  }
   if (S.calib) {
     S.calib.push([mx, my]);
     if (S.calib.length === 2) {
@@ -377,20 +413,24 @@ cv.addEventListener("click", async (ev) => {
   }
   if (S.tool === "select") {
     const hit = nearestElement(mx, my, false);
-    if (hit) { S.sel = hit.el.id; S.selWall = null; inspect(hit.el); render(); return; }
+    if (hit) { S.sel = hit.el.id; S.selWall = null; S.selZone = null; inspect(hit.el); render(); return; }
     const wl = nearestWall(mx, my);
-    if (wl) { S.selWall = wl.id; S.sel = null; inspectWall(wl); render(); return; }
-    S.sel = null; S.selWall = null; inspect(null); render();
+    if (wl) { S.selWall = wl.id; S.sel = null; S.selZone = null; inspectWall(wl); render(); return; }
+    const zn = zoneAt(mx, my);
+    if (zn) { S.selZone = zn.id; S.sel = null; S.selWall = null; inspectZone(zn); render(); return; }
+    S.sel = null; S.selWall = null; S.selZone = null; inspect(null); render();
   }
 });
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     S.elTool = null; S.cableFrom = null; S.wallDraft = null;
     S.calib = null; S.polyDraft = null; S.selCa = null;
+    S.zoneDraft = null; S.zonePoly = null;
     const fp = $("btnFinishPoly"); if (fp) fp.hidden = true;
     render();
   }
   if (e.key === "Delete" && S.sel) deleteElement(S.sel);
+  else if (e.key === "Delete" && S.selZone && !(e.target && e.target.matches("input, select, textarea"))) deleteZone(S.selZone);
 });
 
 function nearestWall(mx, my) {
@@ -411,10 +451,13 @@ function nearestWall(mx, my) {
 document.querySelectorAll(".tool[data-tool]").forEach((b) => {
   b.onclick = () => {
     S.tool = b.dataset.tool; S.elTool = null; S.cableFrom = null;
+    S.zoneDraft = null; S.zonePoly = null;
+    $("btnFinishPoly").hidden = !((S.tool === "poly" && S.polyDraft) || (S.tool === "zone" && S.zonePoly));
     document.querySelectorAll(".tool").forEach((x) => x.classList.remove("active"));
     b.classList.add("active");
     toast(S.tool === "wall" ? "Drag on canvas to draw a wall (" + S.mat + ")" :
           S.tool === "box" ? "Drag a box around the building; the outline is traced inside it" :
+          S.tool === "zone" ? "Zone: drag a rectangle, or click corners (Finish polygon, or click the first corner) to close" :
           S.tool === "cable" ? "Click chain element, then receiving element" :
           S.tool === "poly" ? "Click polygon corners; click near the first corner (or Finish) to close" :
           "Select tool");
@@ -563,7 +606,7 @@ async function commitPoly() {
   } catch (e) { toast(e.message, true); }
   render();
 }
-$("btnFinishPoly").onclick = commitPoly;
+$("btnFinishPoly").onclick = () => (S.tool === "zone" ? commitZonePoly() : commitPoly());
 
 async function deleteCriticalArea(id) {
   try {
@@ -764,6 +807,227 @@ function buildField(box, target, f) {
   row.appendChild(lab); row.appendChild(input); box.appendChild(row);
 }
 
+/* ---------------- area zones ------------------------------------------- */
+// Zone fills by class (ANS palette, translucent). Heights mirror zones.py:
+// a zone's own override wins, then the class's ceiling height band.
+const ZONE_RGB = {
+  warehouse_racked: "2,84,141", high_bay_open: "5,205,251", office_open: "231,231,231",
+  office_standard: "231,231,231", office_dense: "35,36,38", hospital_rooms: "243,125,40",
+  hotel_rooms: "243,125,40", retail: "5,205,251", parking_garage: "134,142,146",
+  stadium_bowl: "2,84,141",
+};
+function zoneClassCfgAll() { return (S.cfg.clutter_map || {}).classes || {}; }
+const zoneClassCfg = (cid) => zoneClassCfgAll()[cid] || {};
+const zoneBands = () => (S.cfg.clutter_map || {}).ceiling_height_bands || {};
+const zonePathways = () => (S.cfg.clutter_map || {}).cable_pathways || [];
+function zoneHeightM(z) {
+  if (z.ceiling_height_m != null) return z.ceiling_height_m;
+  const band = z.height_band || zoneClassCfg(z.class).height_band;
+  const b = zoneBands()[band];
+  return b ? b.height_m : null;
+}
+function zonePathway(z) { return z.pathway || zoneClassCfg(z.class).pathway || ""; }
+function pointInPoly(x, y, pts) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [xi, yi] = pts[i], [xj, yj] = pts[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function zoneAt(mx, my) {
+  const zs = (floor() && floor().zones) || [];
+  for (let i = zs.length - 1; i >= 0; i--) if (pointInPoly(mx, my, zs[i].points || [])) return zs[i];
+  return null;
+}
+function findZone(zid) { return ((floor() && floor().zones) || []).find((z) => z.id === zid) || null; }
+
+function drawZones(f) {
+  for (const z of f.zones || []) {
+    const pts = (z.points || []).map((p) => toScr(p[0], p[1]));
+    if (pts.length < 3) continue;
+    const sel = S.selZone === z.id;
+    ctx.beginPath();
+    pts.forEach(([sx, sy], i) => (i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy)));
+    ctx.closePath();
+    ctx.fillStyle = "rgba(" + (ZONE_RGB[z.class] || "134,142,146") + ",0.22)";
+    ctx.strokeStyle = sel ? "#ffffff" : "#112732";
+    ctx.lineWidth = sel ? 2.5 : 1.5;
+    ctx.fill(); ctx.stroke();
+    const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+    const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+    const h = zoneHeightM(z);
+    const label = (z.name || z.id) + " (" + (zoneClassCfg(z.class).label || z.class) +
+      (h != null ? ", " + h + " m" : "") + ")";
+    ctx.fillStyle = "#e7e7e7"; ctx.font = "10px system-ui"; ctx.textAlign = "center";
+    ctx.fillText(label, cx, cy);
+  }
+}
+
+function fillZoneControls() {
+  const fill = (id, opts, first) => {
+    const sel = $(id); sel.innerHTML = "";
+    for (const [val, txt] of opts) {
+      const o = document.createElement("option"); o.value = val; o.textContent = txt;
+      sel.appendChild(o);
+    }
+    if (first !== undefined) sel.value = first;
+  };
+  fill("zoneClassSel", Object.entries(zoneClassCfgAll()).map(([k, v]) => [k, v.label || k]));
+  fill("zoneHeightSel", [["", "class default"]]
+    .concat(Object.keys(zoneBands()).map((b) => [b, b]))
+    .concat([["__m", "custom (m)"]]));
+  fill("zonePathSel", [["", "class default"]].concat(zonePathways().map((p) => [p, p])));
+}
+
+// Height and pathway controls for a new zone (null = class default).
+function heightFromControls() {
+  const v = $("zoneHeightSel").value;
+  if (v === "__m") {
+    const m = parseFloat($("zoneHeightM").value);
+    return { ceiling_height_m: isFinite(m) ? m : null, height_band: null };
+  }
+  return { height_band: v || null, ceiling_height_m: null };
+}
+
+async function reloadProject() { S.project = await api(P()); }
+
+async function createZone(geom) {
+  const f = floor(); if (!f) return;
+  const name = $("zoneName").value.trim() || ("Zone " + ((f.zones || []).length + 1));
+  const body = Object.assign({ name, class: $("zoneClassSel").value,
+    pathway: $("zonePathSel").value || null }, heightFromControls(), geom);
+  try {
+    const r = await api(P() + "/floors/" + S.floorId + "/zones", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    S.selZone = r.zones[0].id;
+    await reloadProject();
+    toast("Zone added: " + name);
+    inspectZone(findZone(S.selZone));
+  } catch (e) { toast(e.message, true); }
+  renderZoneList(); render();
+}
+
+async function finishZoneRect(mx, my) {
+  const [x0, y0] = S.zoneDraft;
+  S.zoneDraft = null; S.zoneHover = null;
+  if (Math.abs(mx - x0) < 4 / S.zoom || Math.abs(my - y0) < 4 / S.zoom) { render(); return; }
+  S.zoneWasDrag = true;
+  await createZone({ rect: [Math.min(x0, mx), Math.min(y0, my), Math.max(x0, mx), Math.max(y0, my)]
+    .map((v) => Math.round(v)) });
+}
+
+async function commitZonePoly() {
+  if (!S.zonePoly || S.zonePoly.length < 3) { toast("need at least 3 corners", true); return; }
+  const pts = S.zonePoly;
+  S.zonePoly = null; $("btnFinishPoly").hidden = true;
+  await createZone({ points: pts });
+}
+
+async function patchZone(zid, body) {
+  try {
+    await api(P() + "/floors/" + S.floorId + "/zones/" + zid, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    await reloadProject();
+    toast("Zone saved");
+    inspectZone(findZone(zid));
+  } catch (e) { toast(e.message, true); }
+  renderZoneList(); render();
+}
+
+async function deleteZone(zid) {
+  try {
+    await api(P() + "/floors/" + S.floorId + "/zones/" + zid, { method: "DELETE" });
+    S.selZone = null; inspect(null);
+    await reloadProject();
+    toast("Zone deleted");
+  } catch (e) { toast(e.message, true); }
+  renderZoneList(); render();
+}
+
+function selectOf(opts, val) {
+  const sel = document.createElement("select");
+  for (const [v, t] of opts) {
+    const o = document.createElement("option"); o.value = v; o.textContent = t;
+    sel.appendChild(o);
+  }
+  sel.value = val;
+  return sel;
+}
+
+function inspectZone(z) {
+  const box = $("insp");
+  if (!z) { box.innerHTML = "Nothing selected."; return; }
+  box.innerHTML = "";
+  const head = document.createElement("div"); head.className = "head";
+  head.textContent = "zone: " + (z.name || z.id);
+  box.appendChild(head);
+  const addRow = (label, input) => {
+    const row = document.createElement("div"); row.className = "fld";
+    const lab = document.createElement("label"); lab.textContent = label;
+    row.appendChild(lab); row.appendChild(input); box.appendChild(row);
+    return input;
+  };
+  const nameIn = document.createElement("input"); nameIn.type = "text"; nameIn.value = z.name || "";
+  addRow("name", nameIn);
+  const clsIn = addRow("class", selectOf(Object.entries(zoneClassCfgAll())
+    .map(([k, v]) => [k, v.label || k]), z.class));
+  const overridden = z.ceiling_height_m != null ? "__m" : (z.height_band || "");
+  const hSel = addRow("height", selectOf([["", "class default"]]
+    .concat(Object.keys(zoneBands()).map((b) => [b, b])).concat([["__m", "custom (m)"]]), overridden));
+  const hIn = document.createElement("input"); hIn.type = "number"; hIn.step = "0.1";
+  hIn.value = z.ceiling_height_m != null ? z.ceiling_height_m : "";
+  hIn.style.display = hSel.value === "__m" ? "" : "none";
+  hSel.onchange = () => { hIn.style.display = hSel.value === "__m" ? "" : "none"; };
+  addRow("custom height (m)", hIn);
+  const pSel = addRow("pathway", selectOf([["", "class default"]]
+    .concat(zonePathways().map((p) => [p, p])), z.pathway || ""));
+  const info = document.createElement("div"); info.className = "kpis";
+  const h = zoneHeightM(z);
+  info.textContent = "effective height " + (h != null ? h + " m" : "n/a") + "; pathway " +
+    (zonePathway(z) || "n/a") + "; " + (z.points || []).length + " corners";
+  box.appendChild(info);
+  const save = document.createElement("button");
+  save.textContent = "Save zone"; save.className = "mini";
+  save.onclick = () => {
+    const body = { name: nameIn.value.trim() || z.name, class: clsIn.value, pathway: pSel.value || null };
+    if (hSel.value === "__m") {
+      const m = parseFloat(hIn.value);
+      if (!isFinite(m)) { toast("enter the custom height in m", true); return; }
+      body.ceiling_height_m = m; body.height_band = null;
+    } else {
+      body.height_band = hSel.value || null; body.ceiling_height_m = null;
+    }
+    patchZone(z.id, body);
+  };
+  box.appendChild(save);
+  const del = document.createElement("button");
+  del.textContent = "Delete zone"; del.className = "mini";
+  del.onclick = () => deleteZone(z.id);
+  box.appendChild(del);
+}
+
+function renderZoneList() {
+  const box = $("zoneList"); if (!box) return;
+  box.innerHTML = "";
+  const zs = (floor() && floor().zones) || [];
+  if (!zs.length) { box.textContent = "No zones on this floor."; return; }
+  for (const z of zs) {
+    const row = document.createElement("div"); row.className = "fld";
+    row.style.cursor = "pointer";
+    const h = zoneHeightM(z);
+    row.textContent = (z.name || z.id) + ": " + (zoneClassCfg(z.class).label || z.class) +
+      ", " + (h != null ? h + " m" : "height n/a");
+    row.title = "click to select and edit";
+    row.onclick = () => { S.selZone = z.id; S.sel = null; S.selWall = null; inspectZone(z); render(); };
+    box.appendChild(row);
+  }
+}
+
 /* ---------------- project/floor wiring --------------------------------- */
 async function loadProjects() {
   const r = await api("/projects");
@@ -787,8 +1051,9 @@ async function loadProject(pid) {
   const fls = S.project.model.floors;
   S.floorId = fls.length ? fls[0].id : null;
   S.solve = null; S.predict = null; S.sel = null; S.imgCache = {}; S.polyDraft = null; S.selCa = null;
+  S.selZone = null; S.zonePoly = null; S.zoneDraft = null;
   $("kpis").textContent = "Run solve, then enable the heatmap overlay.";
-  buildFloorTabs(); setPpmBox(); render(); renderNfpa();
+  buildFloorTabs(); setPpmBox(); render(); renderNfpa(); renderZoneList();
   $("lnkCsv").href = "/exports/projects/" + pid + "/bom.csv";
   $("lnkJson").href = "/exports/projects/" + pid + "/bom.json";
   await refreshBom();
@@ -803,7 +1068,8 @@ function buildFloorTabs() {
     b.onclick = (ev) => {
       if (ev.target.classList.contains("x")) { deleteFloor(f.id); return; }
       S.floorId = f.id; setPpmBox(); buildFloorTabs();
-      S.predict = null; render(); renderNfpa();
+      S.predict = null; S.selZone = null; S.zonePoly = null; S.zoneDraft = null;
+      render(); renderNfpa(); renderZoneList();
     };
     tabs.appendChild(b);
   }
@@ -977,6 +1243,7 @@ function buildPaletteFromConfig() {
   try {
     S.cfg = await api("/config");
     buildPaletteFromConfig();
+    fillZoneControls();
     await loadProjects();
     render();
   } catch (e) { toast("init failed: " + e.message, true); }

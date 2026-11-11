@@ -74,6 +74,7 @@ from romtool.governance import (GovernanceError, StateRuleError,
 from romtool.predict import PredictError, predict_floor
 from romtool.rflink import RfLinkError, draft_for_project
 from romtool.sanity import run_sanity
+from romtool.zones import ZoneError, normalize_zone, resolve_zone, resolve_zones
 from romtool.report import render_heatmap_png
 from romtool.drawings import (floor_layout_png, floor_layout_svg,
                                  one_line_png, one_line_svg)
@@ -2189,6 +2190,73 @@ def delete_critical_area(pid: int, caid: str):
             _save(pid, proj["name"], model)
             return {"deleted": caid}
     raise HTTPException(status_code=404, detail="critical area %s not found" % caid)
+
+
+# ---------------------------------------------------------------- zones
+
+def _zone_index(floor, zid):
+    for i, z in enumerate(floor.get("zones") or []):
+        if z.get("id") == zid:
+            return i
+    raise HTTPException(status_code=404, detail="zone %s not found on this floor" % zid)
+
+
+@router.get("/projects/{pid}/floors/{fid}/zones")
+def list_zones(pid: int, fid: str):
+    proj = _load_or_404(pid)
+    floor = _find_floor(proj["model"], fid)
+    cfg = _proj_config(proj["model"])
+    return {"floor_id": fid, "zones": resolve_zones(floor.get("zones") or [], cfg)}
+
+
+@router.post("/projects/{pid}/floors/{fid}/zones")
+def add_zones(pid: int, fid: str, payload: dict = Body(...)):
+    """One zone, or {"zones": [...]} for several. Body fields: name, class,
+    rect [x0, y0, x1, y1] or points [[x, y], ...] (floor canvas px), and optional
+    height_band, ceiling_height_m, pathway overrides."""
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    floor = _find_floor(model, fid)
+    cfg = _proj_config(model)
+    batch = payload.get("zones") if isinstance(payload.get("zones"), list) else [payload]
+    recs = []
+    try:
+        for raw in batch:
+            rec = normalize_zone(raw, cfg)
+            rec["id"] = _new_id("zone")
+            recs.append(rec)
+    except ZoneError as exc:
+        raise HTTPException(status_code=422, detail={"errors": exc.errors})
+    floor.setdefault("zones", []).extend(recs)
+    _save(pid, proj["name"], model)
+    return {"zones": resolve_zones(recs, cfg)}
+
+
+@router.patch("/projects/{pid}/floors/{fid}/zones/{zid}")
+def patch_zone(pid: int, fid: str, zid: str, payload: dict = Body(...)):
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    floor = _find_floor(model, fid)
+    cfg = _proj_config(model)
+    i = _zone_index(floor, zid)
+    try:
+        rec = normalize_zone(payload, cfg, base=floor["zones"][i])
+    except ZoneError as exc:
+        raise HTTPException(status_code=422, detail={"errors": exc.errors})
+    rec["id"] = zid
+    floor["zones"][i] = rec
+    _save(pid, proj["name"], model)
+    return {"zone": resolve_zone(rec, cfg)}
+
+
+@router.delete("/projects/{pid}/floors/{fid}/zones/{zid}")
+def delete_zone(pid: int, fid: str, zid: str):
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    floor = _find_floor(model, fid)
+    del floor["zones"][_zone_index(floor, zid)]
+    _save(pid, proj["name"], model)
+    return {"deleted": zid, "floor_id": fid}
 
 
 # ---------------------------------------------------------------- NFPA report
