@@ -886,6 +886,36 @@ curl -s -X POST $BASE/projects/1/builders/rooftop -H "Content-Type: application/
 | `power` | `load_amps`, `runtime_hours`, `string_ah` | Battery strings and rectifiers from the O-zone sizing (`power_plant_counts` in `romtool/estimate.py`). Defaults come from `config/rflink.json` (booster load) and `config/estimating.json` (string size and rectifier size). The chosen parts do not match the default string and rectifier sizes; see the catalog notes. |
 | `monitoring` | `annunciators` | One annunciator panel per unit and alarm wiring at the configured length per unit. A placeholder count. |
 
+### Grades and budget brands
+
+Each project has a `grade` and a `budget_brand`. The grade is `carrier` (default), `enterprise` or `budget`. The brand is `techwave` (default) or `cheapest`, and it only applies when the grade is `budget`. Set both with `PATCH /projects/{id}`, for example `{"grade": "enterprise"}`. The BOM, the BOM CSV and JSON, the iBwave CSV and XLSX, and the builder endpoints accept `?grade=` and `?budget_brand=` for a single request. A value outside the list returns 422. The BOM panel has the same two controls.
+
+The project can also carry `bands`, a list of band ids from `config/default.json`. Without it, every configured band is checked.
+
+| Grade | Tappers and couplers | Omni | 1/2 in cable and connector |
+|---|---|---|---|
+| carrier | Microlab/FXR DN-xxFE tappers, Microlab/FXR CC-6xxE couplers | CommScope CMAX-O-43-UW-i53 | HL4RPV-50 with JMA UPL-4MT-12 |
+| enterprise | Median-ranked compliant part per role and tap ratio | Median-ranked compliant omni | RFS LCF12/ICA12 family, median connector WCW-43M-LCF12-D01, no cable model on file |
+| budget, techwave | Techwave part at the exact ratio; otherwise the fallback chain | Techwave TC AI698-2700V05i360B | Techwave N connector TC-CN-N-J-1/2-RC-1 with the ICA12 family cable, to confirm |
+| budget, cheapest | Lowest-ranked compliant part per role and tap ratio | Lowest-ranked compliant omni | RFS 43M-LCF12-E01, no cable model on file |
+
+Candidate lists come from ANS quote history (parts on 2 or more jobs). They live in `config/grades.json` with the source and job count on each row. Band ranges, tap ratios and interfaces are taken from the description when it states them. `budget_rank` orders the candidates and is not catalog data.
+
+A part is compliant when its stated range covers each project band centre frequency (`freq_mhz` in the band config). A part with no stated range is not compliant for any band. Connectors are checked by cable family and interface, not by band.
+
+When the budget Techwave part is not compliant or the exact tap ratio is missing, the selection moves to the cheapest compliant part, then enterprise, then carrier. The carrier part is the last resort and is kept even when it does not cover a band. The note on that line says which band it misses. Each affected line carries a `note` in the BOM JSON and the builder responses, and `grade_notes` lists the notes for the project. The iBwave file has no note column, so the notes appear only in the JSON and on the BOM panel.
+
+Tap and coupler losses are not changed. Each tapper or coupler line is counted by its modeled loss (the element's own `tap_loss_db` or `coupled_loss_db`, otherwise the config default), so elements with different losses get separate lines. The line uses the nearest ratio the selected family offers, and ties go to the lower ratio. The note gives the modeled and part values. The cascade still uses the modeled loss, so the note marks where the physics and the part differ.
+
+The grade applies to the element BOM and builder lines that carry the 1/2 in cable: the 1/2 in cable and its connectors, branch connectors when the branch cable is 1/2 in, the rooftop plenum leg and GPS coax. It does not apply to the 7/8 in trunk, LMR-400, the outdoor donor run (LDF4-50A), splitters, jumpers, mounts, surge arrestors, fiber or head-end units.
+
+Open items:
+- Carrier couplers are not in the grade brief. They use the Microlab CC-6xxE family, the same vendor as the carrier tappers, and need owner confirmation.
+- The Techwave N connector has no description on file. The budget Techwave pairing assumes the ICA12 family.
+- The budget Techwave grade mixes N-type omnis and couplers with the 4.3-10 fallback tappers.
+- Splitter TC-MSCoM-02NF is not wired because it has no band range or candidate row.
+- ANS data has no ICA12 or LCF12 cable model, so enterprise and budget lines show the cable with an empty model.
+
 ## Area zones (mixed-use floors, ceiling height and pathway)
 
 A floor can hold named zones: a rectangle or polygon with a zone class. A zone
