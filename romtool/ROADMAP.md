@@ -25,7 +25,8 @@ Already built:
 - Building-type and zone loss, with zones carrying ceiling height and pathway.
 - Clutter map, plan import and building-box perimeter.
 - One-line and floor layout drawings.
-- Parts catalog, grade tiers (in progress), assembly builders (rooftop, closet, riser, GPS, power, monitoring) and the iBwave-style BOM export.
+- Parts catalog, grade tiers, assembly builders (rooftop, closet, riser, GPS, power, monitoring) and the iBwave-style BOM export.
+- OEM packages for ten OEMs (config/oem_packages.json). Selecting one replaces the generic head end, remote and repeater lines with that OEM's most-quoted parts, counted from ANS quote-history ratios. A ratio is applied only when at least three jobs support it.
 
 ## Day 2
 

@@ -1066,9 +1066,25 @@ function syncGradeControls() {
   $("gradeSel").value = m.grade || "carrier";
   $("brandSel").value = m.budget_brand || "techwave";
   $("brandLbl").style.display = $("gradeSel").value === "budget" ? "" : "none";
+  $("oemSel").value = m.oem || "";
 }
+async function loadOemOptions() {
+  try {
+    const r = await api("/oem_packages");
+    const sel = $("oemSel");
+    for (const p of r.packages) {
+      const o = document.createElement("option");
+      o.value = p.key;
+      o.textContent = p.label + " (" + p.system_type.toUpperCase() + ", " + p.jobs + " jobs)";
+      sel.appendChild(o);
+    }
+    if (S.project) syncGradeControls();
+  } catch (e) { toast(e.message, true); }
+}
+loadOemOptions();
 async function saveGradeControls() {
-  const body = { grade: $("gradeSel").value, budget_brand: $("brandSel").value };
+  const body = { grade: $("gradeSel").value, budget_brand: $("brandSel").value,
+                 oem: $("oemSel").value || null };
   try {
     S.project = await api(P(), {
       method: "PATCH", headers: { "Content-Type": "application/json" },
@@ -1080,6 +1096,7 @@ async function saveGradeControls() {
 }
 $("gradeSel").onchange = saveGradeControls;
 $("brandSel").onchange = saveGradeControls;
+$("oemSel").onchange = saveGradeControls;
 
 function buildFloorTabs() {
   const tabs = $("floorTabs"); tabs.innerHTML = "";
@@ -1249,7 +1266,8 @@ async function refreshBom() {
     renderBands();
     const box = $("bomBox");
     if (!S.bom.items.length) { box.innerHTML = "No parts yet — build the chain."; return; }
-    let html = '<div class="cat">Grade: ' + S.bom.grade + (S.bom.grade === "budget" ? " / " + S.bom.budget_brand : "") + "</div>";
+    let html = '<div class="cat">Grade: ' + S.bom.grade + (S.bom.grade === "budget" ? " / " + S.bom.budget_brand : "") +
+      (S.bom.oem ? " · OEM: " + ($("oemSel").selectedOptions[0] || {}).textContent : "") + "</div>";
     html += '<table><tr><th>Category</th><th>Item</th><th class="q">Qty</th><th>Unit</th></tr>';
     for (const it of S.bom.items) {
       html += "<tr><td class='cat'>" + it.category + "</td><td>" + it.item +

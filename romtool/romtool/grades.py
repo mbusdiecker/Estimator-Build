@@ -23,6 +23,7 @@ import re
 
 from romtool.bom import generate_bom
 from romtool.builders import builder_items, load_parts_catalog
+from romtool.oem import OEMError, check_oem, expand_oem
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_GRADES_PATH = os.path.join(_REPO_ROOT, "config", "grades.json")
@@ -87,7 +88,7 @@ def default_bands(model, config, grades):
     return ids
 
 
-def settings_for(model, config, grade=None, budget_brand=None, grades=None):
+def settings_for(model, config, grade=None, budget_brand=None, grades=None, oem=None):
     """Resolve the grade settings for a project. Explicit arguments (request
     query) win over the project's stored values, which win over the defaults."""
     g = grades or load_grades()
@@ -99,9 +100,15 @@ def settings_for(model, config, grade=None, budget_brand=None, grades=None):
     freq = {b["id"]: float(b["freq_mhz"]) for b in config.get("bands", [])}
     ids = check_bands(model["bands"], config) if model.get("bands") else default_bands(
         model, config, g)
+    try:
+        oem_key = check_oem(oem if oem is not None else model.get("oem"))
+    except OEMError as exc:
+        raise GradeError(str(exc))
     return {
         "grade": grade,
         "budget_brand": brand,
+        "oem": oem_key,
+        "system_type": model.get("system_type"),
         "bands": ids,
         "freqs": [freq[i] for i in ids],
         "band_freq": freq,
@@ -401,6 +408,11 @@ def grade_items(items, config, settings, catalog=None):
         out.append(new)
         if res.get("adapter"):
             out.append(_adapter_item(it, 1 if kind == "omni" else 2, target_interface(settings)))
+
+    if settings.get("oem"):
+        out, oem_overlay, oem_notes = expand_oem(out, settings["oem"], settings.get("system_type"))
+        overlay.update(oem_overlay)
+        notes_all.extend(oem_notes)
 
     uniq = []
     for n in notes_all:

@@ -1,0 +1,782 @@
+{
+ "_note": "Per-OEM ROM packages from ANS quote history (grade C: company history, median of jobs that quoted both parts of each ratio). A ratio with fewer than 3 jobs has usable=false and is not applied. Parts are the most-quoted model per role; band modules and POI cards vary with the carrier and band setup. No prices. Built by romtool-test/scripts/build_oem_config.py.",
+ "min_jobs": 3,
+ "packages": {
+  "nextivity_quatra": {
+   "label": "Nextivity QUATRA",
+   "system_type": "das",
+   "jobs": 13,
+   "grade": "C",
+   "ratios": {
+    "antennas_per_remote_unit": {
+     "value": 3.75,
+     "jobs": 12,
+     "usable": true
+    },
+    "sq_ft_per_remote_unit": {
+     "value": 11000,
+     "jobs": 4,
+     "usable": true
+    },
+    "remote_units_per_fiber_hub": {
+     "value": 10.0,
+     "jobs": 2,
+     "usable": false
+    },
+    "remote_units_per_head_end": {
+     "value": 3.0,
+     "jobs": 12,
+     "usable": true
+    }
+   },
+   "parts": {
+    "master_unit": {
+     "manufacturer": "Nextivity Inc",
+     "model": "Q44-1M34CNU",
+     "description": "Cel-Fi QUATRA 4000c is an Active DAS Hybrid that solves the problem of indoor cellular coverage. Cel-Fi QUATRA 4000c uti",
+     "jobs": 12
+    },
+    "fiber_hub": {
+     "manufacturer": "Nextivity Inc",
+     "model": "Q40-1234FNU",
+     "description": "QUATRA Fiber Hub for QUATRA 4000 & 4000i Network Unit (NU). The Fiber Hub expands the NU capacity from six to up to twel",
+     "jobs": 2
+    },
+    "remote_unit": {
+     "manufacturer": "Nextivity Inc",
+     "model": "Q41-RECU (QUATRA 4000c)",
+     "description": "QUATRA 4000c Coverage Unit (CU): Band  12 (699-716/729-746 MHz), Band 13 (777-787/746-756 MHz), Band 5 (824-849/869-894",
+     "jobs": 12
+    },
+    "donor_antenna": {
+     "manufacturer": "Nextivity Inc",
+     "model": "A62-V44-200",
+     "description": "Cel-Fi Wideband (617 - 4000 MHz) LPDA Antenna offers a powerful 12/14 dBi gain. This alos features a 10K ohm resistor th",
+     "jobs": 6
+    }
+   }
+  },
+  "commscope_ion_era": {
+   "label": "CommScope ION/Era",
+   "system_type": "das",
+   "jobs": 177,
+   "grade": "C",
+   "ratios": {
+    "antennas_per_remote_unit": {
+     "value": 8.05,
+     "jobs": 26,
+     "usable": true
+    },
+    "sq_ft_per_remote_unit": {
+     "value": 30281,
+     "jobs": 15,
+     "usable": true
+    },
+    "remote_units_per_fiber_hub": {
+     "value": 1.3,
+     "jobs": 16,
+     "usable": true
+    },
+    "remote_units_per_head_end": {
+     "value": 0.5,
+     "jobs": 2,
+     "usable": false
+    },
+    "sfp_per_remote_unit": {
+     "value": 3.16,
+     "jobs": 25,
+     "usable": true
+    },
+    "power_supplies_per_remote_unit": {
+     "value": 0.94,
+     "jobs": 14,
+     "usable": true
+    },
+    "remote_units_per_baseband": {
+     "value": 11.33,
+     "jobs": 1,
+     "usable": false
+    }
+   },
+   "parts": {
+    "master_unit": {
+     "manufacturer": "CommScope",
+     "model": "TFLN 2504/4",
+     "description": "[ION-B] - ION BriteCell - 698-2700 MHz - Master Optical TRX - 4 Optical Links - SC/APC",
+     "jobs": 2
+    },
+    "poi_card": {
+     "manufacturer": "CommScope",
+     "model": "7633229-02",
+     "description": "[Era™] RFD",
+     "jobs": 9
+    },
+    "fiber_hub": {
+     "manufacturer": "CommScope",
+     "model": "7844067-00",
+     "description": "[Era™] ERA, WCS-2 Subrack -48DC",
+     "jobs": 15
+    },
+    "remote_unit": {
+     "manufacturer": "CommScope",
+     "model": "7828333-0001",
+     "description": "[Era™][Preliminary] Carrier Access Point with 4-Band Support for Medium Power UHF, LMR700 and LMR800 Applications, Fiber",
+     "jobs": 8
+    },
+    "sfp_optic": {
+     "manufacturer": "CommScope",
+     "model": "7680813",
+     "description": "[Era™] SFP+ 10GBase-LR, (SM)",
+     "jobs": 24
+    },
+    "power_supply": {
+     "manufacturer": "CommScope",
+     "model": "7663610-00",
+     "description": "[Era™] PSU - 12VDC",
+     "jobs": 12
+    },
+    "baseband_radio_carrier": {
+     "manufacturer": "CommScope",
+     "model": "SC-RS-3010-DE",
+     "description": "BASEBANDCONTROLLER (4G)ACT ONE TIME FE",
+     "jobs": 1
+    },
+    "donor_antenna": {
+     "manufacturer": "Commscope",
+     "model": "NHHS4-65A-R3B",
+     "description": "NHHS4-65A-R3B",
+     "jobs": 1
+    },
+    "battery": {
+     "manufacturer": "ESS",
+     "model": "STDBAT0130",
+     "description": "Standard Battery - Li-Ion, 2200 mAh (PMNN4468)",
+     "jobs": 2
+    },
+    "annunciator_monitoring": {
+     "manufacturer": "CommScope",
+     "model": "DM-10D0-001",
+     "description": "DMS Per radio point (RP2000) PER RADIO M",
+     "jobs": 1
+    }
+   }
+  },
+  "jma_teko": {
+   "label": "JMA TEKO",
+   "system_type": "das",
+   "jobs": 144,
+   "grade": "C",
+   "ratios": {
+    "antennas_per_remote_unit": {
+     "value": 8.75,
+     "jobs": 19,
+     "usable": true
+    },
+    "sq_ft_per_remote_unit": {
+     "value": 45714,
+     "jobs": 15,
+     "usable": true
+    },
+    "remote_units_per_fiber_hub": {
+     "value": 2.5,
+     "jobs": 18,
+     "usable": true
+    },
+    "remote_units_per_head_end": {
+     "value": 7.33,
+     "jobs": 9,
+     "usable": true
+    },
+    "poi_cards_per_head_end": {
+     "value": 3.0,
+     "jobs": 8,
+     "usable": true
+    },
+    "power_supplies_per_remote_unit": {
+     "value": 0.5,
+     "jobs": 16,
+     "usable": true
+    }
+   },
+   "parts": {
+    "head_end": {
+     "manufacturer": "JMA",
+     "model": "Chassis",
+     "description": "Chassis",
+     "jobs": 1
+    },
+    "master_unit": {
+     "manufacturer": "JMA Wireless",
+     "model": "TSYNC-C",
+     "description": "TDD Synchronizer and Reference Module (7TE)  Next Gen, C-Band",
+     "jobs": 8
+    },
+    "poi_card": {
+     "manufacturer": "JMA Wireless",
+     "model": "TAPOI-PCS-F-4",
+     "description": "Active Point of Interface for PCS Band - Flexi, 4.3-10",
+     "jobs": 7
+    },
+    "fiber_hub": {
+     "manufacturer": "Teko Telecom",
+     "model": "TTRU4W-S-M",
+     "description": "4-way MU Optical Transmitter/Receiver Module - RF-to-Optical and Optical-to-RF Conversion (380-2690MHz) with UL monitor",
+     "jobs": 15
+    },
+    "remote_unit": {
+     "manufacturer": "JMA Wireless",
+     "model": "RD35TWW2AT",
+     "description": "RU MIMO2x2, C-Band TDD, Ultra High Power, AC, 4.3-10 (Same output on both ports)  Use ONLY with the ED35TD optical card",
+     "jobs": 6
+    },
+    "remote_chassis": {
+     "manufacturer": "Teko Telecom",
+     "model": "SUB-TRX",
+     "description": "Hosting active (Optical) Subrack Module",
+     "jobs": 1
+    },
+    "remote_band_module": {
+     "manufacturer": "JMA Wireless",
+     "model": "TRX-19H-BU",
+     "description": "SDRU - 19H Band Upgrade",
+     "jobs": 1
+    },
+    "power_supply": {
+     "manufacturer": "JMA Wireless",
+     "model": "TPSU/AC-30-1K",
+     "description": "Power Supply Module - Master Unit TPSU AC 1KW",
+     "jobs": 9
+    },
+    "donor_antenna": {
+     "manufacturer": "JMA Wireless",
+     "model": "DX24FRO265-04",
+     "description": "X-Pol, Panel 65° H-Beams, 698-894 MHz, 1695-2690 MHz, 3400-4200 MHz 31721",
+     "jobs": 1
+    },
+    "annunciator_monitoring": {
+     "manufacturer": "JMA Wireless",
+     "model": "TSPV-NBB",
+     "description": "SPVMU EVO NEXT GEN W/O MODEM-W BACKUP",
+     "jobs": 11
+    }
+   }
+  },
+  "adrf_adx_v": {
+   "label": "ADRF ADX V",
+   "system_type": "das",
+   "jobs": 38,
+   "grade": "C",
+   "ratios": {
+    "antennas_per_remote_unit": {
+     "value": 14.2,
+     "jobs": 22,
+     "usable": true
+    },
+    "sq_ft_per_remote_unit": {
+     "value": 45000,
+     "jobs": 21,
+     "usable": true
+    },
+    "band_modules_per_remote_chassis": {
+     "value": 3.0,
+     "jobs": 21,
+     "usable": true
+    },
+    "remote_units_per_fiber_hub": {
+     "value": 1.25,
+     "jobs": 12,
+     "usable": true
+    },
+    "remote_units_per_head_end": {
+     "value": 2.0,
+     "jobs": 20,
+     "usable": true
+    },
+    "poi_cards_per_head_end": {
+     "value": 5.25,
+     "jobs": 21,
+     "usable": true
+    },
+    "sfp_per_remote_unit": {
+     "value": 1.0,
+     "jobs": 21,
+     "usable": true
+    },
+    "power_supplies_per_remote_unit": {
+     "value": 1.0,
+     "jobs": 20,
+     "usable": true
+    }
+   },
+   "parts": {
+    "head_end": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-NMS-AC",
+     "description": "ADX V DAS HEADEND CHASSIS",
+     "jobs": 19
+    },
+    "poi_card": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-P",
+     "description": "ADX V DAS HEADEND POINT INTER MOD PCS",
+     "jobs": 20
+    },
+    "fiber_hub": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-ODU-4",
+     "description": "ADX V DAS HEADEND OPTICAL DONORUNIT MOD",
+     "jobs": 14
+    },
+    "remote_unit": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-R-CHC-X",
+     "description": "ADX V DAS REMOTE UNIT/HIGH POWER REMOTE",
+     "jobs": 2
+    },
+    "remote_chassis": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-R-CHA",
+     "description": "ADX V DAS REMOTE UNIT CHASSIS",
+     "jobs": 14
+    },
+    "remote_band_module": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-R-37P",
+     "description": "ADX V DAS REMOTE UNIT PCS 37DBM AMP MOD",
+     "jobs": 15
+    },
+    "sfp_optic": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-R-ORU",
+     "description": "ADX V DAS REMOTE UNIT OPTICAL MOD",
+     "jobs": 11
+    },
+    "power_supply": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-R-PSU-AC",
+     "description": "ADX V DAS REMOTE UNIT AC PWR SUPPLY UNIT",
+     "jobs": 13
+    },
+    "bda_repeater": {
+     "manufacturer": "ADRF",
+     "model": "PSR-VU-9537-U",
+     "description": "*VHF/UHF 5W BDA UL2524-V2",
+     "jobs": 2
+    },
+    "donor_antenna": {
+     "manufacturer": "ADRF",
+     "model": "AD-PA-617-960-D",
+     "description": "Low-Band High Isolation Donor Antenna For  617~960 MHz With 7/16 DIN Female Connector",
+     "jobs": 2
+    },
+    "battery": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-BBU-W-120-2S",
+     "description": "ADRF-BBU-W-120-2S",
+     "jobs": 7
+    },
+    "annunciator_monitoring": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-AAI",
+     "description": "Alarm interface module",
+     "jobs": 1
+    }
+   }
+  },
+  "solid": {
+   "label": "SOLiD",
+   "system_type": "das",
+   "jobs": 15,
+   "grade": "C",
+   "ratios": {
+    "antennas_per_remote_unit": {
+     "value": 11.76,
+     "jobs": 3,
+     "usable": true
+    },
+    "sq_ft_per_remote_unit": {
+     "value": 30219,
+     "jobs": 2,
+     "usable": false
+    },
+    "band_modules_per_remote_chassis": {
+     "value": 2.31,
+     "jobs": 3,
+     "usable": true
+    },
+    "remote_units_per_fiber_hub": {
+     "value": 2.83,
+     "jobs": 1,
+     "usable": false
+    },
+    "remote_units_per_head_end": {
+     "value": 6.67,
+     "jobs": 2,
+     "usable": false
+    },
+    "poi_cards_per_head_end": {
+     "value": 6.75,
+     "jobs": 2,
+     "usable": false
+    },
+    "sfp_per_remote_unit": {
+     "value": 0.52,
+     "jobs": 1,
+     "usable": false
+    }
+   },
+   "parts": {
+    "head_end": {
+     "manufacturer": "SOLiD US",
+     "model": "nBIU_2P_AC",
+     "description": "ALLIANCE n-BTS Interface Unit (nBIU) Chassis - Supports 2 SECTOR SISO or 2 SECTOR MIMO. Includes (1) nMCPU, (1) nMPSU_AC",
+     "jobs": 1
+    },
+    "poi_card": {
+     "manufacturer": "SOLiD US",
+     "model": "nMDBU_Cbnd",
+     "description": "ALLIANCE n-Main Drive BTS Unit (nMDBU) (Low POI; 100mW) Input Module (4) 3700-3980 SISO Please contact a SOLiD Rep for a",
+     "jobs": 1
+    },
+    "fiber_hub": {
+     "manufacturer": "SOLiD US",
+     "model": "iOM_4_4000",
+     "description": "ALLIANCE 4 Port optical module, use with iBIU, iODU, iOEU, supports 136 - 4000MHz",
+     "jobs": 1
+    },
+    "remote_chassis": {
+     "manufacturer": "Solid",
+     "model": "N2ROU_BASE_7B_DC",
+     "description": "N2ROU_BASE_7B_DC",
+     "jobs": 1
+    },
+    "remote_band_module": {
+     "manufacturer": "SOLiD US",
+     "model": "HRDU_800I_850C",
+     "description": "ALLIANCE 20 WATT 800MHz (Sprint Only) and 850MHz Module",
+     "jobs": 2
+    },
+    "sfp_optic": {
+     "manufacturer": "SOLiD US",
+     "model": "nOM_8_4000",
+     "description": "ALLIANCE n-Optical Module (nOM) - 8 Port. LC-APC Connectors Use with nBIU supports 136 - 4000MHz Please contact a SOLiD",
+     "jobs": 1
+    },
+    "annunciator_monitoring": {
+     "manufacturer": "SOLiD US",
+     "model": "DMS_1200",
+     "description": "ALLIANCE DAS Management System (DMS) for ALLIANCE - For use with Rel. 6",
+     "jobs": 1
+    }
+   }
+  },
+  "comba": {
+   "label": "Comba",
+   "system_type": "bda",
+   "jobs": 21,
+   "grade": "C",
+   "ratios": {
+    "antennas_per_remote_unit": {
+     "value": 7.0,
+     "jobs": 1,
+     "usable": false
+    },
+    "sq_ft_per_remote_unit": {
+     "value": 70000,
+     "jobs": 1,
+     "usable": false
+    }
+   },
+   "parts": {
+    "remote_unit": {
+     "manufacturer": "Comba",
+     "model": "RH78V3-A3300P0-S0",
+     "description": "PS-700/800, 2W REMOTE, with B14, Class A",
+     "jobs": 1
+    },
+    "bda_repeater": {
+     "manufacturer": "Comba",
+     "model": "RX08V3-A3327P0-S0",
+     "description": "800MHz BDA Class A 2W Passes FirstNet",
+     "jobs": 2
+    },
+    "donor_antenna": {
+     "manufacturer": "Comba",
+     "model": "OY-YN-V11P",
+     "description": "yagi antenna",
+     "jobs": 2
+    },
+    "battery": {
+     "manufacturer": "Comba",
+     "model": "BBUV3-LFP48030",
+     "description": "(N.America) CriticalPoint™ (V3 / NG) Battery Backup Unit (Optional dedicated Battery Backup Solution for Comba BDA V3 pl",
+     "jobs": 3
+    },
+    "annunciator_monitoring": {
+     "manufacturer": "Comba",
+     "model": "APV3-BDA",
+     "description": "Annunciator Panel V3 for BDA V3 UL2524",
+     "jobs": 6
+    }
+   }
+  },
+  "westell_ps_bda": {
+   "label": "Westell PS BDA",
+   "system_type": "bda",
+   "jobs": 52,
+   "grade": "C",
+   "ratios": {
+    "antennas_per_remote_unit": {
+     "value": 20.33,
+     "jobs": 8,
+     "usable": true
+    },
+    "sq_ft_per_remote_unit": {
+     "value": 281000,
+     "jobs": 7,
+     "usable": true
+    },
+    "remote_units_per_head_end": {
+     "value": 2.0,
+     "jobs": 7,
+     "usable": true
+    },
+    "poi_cards_per_head_end": {
+     "value": 8.17,
+     "jobs": 2,
+     "usable": false
+    },
+    "sfp_per_remote_unit": {
+     "value": 1.0,
+     "jobs": 4,
+     "usable": true
+    }
+   },
+   "parts": {
+    "head_end": {
+     "manufacturer": "Westell",
+     "model": "UDIT-CH1-CM1D-XXEN-194U-12BP",
+     "description": "UDIT Subrack and Control Module,  19\" rack, 4RMU, Supports  up to 12 POI cards.  Comes with 12 Blank Panels.",
+     "jobs": 1
+    },
+    "master_unit": {
+     "manufacturer": "Westell",
+     "model": "CS40-OPTMASTER",
+     "description": "ProtectLink Public Safety Optical DAS Mater Unit chassis, Supports up to 8 Optical Radio Modules, ordered separately.",
+     "jobs": 4
+    },
+    "poi_card": {
+     "manufacturer": "Westell",
+     "model": "UDIT-P1SDS-H3AX2-1900 (1900MHz POI)",
+     "description": "UDIT POI Module, PCS 1900MHz, Jumpered for up to +40dBm, CEQ.14537",
+     "jobs": 2
+    },
+    "remote_unit": {
+     "manufacturer": "Westell",
+     "model": "CS40-PLV2FIBER-RE",
+     "description": "ProtectLinkV2 fiber Remote end point",
+     "jobs": 4
+    },
+    "sfp_optic": {
+     "manufacturer": "Westell",
+     "model": "CS40-OPTRADIOMOD",
+     "description": "ProtectLink Public Safety Series Optical Radio Module.  Use in Optical Master Unit chassis  to support Optical Remotes.",
+     "jobs": 4
+    },
+    "power_supply": {
+     "manufacturer": "Westell",
+     "model": "UDIT-PSCH-148VMOD",
+     "description": "UDIT Power Supply Chassis, 1 1000w Module included.  -48VDC",
+     "jobs": 1
+    },
+    "bda_repeater": {
+     "manufacturer": "Westell",
+     "model": "CS45-734-834-K1",
+     "description": "PSKIT-700/800,2.5W BDA, BBU W/145AH-12HR",
+     "jobs": 5
+    },
+    "donor_antenna": {
+     "manufacturer": "Westell",
+     "model": "CS03-003-430 (AY/746-896/11)",
+     "description": "Yagi Antenna  Public Safety 700/800 (746-896MHz) 11 dBi",
+     "jobs": 10
+    },
+    "battery": {
+     "manufacturer": "Westell",
+     "model": "CS19-PYL12V160FT",
+     "description": "12 VDC, 160AH Sealed lead acid battery",
+     "jobs": 10
+    },
+    "annunciator_monitoring": {
+     "manufacturer": "Westell",
+     "model": "CS40-DASANNUNC",
+     "description": "ProtectLink Public Safety Series DAS Remote Annunciator, Supports up to 9 elements in the ProtectLink fiber DAS",
+     "jobs": 9
+    }
+   }
+  },
+  "samsung_dran": {
+   "label": "Samsung DRAN",
+   "system_type": "dran",
+   "jobs": 47,
+   "grade": "C",
+   "ratios": {
+    "antennas_per_remote_unit": {
+     "value": 9.44,
+     "jobs": 38,
+     "usable": true
+    },
+    "sq_ft_per_remote_unit": {
+     "value": 37667,
+     "jobs": 33,
+     "usable": true
+    },
+    "remote_units_per_fiber_hub": {
+     "value": 6.67,
+     "jobs": 1,
+     "usable": false
+    },
+    "sfp_per_remote_unit": {
+     "value": 2.0,
+     "jobs": 9,
+     "usable": true
+    },
+    "remote_units_per_baseband": {
+     "value": 2.0,
+     "jobs": 29,
+     "usable": true
+    }
+   },
+   "parts": {
+    "fiber_hub": {
+     "manufacturer": "Samsung Electronics",
+     "model": "RHU20_v1.1",
+     "description": "Radio Hub Unit - LTE and 5G NR (sub6GHz); 1-7 Shared Cell, eCPRI 10 Gbps Optic x1, eCPRI 2.5/5/10 Gbps Copper x 7 port",
+     "jobs": 1
+    },
+    "remote_unit": {
+     "manufacturer": "Samsung",
+     "model": "RF4437d-25C/D_AWS/PCS Dual-Band MicroRRH_LTE (4T4R MIMO) VerB",
+     "description": "(LTE) MicroRRH for Dual Band AWS and PCS 2x2 MIMO Support,  This unit doesn't have clip-on antenna option. Revision Upda",
+     "jobs": 12
+    },
+    "sfp_optic": {
+     "manufacturer": "Samsung",
+     "model": "SLS-BB1150EHEX",
+     "description": "10Gbps 20Km Duplex Optic Module 1310nm (L0 or L1 port) - For Both CPRI or oRAN @ Samsung RIUs Optic Module (20 Km) CPRI",
+     "jobs": 4
+    },
+    "baseband_radio_carrier": {
+     "manufacturer": "Samsung",
+     "model": "CDU30_1 LCC4 (Srcl/Mbl)",
+     "description": "5G Baseband with 1 LCC4 Card",
+     "jobs": 16
+    }
+   }
+  },
+  "ericsson_dot": {
+   "label": "Ericsson DOT",
+   "system_type": "dran",
+   "jobs": 30,
+   "grade": "C",
+   "ratios": {
+    "antennas_per_remote_unit": {
+     "value": 4.5,
+     "jobs": 3,
+     "usable": true
+    },
+    "sq_ft_per_remote_unit": {
+     "value": 5883,
+     "jobs": 21,
+     "usable": true
+    },
+    "remote_units_per_fiber_hub": {
+     "value": 7.5,
+     "jobs": 3,
+     "usable": true
+    },
+    "sfp_per_remote_unit": {
+     "value": 0.77,
+     "jobs": 4,
+     "usable": true
+    },
+    "remote_units_per_baseband": {
+     "value": 4.0,
+     "jobs": 11,
+     "usable": true
+    }
+   },
+   "parts": {
+    "fiber_hub": {
+     "manufacturer": "Ericsson",
+     "model": "B-245-N2JMJK",
+     "description": "IRU Block 3-4 Operators (IRU 1648)",
+     "jobs": 1
+    },
+    "remote_unit": {
+     "manufacturer": "SpiderCloud Wireless",
+     "model": "SCRN-340-13142566",
+     "description": "Enterprise Radio Access Network (E-RAN) - LTE Small Cell for Scalable Indoor and Venue Deployments - MIMO 2x2 - LTE 700/",
+     "jobs": 8
+    },
+    "sfp_optic": {
+     "manufacturer": "Ericsson",
+     "model": "RDH10265/3",
+     "description": "SFP transceiver module, 1-G LR 1310nm, Duplex LC, SMF, up to 10km",
+     "jobs": 3
+    },
+    "baseband_radio_carrier": {
+     "manufacturer": "Ericsson",
+     "model": "BB 6651",
+     "description": "Baseband 6651",
+     "jobs": 4
+    },
+    "annunciator_monitoring": {
+     "manufacturer": "Ericsson",
+     "model": "NTB101242/1",
+     "description": "SAU KIT, DF-OVP V3, 10M",
+     "jobs": 8
+    }
+   }
+  },
+  "nokia": {
+   "label": "Nokia",
+   "system_type": "dran",
+   "jobs": 43,
+   "grade": "C",
+   "ratios": {
+    "antennas_per_remote_unit": {
+     "value": 4.29,
+     "jobs": 1,
+     "usable": false
+    }
+   },
+   "parts": {
+    "poi_card": {
+     "manufacturer": "Nokia",
+     "model": "CDD Optical Port (Updated)",
+     "description": "[Era™] CPRI Digital Donor (Updated)",
+     "jobs": 2
+    },
+    "remote_unit": {
+     "manufacturer": "Nokia",
+     "model": "RRH 4x30W-B25",
+     "description": "Remote Radio Head - 4x30 W RF Output B25",
+     "jobs": 1
+    },
+    "sfp_optic": {
+     "manufacturer": "Nokia",
+     "model": "3HE12111AB",
+     "description": "SFP+ 10GE BX20-D LC ROHS6/6 -40/85C  BIDI",
+     "jobs": 3
+    },
+    "power_supply": {
+     "manufacturer": "Nokia",
+     "model": "PS - 7250 IXR-e DC",
+     "description": "PS - 7250 IXR-e DC",
+     "jobs": 2
+    }
+   }
+  }
+ }
+}

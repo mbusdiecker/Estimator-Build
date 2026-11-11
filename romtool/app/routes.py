@@ -54,6 +54,7 @@ from romtool.builders import BUILDER_NAMES, build_lines
 from romtool.grades import GradeError, check_bands, check_budget_brand, check_grade
 from romtool.grades import grade_items, project_items, settings_for
 from romtool.ibwave import ibwave_csv, ibwave_sheet, ibwave_table
+from romtool.oem import OEMError, check_oem, list_packages
 from romtool.bidform import build_bid_form, bid_form_pdf, bid_form_xlsx
 from romtool.cascade import solve_cascade
 from romtool.composite import composite_heatmap_view, predict_floor_multiband
@@ -306,6 +307,15 @@ def patch_project(pid: int, payload: dict = Body(...)):
         model["grade"] = _grade_check(check_grade, payload["grade"])
     if "budget_brand" in payload:
         model["budget_brand"] = _grade_check(check_budget_brand, payload["budget_brand"])
+    if "oem" in payload:
+        try:
+            key = check_oem(payload["oem"])
+        except OEMError as exc:
+            raise HTTPException(status_code=422, detail=str(exc))
+        if key is None:
+            model.pop("oem", None)
+        else:
+            model["oem"] = key
     if "bands" in payload:
         if payload["bands"] is None:
             model.pop("bands", None)
@@ -339,6 +349,12 @@ def _graded_items(model, cfg, grade=None, budget_brand=None):
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return settings, items, notes
+
+
+@router.get("/oem_packages")
+def oem_packages():
+    """OEM packages a project can select (config/oem_packages.json)."""
+    return {"packages": list_packages()}
 
 
 @router.delete("/projects/{pid}")
@@ -2694,6 +2710,7 @@ def project_bom(pid: int, grade: str = Query(None), budget_brand: str = Query(No
     settings, items, notes = _graded_items(model, _proj_config(model), grade, budget_brand)
     return {"project_id": pid, "grade": settings["grade"],
             "budget_brand": settings["budget_brand"], "bands": settings["bands"],
+            "oem": settings["oem"],
             "items": items, "grade_notes": notes}
 
 
