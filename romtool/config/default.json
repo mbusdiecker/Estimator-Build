@@ -186,6 +186,50 @@
     "jumper": { "label": "Jumper cable, each", "loss_db": 0.3, "per_branch": 1, "grade": "E", "ref": "estimate: short flexible jumper at the antenna; replace with the cable datasheet at the band frequency and length" },
     "diplexer": { "label": "Diplexer / combiner, each", "loss_db": 0.5, "per_branch": 1, "when_bands_gt": 1, "grade": "E", "ref": "estimate: representative diplexer insertion loss; replace with the selected OEM part" }
   },
+  "builders_note": "Quantity rules for the assembly builders (romtool/builders.py, POST /projects/{pid}/builders/{name}). Every rule is {value, grade, ref}: grade C is a calibrated or ANS standard value with its reference named, grade E is an estimate. Change a value here, not in code. Floor height, riser slack and the power sizing inputs are read from autoplace, rflink and estimating config so each number has one home.",
+  "builders": {
+    "rooftop": {
+      "donors_per_carrier": { "value": 1, "grade": "E", "ref": "estimate: one donor antenna per carrier; set donor_count on the request for multi-donor sites" },
+      "donor_outdoor_ft_per_carrier": { "value": 150.0, "grade": "C", "ref": "Matt standard, ibw-budget-defaults 2026-10-22: 150 ft outdoor-rated 1/2 in per carrier" },
+      "donor_plenum_ft_per_carrier": { "value": 150.0, "grade": "C", "ref": "Matt standard, ibw-budget-defaults 2026-10-22: 150 ft indoor plenum 1/2 in per carrier" },
+      "connectors_per_donor_line": { "value": 4, "grade": "E", "ref": "estimate: 2 connectors per cable segment (outdoor and plenum), the same 2-per-run convention the cable BOM uses" },
+      "jumpers_per_donor_line": { "value": 2, "grade": "E", "ref": "rflink.json A02, donor jumper assemblies at both ends" },
+      "surge_per_donor_line": { "value": 1, "grade": "E", "ref": "rflink.json B09, surge suppression at the RF entry, one per donor line" },
+      "grounding_kits_per_donor_line": { "value": 1, "grade": "E", "ref": "estimate: one kit per outdoor coax run" },
+      "weatherproof_kits_per_donor_line": { "value": 2, "grade": "E", "ref": "estimate: one kit per outdoor connection, both ends" },
+      "roof_entries": { "value": 1, "grade": "E", "ref": "rflink.json A04, rooftop cable entry port (assumed; relocate if the donor path is not rooftop)" }
+    },
+    "closet": {
+      "racks": { "value": 1, "grade": "E", "ref": "estimate: one head-end rack per closet; the request can override" },
+      "backboards_per_rack": { "value": 1, "grade": "E", "ref": "estimate: one plywood backboard per rack" },
+      "pdus_per_rack": { "value": 1, "grade": "E", "ref": "estimate: one PDU per rack" },
+      "ground_bars": { "value": 1, "grade": "E", "ref": "estimate: one ground bar per closet" },
+      "ground_cable_ft": { "value": 20.0, "grade": "E", "ref": "estimate: ground cable from the bar to the building ground; measure on site" },
+      "cassettes_per_fiber_run": { "value": 1, "grade": "E", "ref": "estimate: one splice cassette per fiber run" },
+      "cassettes_per_panel": { "value": 3, "grade": "E", "ref": "ANS quote history description of the sliding 1U fiber panel: up to 3 L-type cartridges; confirm the cartridge to cassette ratio" },
+      "housings_per_closet": { "value": 1, "grade": "E", "ref": "estimate: one fiber housing per closet with fiber" },
+      "fiber_jumpers_per_fiber_run": { "value": 2, "grade": "E", "ref": "estimate: one jumper per fiber end" },
+      "labels_per_fiber_run": { "value": 2, "grade": "E", "ref": "estimate: one label per fiber end" },
+      "labels_per_head_end_unit": { "value": 1, "grade": "E", "ref": "estimate: one label per head-end unit" },
+      "rack_shelves_per_head_end_unit": { "value": 1, "grade": "E", "ref": "estimate: one rack shelf per head-end unit; the units themselves come from the element BOM lines" }
+    },
+    "riser": {
+      "sleeves_per_penetration": { "value": 1, "grade": "E", "ref": "estimate: one sleeve per floor slab per shaft" },
+      "firestop_per_penetration": { "value": 1, "grade": "E", "ref": "estimate: one firestop per floor slab per shaft" },
+      "jhook_spacing_m": { "value": 1.5, "grade": "E", "ref": "estimate: J-hook spacing on vertical runs; confirm against the install spec" }
+    },
+    "gps": {
+      "connectors_per_gps": { "value": 2, "grade": "E", "ref": "estimate: one connector at each end of the GPS coax run" },
+      "surge_per_gps": { "value": 1, "grade": "E", "ref": "estimate: one surge arrestor at the GPS coax entry" }
+    },
+    "power": {
+      "runtime_hours": { "value": 12.0, "grade": "C", "ref": "IFC 510.4.2.3 12-hour runtime, the same value as rflink.json booster_load and estimating.json power_plant" }
+    },
+    "monitoring": {
+      "annunciators": { "value": 1, "grade": "E", "ref": "estimate: one public safety annunciator panel per head end; the request can override" },
+      "alarm_wiring_ft_per_annunciator": { "value": 100.0, "grade": "E", "ref": "estimate: alarm and supervision wiring from each annunciator; measure on site" }
+    }
+  },
   "repeater": { "label": "Off-air repeater (BDA)", "dl_gain_db": 65.0, "max_dl_out_dbm": 33.0, "ports": 2 },
   "remote_note": "Remote unit: an active element fed from the head end (repeater or source) by a fiber run, with its own downlink output cap per band. Modeled like the repeater: out = min(in + dl_gain_db, max_dl_out_dbm), per-band cap via max_dl_out_dbm_per_band. Every value below is grade E (no published figure, no vendor datasheet loaded): replace with the selected OEM remote spec. dl_gain_db 0 means the fiber link is level-neutral (the head-end port power is passed through, then capped); optical splitting and fiber loss are not modeled. Each band is capped independently (composite power sharing across bands is not modeled).",
   "remote": { "label": "Remote unit (fiber-fed active DAS)", "dl_gain_db": 0.0, "dl_gain_grade": "E", "dl_gain_ref": "estimate: level-neutral link; no OEM spec loaded",

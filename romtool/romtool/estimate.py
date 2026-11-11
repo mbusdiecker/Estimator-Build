@@ -716,6 +716,27 @@ def _cost_carry_line(loc, days, est, crew, label):
 
 # ------------------------------------------------------- power-plant helper
 
+def power_plant_counts(load_amps, runtime_hours, string_ah, rectifier_size_amps,
+                       rectifier_modules=None):
+    """O-zone plant counts, shared by the O-zone auto-sizer and the builders.
+
+    Ah = runtime_hours x load_amps; strings = ceil(Ah / string_ah) (IFC 12-hr
+    sizing per O04 notes); rectifiers N+1 = ceil(load_amps/rect_size)+1 unless
+    rectifier_modules pins the count."""
+    load = float(load_amps)
+    runtime = float(runtime_hours)
+    ah = runtime * load
+    strings = int(math.ceil(ah / float(string_ah))) if ah > 0 else 0
+    if rectifier_modules is not None:
+        rects, rnote = int(rectifier_modules), "pinned by definition"
+    else:
+        n = int(math.ceil(load / float(rectifier_size_amps))) if load > 0 else 0
+        rects = n + 1
+        rnote = ("N+1 from load: ceil(%.1fA / %.1fA) = %d +1 spare = %d"
+                 % (load, float(rectifier_size_amps), n, rects))
+    return {"ah": ah, "strings": strings, "rectifiers": rects, "rectifier_note": rnote}
+
+
 def _power_plant_lines(loc, sched_stack, crew, est, cat, warnings):
     """Auto-sized O-zone lines from a location's power_plant block.
 
@@ -730,15 +751,10 @@ def _power_plant_lines(loc, sched_stack, crew, est, cat, warnings):
     conds = _condition_stack(loc.get("conditions"), est)
     access = _access_entry(loc.get("access", "ground"), est)
 
-    ah = runtime * load
-    strings = int(math.ceil(ah / string_ah)) if ah > 0 else 0
-    if "rectifier_modules" in pp and pp.get("rectifier_modules") is not None:
-        rects, rnote = int(pp["rectifier_modules"]), "pinned by definition"
-    else:
-        n = int(math.ceil(load / float(spec["rectifier_size_amps"]))) if load > 0 else 0
-        rects = n + 1
-        rnote = ("N+1 from load: ceil(%.1fA / %.1fA) = %d +1 spare = %d"
-                 % (load, spec["rectifier_size_amps"], n, rects))
+    sizing = power_plant_counts(load, runtime, string_ah, spec["rectifier_size_amps"],
+                                pp.get("rectifier_modules"))
+    ah, strings = sizing["ah"], sizing["strings"]
+    rects, rnote = sizing["rectifiers"], sizing["rectifier_note"]
     if runtime < float(spec["runtime_ifc_min_hours"]):
         warnings.append("power_plant at location %r: %.1f h runtime is below the IFC "
                         "510.4.2.3 %.0f-h minimum" % (loc["id"], runtime,
