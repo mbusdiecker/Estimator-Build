@@ -1056,8 +1056,30 @@ async function loadProject(pid) {
   buildFloorTabs(); setPpmBox(); render(); renderNfpa(); renderZoneList();
   $("lnkCsv").href = "/exports/projects/" + pid + "/bom.csv";
   $("lnkJson").href = "/exports/projects/" + pid + "/bom.json";
+  syncGradeControls();
   await refreshBom();
 }
+
+/* Grade and budget brand live on the project; the BOM and iBwave exports read them. */
+function syncGradeControls() {
+  const m = S.project.model;
+  $("gradeSel").value = m.grade || "carrier";
+  $("brandSel").value = m.budget_brand || "techwave";
+  $("brandLbl").style.display = $("gradeSel").value === "budget" ? "" : "none";
+}
+async function saveGradeControls() {
+  const body = { grade: $("gradeSel").value, budget_brand: $("brandSel").value };
+  try {
+    S.project = await api(P(), {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    syncGradeControls();
+    await refreshBom();
+  } catch (e) { toast(e.message, true); syncGradeControls(); }
+}
+$("gradeSel").onchange = saveGradeControls;
+$("brandSel").onchange = saveGradeControls;
 
 function buildFloorTabs() {
   const tabs = $("floorTabs"); tabs.innerHTML = "";
@@ -1195,13 +1217,24 @@ async function refreshBom() {
     S.bom = await api(P() + "/bom");
     const box = $("bomBox");
     if (!S.bom.items.length) { box.innerHTML = "No parts yet — build the chain."; return; }
-    let html = '<table><tr><th>Category</th><th>Item</th><th class="q">Qty</th><th>Unit</th></tr>';
+    let html = '<div class="cat">Grade: ' + S.bom.grade + (S.bom.grade === "budget" ? " / " + S.bom.budget_brand : "") + "</div>";
+    html += '<table><tr><th>Category</th><th>Item</th><th class="q">Qty</th><th>Unit</th></tr>';
     for (const it of S.bom.items) {
       html += "<tr><td class='cat'>" + it.category + "</td><td>" + it.item +
         '</td><td class="q">' + it.qty + "</td><td>" + it.unit + "</td></tr>";
     }
     html += "</table>";
     box.innerHTML = html;
+    if (S.bom.grade_notes && S.bom.grade_notes.length) {
+      const ul = document.createElement("ul");
+      ul.className = "cat";
+      for (const n of S.bom.grade_notes) {
+        const li = document.createElement("li");
+        li.textContent = n;
+        ul.appendChild(li);
+      }
+      box.appendChild(ul);
+    }
   } catch (e) { $("bomBox").textContent = e.message; }
 }
 $("btnBom").onclick = refreshBom;

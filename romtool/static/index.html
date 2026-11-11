@@ -22,6 +22,15 @@
     <label class="lbl">Band <select id="bandSel"></select></label>
     <label class="chk"><input type="checkbox" id="chkHeatmap"> Heatmap</label>
     <span class="sep"></span>
+    <label class="lbl">Grade <select id="gradeSel" title="Parts grade for the BOM and iBwave export">
+      <option value="carrier">Carrier grade</option>
+      <option value="enterprise">Enterprise grade</option>
+      <option value="budget">Budget</option>
+    </select></label>
+    <label class="lbl" id="brandLbl">Brand <select id="brandSel" title="Budget brand option">
+      <option value="techwave">Techwave</option>
+      <option value="cheapest">Cheapest compliant</option>
+    </select></label>
     <button id="btnBom">Refresh BOM</button>
     <a id="lnkCsv" href="#" download>BOM CSV</a>
     <a id="lnkJson" href="#" download>BOM JSON</a>
