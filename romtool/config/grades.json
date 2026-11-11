@@ -1,0 +1,1486 @@
+{
+ "comment": "Grade and budget-brand options for ROMtool parts selection (romtool/romtool/grades.py). Each tier names a part family per role. The candidate lists are ANS quote history (2+ jobs) with band, ratio and interface specs filled from the description where it states them. budget_rank orders candidates by relative rank only (1 is the lowest-ranked part in the list); it is not catalog data. bands_mhz is a list of [low, high] MHz ranges; a part with no stated range is not compliant for bands it does not state. Connectors are checked against the cable family and interface, not bands.",
+ "source": "ANS quote history candidates (grade_candidates.json, 2026-11-10); owner decisions 2026-11-10",
+ "default_grade": "carrier",
+ "default_budget_brand": "techwave",
+ "tiers": {
+  "carrier": {
+   "label": "Carrier grade"
+  },
+  "enterprise": {
+   "label": "Enterprise grade"
+  },
+  "budget": {
+   "label": "Budget"
+  }
+ },
+ "budget_brands": {
+  "techwave": {
+   "label": "Techwave",
+   "note": "Techwave parts where Techwave has them. Other roles fall back to the cheapest compliant part, then enterprise, then carrier."
+  },
+  "cheapest": {
+   "label": "Cheapest compliant",
+   "note": "Lowest budget_rank compliant part per role and tap ratio. Falls back to enterprise, then carrier."
+  }
+ },
+ "selection": {
+  "carrier": "Family match (carrier_match) with the most ANS jobs. A tap ratio the family does not offer uses the nearest ratio it offers; ties go to the lower ratio.",
+  "enterprise": "Median budget_rank among band-compliant candidates per role and tap ratio (lower median when the count is even).",
+  "cheapest": "Lowest budget_rank among band-compliant candidates per role and tap ratio.",
+  "techwave": "Techwave candidate with the most ANS jobs at the exact tap ratio. No nearest-ratio substitution; a missing ratio falls back.",
+  "ratio_note": "Modeled tap and coupler losses are not changed. The item keeps its modeled ratio and the note reports the part ratio used."
+ },
+ "carrier_match": {
+  "tapper": {
+   "mfr": "Microlab/FXR",
+   "model_regex": "DN-\\d{2}FE"
+  },
+  "coupler": {
+   "mfr": "Microlab/FXR",
+   "model_regex": "CC-6\\d{2}E"
+  },
+  "omni": {
+   "mfr": "CommScope",
+   "model": "CMAX-O-43-UW-i53"
+  }
+ },
+ "pairs": {
+  "carrier": {
+   "cable": {
+    "catalog_role": "cable.coax_1_2in_plenum"
+   },
+   "connector_family": "CommScope/annular 1/2 in",
+   "connector_interface": "4.3-10",
+   "connector_pick": "max_jobs"
+  },
+  "enterprise": {
+   "cable": {
+    "mfr": "RFS",
+    "model": "",
+    "description": "1/2 in LCF12/ICA12 family coax, per ft (model not on ANS file)",
+    "ibwave_type": "Cable",
+    "unit": "ft",
+    "source": "no ANS standard yet"
+   },
+   "connector_family": "RFS LCF12/ICA12",
+   "connector_interface": "4.3-10",
+   "connector_pick": "median"
+  },
+  "budget_cheapest": {
+   "cable": {
+    "mfr": "RFS",
+    "model": "",
+    "description": "1/2 in LCF12/ICA12 family coax, per ft (model not on ANS file)",
+    "ibwave_type": "Cable",
+    "unit": "ft",
+    "source": "no ANS standard yet"
+   },
+   "connector_family": "RFS LCF12/ICA12",
+   "connector_interface": "4.3-10",
+   "connector_pick": "cheapest"
+  },
+  "budget_techwave": {
+   "cable": {
+    "mfr": "RFS",
+    "model": "",
+    "description": "1/2 in ICA12 family coax, per ft (model not on ANS file)",
+    "ibwave_type": "Cable",
+    "unit": "ft",
+    "source": "no ANS standard yet"
+   },
+   "connector_source": "techwave_connectors",
+   "connector_interface": "N",
+   "note": "Techwave N connector paired with the ICA12 family. No description is on file for the connector, so confirm the cable it is made for."
+  }
+ },
+ "not_graded": [
+  "Splitters (splitter.2way): TC-MSCoM-02NF is listed for budget Techwave, but it has no band range and no candidate row, so it is not wired and the catalog splitter stays.",
+  "Outdoor donor coax (cable.coax_1_2in_outdoor, LDF4-50A) and its connectors: the input has no 1/2 in outdoor candidates, so the catalog part stays.",
+  "Jumpers, diplexers, mounts, surge arrestors, 7/8 in trunk coax and its connectors, LMR-400 and fiber."
+ ],
+ "candidates": {
+  "tapper": [
+   {
+    "mfr": "Westell",
+    "model": "CS05-482-114 (PT10/340- 2.7K/N)",
+    "description": "POWER TAPPER, 10dB, 500W (340-2700 MHz) N",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      340.0,
+      2700.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 10.0,
+    "cable_family": null,
+    "budget_rank": 1
+   },
+   {
+    "mfr": "Westell",
+    "model": "CS05-494-114 (PT3/340-2.7K/N)",
+    "description": "POWER TAPPER, 3dB, 500W (340-2700 MHz) N- Type",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      340.0,
+      2700.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 3.0,
+    "cable_family": null,
+    "budget_rank": 5
+   },
+   {
+    "mfr": "Westell",
+    "model": "CS05-481-114 (PT8/340-2.7K/N)",
+    "description": "POWER TAPPER, 8dB, 500W (340-2700 MHz) N",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      340.0,
+      2700.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 8.0,
+    "cable_family": null,
+    "budget_rank": 6
+   },
+   {
+    "mfr": "CommScope",
+    "model": "CT-8-TUW-NI6",
+    "description": "8 dB, Tapper, 340 - 6000 MHz",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      340.0,
+      6000.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 8.0,
+    "cable_family": null,
+    "budget_rank": 8
+   },
+   {
+    "mfr": "Sym Technology",
+    "model": "ST-06-60",
+    "description": "6dB (4:1) RF Tapper, 340-6000MHz, -161dBc, 300W, IP67 & 4.3-10 (F) (Rev.2)",
+    "jobs": 5,
+    "source": "ANS quote history, 5 jobs",
+    "bands_mhz": [
+     [
+      340.0,
+      6000.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 6.0,
+    "cable_family": null,
+    "budget_rank": 9
+   },
+   {
+    "mfr": "Sym Technology",
+    "model": "ST-08-60",
+    "description": "8dB (6:1) RF Tapper, 340-6000MHz, -161dBc, 300W, IP67 & 4.3-10 (F) (Rev.2)",
+    "jobs": 4,
+    "source": "ANS quote history, 4 jobs",
+    "bands_mhz": [
+     [
+      340.0,
+      6000.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 8.0,
+    "cable_family": null,
+    "budget_rank": 10
+   },
+   {
+    "mfr": "Sym Technology",
+    "model": "ST-10-60",
+    "description": "10dB (10:1) RF Tapper, 340-6000MHz, -161dBc, 300W, IP67 & 4.3-10 (F) (Rev.2)",
+    "jobs": 4,
+    "source": "ANS quote history, 4 jobs",
+    "bands_mhz": [
+     [
+      340.0,
+      6000.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 10.0,
+    "cable_family": null,
+    "budget_rank": 11
+   },
+   {
+    "mfr": "Sym Technology",
+    "model": "ST-13-60",
+    "description": "13dB (20:1) RF Tapper, 340-6000MHz, -161dBc, 300W, IP67 & 4.3-10 (F) (Rev.2)",
+    "jobs": 3,
+    "source": "ANS quote history, 3 jobs",
+    "bands_mhz": [
+     [
+      340.0,
+      6000.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 13.0,
+    "cable_family": null,
+    "budget_rank": 12
+   },
+   {
+    "mfr": "Westell",
+    "model": "CS65-552-853",
+    "description": "Power Tapper 6dB, 500 W, 4.3-10 -161dBc PIM",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": "4.3-10",
+    "ratio_db": 6.0,
+    "cable_family": null,
+    "budget_rank": 13
+   },
+   {
+    "mfr": "Westell",
+    "model": "CS65-551-853",
+    "description": "Power Tapper 5dB, 500 W, 4.3-10 -161dBc PIM",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": "4.3-10",
+    "ratio_db": 5.0,
+    "cable_family": null,
+    "budget_rank": 14
+   },
+   {
+    "mfr": "Westell",
+    "model": "CS65-556-853",
+    "description": "Power Tapper 10dB, 500 W, 4.3-10 -161dBc",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": "4.3-10",
+    "ratio_db": 10.0,
+    "cable_family": null,
+    "budget_rank": 15
+   },
+   {
+    "mfr": "Westell",
+    "model": "CS65-550-853 (PT3/380- 6G/4310)",
+    "description": "Power Tapper 3dB, 500 W, 4.3-10 -161dBc PIM, 380-6000MHz",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      380.0,
+      6000.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 3.0,
+    "cable_family": null,
+    "budget_rank": 16
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-34FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 30,
+    "source": "ANS quote history, 30 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 3.0,
+    "cable_family": null,
+    "budget_rank": 17
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-44FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 26,
+    "source": "ANS quote history, 26 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 4.8,
+    "cable_family": null,
+    "budget_rank": 18
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-84FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 13,
+    "source": "ANS quote history, 13 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 13.0,
+    "cable_family": null,
+    "budget_rank": 19
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-94FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 9,
+    "source": "ANS quote history, 9 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 15.0,
+    "cable_family": null,
+    "budget_rank": 20
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-04FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 7,
+    "source": "ANS quote history, 7 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 20.0,
+    "cable_family": null,
+    "budget_rank": 21
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-54FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 20,
+    "source": "ANS quote history, 20 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 6.0,
+    "cable_family": null,
+    "budget_rank": 22
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-64FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 25,
+    "source": "ANS quote history, 25 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 8.0,
+    "cable_family": null,
+    "budget_rank": 23
+   },
+   {
+    "mfr": "Microlab",
+    "model": "DN-74FE",
+    "description": "10 dB tapper 4.3-10, 350-5930 MHz, 500W",
+    "jobs": 3,
+    "source": "ANS quote history, 3 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 10.0,
+    "cable_family": null,
+    "budget_rank": 24
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-74FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 20,
+    "source": "ANS quote history, 20 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 10.0,
+    "cable_family": null,
+    "budget_rank": 25
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "*DN-34FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM <-161 dBc, 2:1 (3 dB), 350-5930 MHz, 500W, 4.3-10 Connectors IP67 <CNE>",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 3.0,
+    "cable_family": null,
+    "budget_rank": 26
+   },
+   {
+    "mfr": "Microlab",
+    "model": "DN-54FE",
+    "description": "6 dB tapper 4.3-10, 350-5930 MHz, 500W",
+    "jobs": 4,
+    "source": "ANS quote history, 4 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 6.0,
+    "cable_family": null,
+    "budget_rank": 27
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "*DN-64FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM <-161 dBc, 6:1 (8 dB), 350-5930 MHz, 500W, 4.3-10 Connectors, IP67, <CNE>",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 8.0,
+    "cable_family": null,
+    "budget_rank": 28
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "*DN-54FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM <-161 dBc, 4:1 (6 dB), 350-5930 MHz, 500W, 4.3-10 Connectors, IP67, <CNE>",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 6.0,
+    "cable_family": null,
+    "budget_rank": 29
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "*DN-74FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM <-161dBc, 10:1 (10 dB), 350-5930 MHz, 500W, 4.3-10 Connectors, IP67 <CNE>",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 10.0,
+    "cable_family": null,
+    "budget_rank": 30
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "*DN-44FE",
+    "description": "Unequal Power Splitter (Tapper), Low PIM <-161 dBc, 3:1 (4.8 dB), 350-5930 MHz, 500W, 4.3-10 Connectors, IP67 <CNE>",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 4.8,
+    "cable_family": null,
+    "budget_rank": 31
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-44FN",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 4.8,
+    "cable_family": null,
+    "budget_rank": 32
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-34FN",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 3.0,
+    "cable_family": null,
+    "budget_rank": 33
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-54FN",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      350.0,
+      5930.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 6.0,
+    "cable_family": null,
+    "budget_rank": 34
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-01FN",
+    "description": "20DB Power tapper",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": null,
+    "ratio_db": 20.0,
+    "cable_family": null,
+    "budget_rank": 35
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-31FN",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      137.0,
+      960.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 3.0,
+    "cable_family": null,
+    "budget_rank": 37
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "DN-51FN",
+    "description": "Unequal Power Splitter (Tapper), Low PIM",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      137.0,
+      960.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 6.0,
+    "cable_family": null,
+    "budget_rank": 38
+   },
+   {
+    "mfr": "Westell",
+    "model": "CS05-162-114 (PT03/617-2.7K/-161/4310)",
+    "description": "Power Tapper 200W 3dB 4.3-10 -161 PIM",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": "4.3-10",
+    "ratio_db": 3.0,
+    "cable_family": null,
+    "budget_rank": 55
+   }
+  ],
+  "coupler": [
+   {
+    "mfr": "Techwave",
+    "model": "TC-PCCoM-06DI",
+    "description": "6 dB Directional Coupler, 698-2700 MHz, N-Female Connectors 200W and PIM less than -153dBc @ 2x43dBm.",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      698.0,
+      2700.0
+     ]
+    ],
+    "interface": "N",
+    "ratio_db": 6.0,
+    "cable_family": null,
+    "budget_rank": 2
+   },
+   {
+    "mfr": "Techwave",
+    "model": "TC-PCCoM-10DI",
+    "description": "10 dB Directional Coupler, 698-2700 MHz, N-Female Connectors 200W and PIM less than -153dBc @ 2x43dBm.",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      698.0,
+      2700.0
+     ]
+    ],
+    "interface": "N",
+    "ratio_db": 10.0,
+    "cable_family": null,
+    "budget_rank": 3
+   },
+   {
+    "mfr": "Techwave",
+    "model": "TC-PCCoM-15DI",
+    "description": "15 dB Directional Coupler, 698-2700 MHz, N-Female Connectors 200W and PIM less than -153dBc @ 2x43dBm.",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      698.0,
+      2700.0
+     ]
+    ],
+    "interface": "N",
+    "ratio_db": 15.0,
+    "cable_family": null,
+    "budget_rank": 4
+   },
+   {
+    "mfr": "SureCall",
+    "model": "SC-C-6-5G",
+    "description": "-6dB Directional Coupler",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": null,
+    "ratio_db": 6.0,
+    "cable_family": null,
+    "budget_rank": 7
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "CC-613E",
+    "description": "Directional Coupler, 13 dB, Ultra-Wideband 617-5925 MHz, 300W, 4.3-10 Connectors, Low PIM",
+    "jobs": 8,
+    "source": "ANS quote history, 8 jobs",
+    "bands_mhz": [
+     [
+      617.0,
+      5925.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 13.0,
+    "cable_family": null,
+    "budget_rank": 36
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "CC-615E",
+    "description": "Directional Coupler, 15 dB, Ultra-Wideband 617-5925 MHz, 300W, 4.3-10 Connectors, Low PIM",
+    "jobs": 7,
+    "source": "ANS quote history, 7 jobs",
+    "bands_mhz": [
+     [
+      617.0,
+      5925.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 15.0,
+    "cable_family": null,
+    "budget_rank": 39
+   },
+   {
+    "mfr": "CommScope",
+    "model": "C-15-UW-43-Ai6",
+    "description": "15 dB, Air Directional Coupler, 555-6000 MHz",
+    "jobs": 17,
+    "source": "ANS quote history, 17 jobs",
+    "bands_mhz": [
+     [
+      555.0,
+      6000.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 15.0,
+    "cable_family": null,
+    "budget_rank": 40
+   },
+   {
+    "mfr": "CommScope",
+    "model": "C-20-UW-43-Ai6",
+    "description": "20 dB, Air Directional Coupler, 555-6000 MHz",
+    "jobs": 12,
+    "source": "ANS quote history, 12 jobs",
+    "bands_mhz": [
+     [
+      555.0,
+      6000.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 20.0,
+    "cable_family": null,
+    "budget_rank": 41
+   },
+   {
+    "mfr": "CommScope",
+    "model": "C-6-UW-43-Ai6",
+    "description": "6 dB, Air Directional Coupler, 555-6000 MHz",
+    "jobs": 40,
+    "source": "ANS quote history, 40 jobs",
+    "bands_mhz": [
+     [
+      555.0,
+      6000.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 6.0,
+    "cable_family": null,
+    "budget_rank": 42
+   },
+   {
+    "mfr": "CommScope",
+    "model": "C-13-UW-43-Ai6",
+    "description": "13 dB, Air Directional Coupler, 555-6000 MHz",
+    "jobs": 26,
+    "source": "ANS quote history, 26 jobs",
+    "bands_mhz": [
+     [
+      555.0,
+      6000.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 13.0,
+    "cable_family": null,
+    "budget_rank": 43
+   },
+   {
+    "mfr": "CommScope",
+    "model": "C-8-UW-43-Ai6",
+    "description": "8 dB, Air Directional Coupler, 555-6000 MHz",
+    "jobs": 38,
+    "source": "ANS quote history, 38 jobs",
+    "bands_mhz": [
+     [
+      555.0,
+      6000.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 8.0,
+    "cable_family": null,
+    "budget_rank": 44
+   },
+   {
+    "mfr": "CommScope",
+    "model": "C-5-UW-43-Ai6",
+    "description": "5 dB, Air Directional Coupler, 555-6000 MHz",
+    "jobs": 40,
+    "source": "ANS quote history, 40 jobs",
+    "bands_mhz": [
+     [
+      555.0,
+      6000.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 5.0,
+    "cable_family": null,
+    "budget_rank": 45
+   },
+   {
+    "mfr": "CommScope",
+    "model": "C-10-UW-43-Ai6",
+    "description": "10 dB, Air Directional Coupler, 555-6000 MHz",
+    "jobs": 31,
+    "source": "ANS quote history, 31 jobs",
+    "bands_mhz": [
+     [
+      555.0,
+      6000.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 10.0,
+    "cable_family": null,
+    "budget_rank": 46
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "CC-610E",
+    "description": "Directional Coupler, 10 dB,Ultra-Wideband 617-5925 MHz, 300W, 4.3-10 Connectors, Low PIM",
+    "jobs": 8,
+    "source": "ANS quote history, 8 jobs",
+    "bands_mhz": [
+     [
+      617.0,
+      5925.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 10.0,
+    "cable_family": null,
+    "budget_rank": 47
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "CC-605E",
+    "description": "Directional Coupler, 5 dB,Ultra-WideBand 617-5925 MHz, 300W, 4.3-10 Connectors, Low PIM",
+    "jobs": 8,
+    "source": "ANS quote history, 8 jobs",
+    "bands_mhz": [
+     [
+      617.0,
+      5925.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 5.0,
+    "cable_family": null,
+    "budget_rank": 48
+   },
+   {
+    "mfr": "CommScope",
+    "model": "C-30-UW-43-Ai6",
+    "description": "30 dB, Air Directional Coupler, 555-6000 MHz",
+    "jobs": 4,
+    "source": "ANS quote history, 4 jobs",
+    "bands_mhz": [
+     [
+      555.0,
+      6000.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": 30.0,
+    "cable_family": null,
+    "budget_rank": 49
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "CC-606E",
+    "description": "Directional Coupler, 6dB, Ultra-WideBand 617-5925 MHz, 300W, 4.3-10 Connectors, Low PIM",
+    "jobs": 7,
+    "source": "ANS quote history, 7 jobs",
+    "bands_mhz": [
+     [
+      617.0,
+      5925.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 6.0,
+    "cable_family": null,
+    "budget_rank": 50
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "CC-608E",
+    "description": "Directional Coupler, 8 dB, Ultra-Wideband 617-5925 MHz, 300W, 4.3-10 Connectors, Low PIM",
+    "jobs": 8,
+    "source": "ANS quote history, 8 jobs",
+    "bands_mhz": [
+     [
+      617.0,
+      5925.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 8.0,
+    "cable_family": null,
+    "budget_rank": 51
+   },
+   {
+    "mfr": "Microlab/FXR",
+    "model": "CC-607E",
+    "description": "Directional Coupler, 7 dB, Ultra-Wideband 617-5925 MHz, 300W, 4.3-10 Connectors, Low PIM",
+    "jobs": 6,
+    "source": "ANS quote history, 6 jobs",
+    "bands_mhz": [
+     [
+      617.0,
+      5925.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 7.0,
+    "cable_family": null,
+    "budget_rank": 52
+   },
+   {
+    "mfr": "ADRF",
+    "model": "ADRF-DCPL-10-4310-X",
+    "description": "10dB Directional Coupler (600~4200 MHz, 200 W) Low PIM, 4.3-10 Female",
+    "jobs": 3,
+    "source": "ANS quote history, 3 jobs",
+    "bands_mhz": [
+     [
+      600.0,
+      4200.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 10.0,
+    "cable_family": null,
+    "budget_rank": 53
+   },
+   {
+    "mfr": "ADRF",
+    "model": "ADRF-DCPL-6-4310-X",
+    "description": "6dB Directional Coupler (600~4200 MHz, 200 W) Low PIM, 4.3-10 Female",
+    "jobs": 3,
+    "source": "ANS quote history, 3 jobs",
+    "bands_mhz": [
+     [
+      600.0,
+      4200.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": 6.0,
+    "cable_family": null,
+    "budget_rank": 54
+   },
+   {
+    "mfr": "JMA Wireless",
+    "model": "TDC-C",
+    "description": "Directional Coupler, 20 dB, SMA Connectors",
+    "jobs": 5,
+    "source": "ANS quote history, 5 jobs",
+    "bands_mhz": null,
+    "interface": null,
+    "ratio_db": 20.0,
+    "cable_family": null,
+    "budget_rank": 56
+   }
+  ],
+  "connector_half_male": [
+   {
+    "mfr": "Windy City Wire",
+    "model": "WCW-NM-LCF12-D01",
+    "description": "N Male Connector for 1/2\" Coaxial Cable, OMNI FIT Premium, Straight, Polymer Claw and Compression Sealing",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": "N",
+    "ratio_db": null,
+    "cable_family": "RFS LCF12/ICA12",
+    "budget_rank": 1
+   },
+   {
+    "mfr": "RFS",
+    "model": "43M-LCF12-E01",
+    "description": "Connector - LCF12-50 - 4.3-10 Male Connectors",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": "4.3-10",
+    "ratio_db": null,
+    "cable_family": "RFS LCF12/ICA12",
+    "budget_rank": 2
+   },
+   {
+    "mfr": "Connector",
+    "model": "NM-LCF12-C02-6",
+    "description": "N Male OMNI FITTM Connector for ICA12/LCF12-50 Cable",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": "N",
+    "ratio_db": null,
+    "cable_family": "RFS LCF12/ICA12",
+    "budget_rank": 3
+   },
+   {
+    "mfr": "Windy City Wire",
+    "model": "WCW-43M-LCF12-D01",
+    "description": "4.3-10 Male Straight Connector for 1/2\" LCF12-50 Series and ICA12-50 Series Coaxial Cable, OMNI FIT Premium, Straight",
+    "jobs": 11,
+    "source": "ANS quote history, 11 jobs",
+    "bands_mhz": null,
+    "interface": "4.3-10",
+    "ratio_db": null,
+    "cable_family": "RFS LCF12/ICA12",
+    "budget_rank": 4
+   },
+   {
+    "mfr": "RFS",
+    "model": "43M-LCF12-D01",
+    "description": "Connector - LCF12-50 - 4.3-10 Male Connectors",
+    "jobs": 8,
+    "source": "ANS quote history, 8 jobs",
+    "bands_mhz": null,
+    "interface": "4.3-10",
+    "ratio_db": null,
+    "cable_family": "RFS LCF12/ICA12",
+    "budget_rank": 5
+   },
+   {
+    "mfr": "JMA Wireless",
+    "model": "APL-4MT-12",
+    "description": "APL 4.3-10 Male Torque Connector for Cables 1/2\" Annular",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": "4.3-10",
+    "ratio_db": null,
+    "cable_family": "CommScope/annular 1/2 in",
+    "budget_rank": 6
+   },
+   {
+    "mfr": "RFS",
+    "model": "NM-LCF12-D01",
+    "description": "N Male OMNI FIT Connector for LCF12-50 Cable",
+    "jobs": 8,
+    "source": "ANS quote history, 8 jobs",
+    "bands_mhz": null,
+    "interface": "N",
+    "ratio_db": null,
+    "cable_family": "RFS LCF12/ICA12",
+    "budget_rank": 7
+   },
+   {
+    "mfr": "Windy City Wire",
+    "model": "WCW-NM-LCF12-C02-6",
+    "description": "N-Male Connector for 1/2\" LCF12-50 Series and ICA12-50 Series Coaxial Cable, OMNI FIT Standard, Extended Frequency Rang",
+    "jobs": 5,
+    "source": "ANS quote history, 5 jobs",
+    "bands_mhz": null,
+    "interface": "N",
+    "ratio_db": null,
+    "cable_family": "RFS LCF12/ICA12",
+    "budget_rank": 8
+   },
+   {
+    "mfr": "AirCell-Trilogy",
+    "model": "NMA01250B",
+    "description": "N Type, Male Connector for 1/2\" AirCell Transline & Radiating Cables, 50 Ohm, PIM (Optimized for PIM)",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": "N",
+    "ratio_db": null,
+    "cable_family": "1/2 in (unspecified)",
+    "budget_rank": 9
+   },
+   {
+    "mfr": "JMA Wireless",
+    "model": "UXP-NM-12S",
+    "description": "N Male Connector for 1/2” Superflexible Cable",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": "N",
+    "ratio_db": null,
+    "cable_family": "1/2 in (unspecified)",
+    "budget_rank": 10
+   },
+   {
+    "mfr": "JMA Wireless",
+    "model": "UPL-NM-12",
+    "description": "UPL N Male Connector for Air Dielectric Cables 1/2\" Annular",
+    "jobs": 31,
+    "source": "ANS quote history, 31 jobs",
+    "bands_mhz": null,
+    "interface": "N",
+    "ratio_db": null,
+    "cable_family": "CommScope/annular 1/2 in",
+    "budget_rank": 11
+   },
+   {
+    "mfr": "CommScope",
+    "model": "UPL-NM-12",
+    "description": "UPL N Male Connector for Plenum 1/2\" Annular",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": "N",
+    "ratio_db": null,
+    "cable_family": "CommScope/annular 1/2 in",
+    "budget_rank": 12
+   },
+   {
+    "mfr": "JMA Wireless",
+    "model": "UXP-4MT-12",
+    "description": "UXP 4.3-10 Male Torque Connector for Cables 1/2\" Annular",
+    "jobs": 9,
+    "source": "ANS quote history, 9 jobs",
+    "bands_mhz": null,
+    "interface": "4.3-10",
+    "ratio_db": null,
+    "cable_family": "CommScope/annular 1/2 in",
+    "budget_rank": 13
+   },
+   {
+    "mfr": "JMA",
+    "model": "UPL-4MT-12",
+    "description": "UPL 4.3-10 Male Torque Connector for Cables 1/2\" Annular",
+    "jobs": 13,
+    "source": "ANS quote history, 13 jobs",
+    "bands_mhz": null,
+    "interface": "4.3-10",
+    "ratio_db": null,
+    "cable_family": "CommScope/annular 1/2 in",
+    "budget_rank": 14
+   },
+   {
+    "mfr": "JMA Wireless",
+    "model": "UPL-4MT-12",
+    "description": "UPL 4.3-10 Male Torque Connector for Cables 1/2\" Annular",
+    "jobs": 89,
+    "source": "ANS quote history, 89 jobs",
+    "bands_mhz": null,
+    "interface": "4.3-10",
+    "ratio_db": null,
+    "cable_family": "CommScope/annular 1/2 in",
+    "budget_rank": 15
+   },
+   {
+    "mfr": "JMA Wireless",
+    "model": "UPL-DM-12",
+    "description": "UPL 7-16 DIN Male Connector for Air Dielectric Cables 1/2\" Annular",
+    "jobs": 5,
+    "source": "ANS quote history, 5 jobs",
+    "bands_mhz": null,
+    "interface": "N",
+    "ratio_db": null,
+    "cable_family": "CommScope/annular 1/2 in",
+    "budget_rank": 16
+   },
+   {
+    "mfr": "JMA Wireless",
+    "model": "UXP-DM-12",
+    "description": "UXP 7-16 DIN Male Connector for Foam Dielectric Cables 1/2\" Annular",
+    "jobs": 4,
+    "source": "ANS quote history, 4 jobs",
+    "bands_mhz": null,
+    "interface": "N",
+    "ratio_db": null,
+    "cable_family": "CommScope/annular 1/2 in",
+    "budget_rank": 17
+   }
+  ],
+  "omni": [
+   {
+    "mfr": "Techwave",
+    "model": "TC AI698-2700V05i360B (PS)",
+    "description": "Wide Band indoor Omni Antenna: Frequency Rang(MHz) 698~960/1710~2700，Impedance（Ω） 50，VSWR ≤1.8/1.5，PIM",
+    "jobs": 3,
+    "source": "ANS quote history, 3 jobs",
+    "bands_mhz": [
+     [
+      698,
+      960
+     ],
+     [
+      1710,
+      2700
+     ]
+    ],
+    "interface": null,
+    "ratio_db": null,
+    "cable_family": null,
+    "budget_rank": 1
+   },
+   {
+    "mfr": "Techwave",
+    "model": "TC AI698-2700V05i360B",
+    "description": "Wide Band Indoor Omni Ceiling Mounted Antenna, 698-960/1710-2700MHz, VSWR 1.8, PIM(-153dBc), Gain 2/5dBi, N-Female Femal",
+    "jobs": 4,
+    "source": "ANS quote history, 4 jobs",
+    "bands_mhz": [
+     [
+      698,
+      960
+     ],
+     [
+      1710,
+      2700
+     ]
+    ],
+    "interface": "N",
+    "ratio_db": null,
+    "cable_family": null,
+    "budget_rank": 2
+   },
+   {
+    "mfr": "JMA Wireless",
+    "model": "iV01OMI136-U4",
+    "description": "Surface Mount UltraThin Omni SISO Antenna, 617-5925 MHz 4.3-10 with pigtail",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      617.0,
+      5925.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": null,
+    "cable_family": null,
+    "budget_rank": 3
+   },
+   {
+    "mfr": "CommScope",
+    "model": "CMAX-OUS1-UW43-I53",
+    "description": "Cell-Max Low PIM Omni In-building Antenna, 617-960, 1400-1600, 1695-2700 MHz, 3300-4200 MHz and 4900-6000MHz 4.3-10",
+    "jobs": 6,
+    "source": "ANS quote history, 6 jobs",
+    "bands_mhz": [
+     [
+      617,
+      960
+     ],
+     [
+      1400,
+      1600
+     ],
+     [
+      1695,
+      2700
+     ],
+     [
+      3300,
+      4200
+     ],
+     [
+      4900,
+      6000
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": null,
+    "cable_family": null,
+    "budget_rank": 4
+   },
+   {
+    "mfr": "CommScope",
+    "model": "CMAX-O-43-UW-i53",
+    "description": "Cell-Max Low PIM Omni In-building Antenna, 617-6000 MHz",
+    "jobs": 69,
+    "source": "ANS quote history, 69 jobs",
+    "bands_mhz": [
+     [
+      617.0,
+      6000.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": null,
+    "cable_family": null,
+    "budget_rank": 5
+   },
+   {
+    "mfr": "CommScope",
+    "model": "CMAX-O-43-UW i53",
+    "description": "Cell-Max Low PIM Omni In-building Antenna, 617-6000 MHz",
+    "jobs": 5,
+    "source": "ANS quote history, 5 jobs",
+    "bands_mhz": [
+     [
+      617.0,
+      6000.0
+     ]
+    ],
+    "interface": null,
+    "ratio_db": null,
+    "cable_family": null,
+    "budget_rank": 6
+   },
+   {
+    "mfr": "Westell",
+    "model": "CS03-043-380/N (O\\380-4000-Thinrnd/N(f)",
+    "description": "Public Safety Antenna Ceiling Mount / Low Profile / Omni / 380-4000 MHz (N/F)",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      380.0,
+      4000.0
+     ]
+    ],
+    "interface": "N",
+    "ratio_db": null,
+    "cable_family": null,
+    "budget_rank": 7
+   },
+   {
+    "mfr": "JMA Wireless",
+    "model": "iV01OMI136-S4",
+    "description": "Surface Mount Omni SISO Antenna, 617-5925 MHz 4.3-10 with pigtail",
+    "jobs": 12,
+    "source": "ANS quote history, 12 jobs",
+    "bands_mhz": [
+     [
+      617.0,
+      5925.0
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": null,
+    "cable_family": null,
+    "budget_rank": 8
+   },
+   {
+    "mfr": "Commscope",
+    "model": "Commscope SISO OMNI",
+    "description": "OMNI antenna",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": null,
+    "interface": null,
+    "ratio_db": null,
+    "cable_family": null,
+    "budget_rank": 9
+   },
+   {
+    "mfr": "Galtronics",
+    "model": "PEAR S5491i",
+    "description": "Small form factor omni in-building antenna (380-520/617-960/1685-6000 MHz)",
+    "jobs": 2,
+    "source": "ANS quote history, 2 jobs",
+    "bands_mhz": [
+     [
+      380,
+      520
+     ],
+     [
+      617,
+      960
+     ],
+     [
+      1685,
+      6000
+     ]
+    ],
+    "interface": null,
+    "ratio_db": null,
+    "cable_family": null,
+    "budget_rank": 10
+   },
+   {
+    "mfr": "ADRF",
+    "model": "AD-OMNI-SISO-4310-X",
+    "description": "Low PIM SISO Omni Server Antenna (617MHz-6000MHz) (4.3-10 Type)",
+    "jobs": 3,
+    "source": "ANS quote history, 3 jobs",
+    "bands_mhz": [
+     [
+      617,
+      6000
+     ]
+    ],
+    "interface": "4.3-10",
+    "ratio_db": null,
+    "cable_family": null,
+    "budget_rank": 11
+   },
+   {
+    "mfr": "CommScope",
+    "model": "CELLMAX-O-TCPUSEWi",
+    "description": "Cell-Max Omni In-building Antenna, 350-470 MHz, 698-960MHz and 1710-6000 MHz",
+    "jobs": 5,
+    "source": "ANS quote history, 5 jobs",
+    "bands_mhz": [
+     [
+      350,
+      470
+     ],
+     [
+      698,
+      960
+     ],
+     [
+      1710,
+      6000
+     ]
+    ],
+    "interface": null,
+    "ratio_db": null,
+    "cable_family": null,
+    "budget_rank": 12
+   }
+  ]
+ },
+ "techwave_connectors": [
+  {
+   "mfr": "Techwave",
+   "model": "TC-CN-N-J-1/2-RC-1",
+   "description": "Techwave N connector for 1/2 in cable (model as listed in the owner decision; description not on file)",
+   "jobs": 0,
+   "source": "owner decision 2026-11-10, not in ANS quote history",
+   "bands_mhz": null,
+   "interface": "N",
+   "ratio_db": null,
+   "cable_family": null,
+   "budget_rank": null
+  }
+ ]
+}

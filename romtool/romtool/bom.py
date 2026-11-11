@@ -17,6 +17,15 @@ def _elements(model):
             yield el
 
 
+def _loss(el, parts, group, pid, key, fallback):
+    """The element's own loss if it sets one, else the config part's, else the
+    fallback (the same order the cascade uses)."""
+    if el.get(key) is not None:
+        return float(el[key])
+    dflt = (parts.get(group) or {}).get(pid) or {}
+    return float(dflt.get(key, fallback))
+
+
 def generate_bom(model, config):
     cables = config.get("cables", {})
     parts = config.get("parts", {})
@@ -49,10 +58,12 @@ def generate_bom(model, config):
             splitter_ways[ways] = splitter_ways.get(ways, 0) + 1
         elif t == "tapper":
             pid = el.get("part_id") or "default"
-            tapper_count[pid] = tapper_count.get(pid, 0) + 1
+            key = (pid, _loss(el, parts, "tappers", pid, "tap_loss_db", 12.0))
+            tapper_count[key] = tapper_count.get(key, 0) + 1
         elif t == "coupler":
             pid = el.get("part_id") or "default"
-            coupler_count[pid] = coupler_count.get(pid, 0) + 1
+            key = (pid, _loss(el, parts, "couplers", pid, "coupled_loss_db", 10.0))
+            coupler_count[key] = coupler_count.get(key, 0) + 1
         elif t == "antenna":
             aid = el.get("antenna_id")
             if aid not in antennas:
@@ -72,16 +83,23 @@ def generate_bom(model, config):
 
     # "role" names the part a line stands for (config/parts_catalog.json). It is
     # an extra key: the four original fields and bom_csv() are unchanged.
+    # "grade_kind" marks lines the grade selection may replace (grades.py). The
+    # 1/2 in cable and its connectors are graded as a pair; tappers and couplers
+    # carry the modeled tap or coupled loss in "ratio_db".
+    ap = config.get("autoplace") or {}
+    branch_cable = ap.get("branch_cable_id", "coax_1_2in")
     items = []
     for cid in sorted(cable_len):
         label = cables[cid].get("label", cid)
         meters = round(cable_len[cid], 2)
+        half_inch = "coax_1_2in" == cid
         items.append({"category": "cable", "item": label, "qty": meters, "unit": "m",
                       "role": "cable.%s" % cid})
         items.append({
             "category": "cable", "item": label,
             "qty": round(cable_len[cid] / M_PER_FT, 1), "unit": "ft",
             "role": "cable.%s" % cid,
+            **({"grade_kind": "cable"} if half_inch else {}),
         })
         conn_label = (cables[cid].get("connector_label")
                       or "N-type connectors (pairs per %s run)" % label)
@@ -90,6 +108,7 @@ def generate_bom(model, config):
             "category": "connectors", "item": conn_label,
             "qty": 2 * cable_runs[cid], "unit": "ea",
             "role": "connector.fiber" if is_fiber else "connector.coax",
+            **({"grade_kind": "connector"} if half_inch and not is_fiber else {}),
         })
     for ways in sorted(splitter_ways):
         key = "%dway" % ways
@@ -97,20 +116,25 @@ def generate_bom(model, config):
         items.append({"category": "splitter", "item": label,
                       "qty": splitter_ways[ways], "unit": "ea",
                       "role": "splitter.%s" % key})
-    for pid in sorted(tapper_count):
+    for pid, loss in sorted(tapper_count):
         label = parts.get("tappers", {}).get(pid, {}).get("label", "Tap (through + taps)")
-        items.append({"category": "tapper", "item": label, "qty": tapper_count[pid],
-                      "unit": "ea", "role": "tapper.%s" % pid})
-    for pid in sorted(coupler_count):
+        items.append({"category": "tapper", "item": label,
+                      "qty": tapper_count[(pid, loss)],
+                      "unit": "ea", "role": "tapper.%s" % pid,
+                      "ratio_db": loss, "grade_kind": "tapper"})
+    for pid, loss in sorted(coupler_count):
         label = (parts.get("couplers", {}).get(pid, {}).get("label")
                  or "Directional coupler")
-        items.append({"category": "coupler", "item": label, "qty": coupler_count[pid],
-                      "unit": "ea", "role": "coupler.%s" % pid})
+        items.append({"category": "coupler", "item": label,
+                      "qty": coupler_count[(pid, loss)],
+                      "unit": "ea", "role": "coupler.%s" % pid,
+                      "ratio_db": loss, "grade_kind": "coupler"})
     for aid in sorted(antenna_count):
         label = antennas[aid].get("label", aid)
         items.append({"category": "antenna", "item": label,
                       "qty": antenna_count[aid], "unit": "ea",
-                      "role": "antenna.%s" % aid})
+                      "role": "antenna.%s" % aid,
+                      **({"grade_kind": "omni"} if aid == "omni_das" else {})})
     hw = config.get("branch_hardware", {})
     branch_roles = {"connector": "connector.coax", "jumper": "jumper.coax",
                     "diplexer": "diplexer.das"}
@@ -119,7 +143,10 @@ def generate_bom(model, config):
             items.append({"category": "branch hardware",
                           "item": hw.get(key, {}).get("label", key),
                           "qty": branch_parts[key + "s"], "unit": "ea",
-                          "role": branch_roles[key]})
+                          "role": branch_roles[key],
+                          **({"grade_kind": "connector"}
+                             if key == "connector" and branch_cable == "coax_1_2in"
+                             else {})})
     if source_count:
         items.append({"category": "source",
                       "item": src_cfg.get("label", "Off-air source (donor)"),

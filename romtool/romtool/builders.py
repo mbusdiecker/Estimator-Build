@@ -116,17 +116,23 @@ class _Ctx:
 
 
 def _lines_out(ctx, raw):
-    """raw: list of (role, qty, note). Adds the unit from the catalog, rounds
-    feet to 0.1 ft, and drops zero-quantity lines."""
+    """raw: list of (role, qty, note[, grade_kind]). Adds the unit from the
+    catalog, rounds feet to 0.1 ft, and drops zero-quantity lines. grade_kind
+    ("cable" or "connector") marks lines the grade selection may replace."""
     out = []
-    for role, qty, note in raw:
+    for entry in raw:
+        role, qty, note = entry[0], entry[1], entry[2]
+        kind = entry[3] if len(entry) > 3 else None
         unit = ctx.part(role)["unit"]
         if unit == "ft":
             qty = round(float(qty), 1)
         else:
             qty = int(round(float(qty)))
         if qty:
-            out.append({"role": role, "qty": qty, "unit": unit, "note": note})
+            line = {"role": role, "qty": qty, "unit": unit, "note": note}
+            if kind:
+                line["grade_kind"] = kind
+            out.append(line)
     return out
 
 
@@ -166,8 +172,14 @@ def rooftop(inputs, rules, ctx):
          % (rules("donor_outdoor_ft_per_carrier"), basis)),
         ("cable.coax_1_2in_plenum", plenum_ft,
          "%g ft indoor plenum 1/2 in per donor line, %s"
-         % (rules("donor_plenum_ft_per_carrier"), basis)),
-        ("connector.coax", donors * rules("connectors_per_donor_line"), per),
+         % (rules("donor_plenum_ft_per_carrier"), basis), "cable"),
+        # The connector rule counts both cable legs. The outdoor leg keeps the
+        # catalog connector; the plenum leg follows the grade's 1/2 in pair.
+        ("connector.coax", donors * (rules("connectors_per_donor_line") // 2),
+         per + ", outdoor leg"),
+        ("connector.coax",
+         donors * (rules("connectors_per_donor_line") - rules("connectors_per_donor_line") // 2),
+         per + ", plenum leg", "connector"),
         ("jumper.coax", donors * rules("jumpers_per_donor_line"), per),
     ]
     return _lines_out(ctx, raw)
@@ -220,7 +232,8 @@ def riser(inputs, rules, ctx):
     note = "%d floors at %g m, %g m slack per run (%d transitions)" % (
         floors, floor_h, slack_m, transitions)
     raw = [
-        ("cable.%s" % coax_id, coax_runs * run_ft, "%d vertical run(s), %s" % (coax_runs, note)),
+        ("cable.%s" % coax_id, coax_runs * run_ft, "%d vertical run(s), %s" % (coax_runs, note),
+         "cable" if coax_id == "coax_1_2in" else None),
         ("cable.fiber_sm", fiber_runs * run_ft, "%d vertical fiber run(s), %s"
          % (fiber_runs, note)),
         ("sleeve.penetration", penetrations * rules("sleeves_per_penetration"),
@@ -237,9 +250,9 @@ def gps(inputs, rules, ctx):
     raw = [
         ("antenna.gps", 1, "GPS antenna"),
         ("mount.gps", 1, "GPS rooftop mount"),
-        ("cable.coax_1_2in_plenum", coax_ft, "GPS coax run, 1/2 in plenum assumed"),
+        ("cable.coax_1_2in_plenum", coax_ft, "GPS coax run, 1/2 in plenum assumed", "cable"),
         ("surge.coax", rules("surge_per_gps"), "GPS coax entry"),
-        ("connector.coax", rules("connectors_per_gps"), "GPS coax ends"),
+        ("connector.coax", rules("connectors_per_gps"), "GPS coax ends", "connector"),
     ]
     return _lines_out(ctx, raw)
 
@@ -311,12 +324,15 @@ def builder_items(model, config, catalog=None):
             continue
         for ln in build_lines(name, stored[name], config, model=model, catalog=cat):
             part = cat[ln["role"]]
-            items.append({
+            item = {
                 "category": "builder: %s" % name,
                 "item": part["description"],
                 "qty": ln["qty"],
                 "unit": ln["unit"],
                 "role": ln["role"],
                 "note": ln["note"],
-            })
+            }
+            if ln.get("grade_kind"):
+                item["grade_kind"] = ln["grade_kind"]
+            items.append(item)
     return items
