@@ -218,6 +218,8 @@ stack with every line visible in the recap:
 | GET | `/projects/{id}/floors/{fid}/nfpa_report(.json|.png)?band=…&step=…` |
 | GET | `/projects/{id}/bom` |
 | GET | `/exports/projects/{id}/bom.csv`, `/exports/projects/{id}/bom.json` |
+| GET | `/projects/{id}/bom_ibwave.csv`, `/projects/{id}/bom_ibwave.xlsx` (`?by_floor=true`) |
+| GET, POST | `/projects/{id}/builders`, `/projects/{id}/builders/{name}` |
 
 Solve returns a per-band trace (node in/out dBm, cable losses, per-antenna port
 power + EIRP) plus validation errors (HTTP 422) and warnings (e.g. antenna port
@@ -848,6 +850,41 @@ the floor has walls.
 - Pure-Python decoding and tracing take several seconds on a full-size page.
 - Floors with a clutter map keep the old map after a new plan. Run the
   clutter-map endpoint again.
+
+## BOM export, parts catalog and assembly builders
+
+The project BOM combines three sources: the element BOM (cable per type in metres and feet, connectors, splitters, tappers, couplers, antennas, branch hardware and head-end units), the builders stored on the project, and the parts catalog that maps each role to a part. `GET /projects/{id}/bom` returns the combined `items`. `/exports/projects/{id}/bom.csv` and `bom.json` use the same list.
+
+### Parts catalog
+
+`config/parts_catalog.json` maps each role (`cable.coax_1_2in`, `splitter.2way`, `antenna.omni_das`, and so on) to a manufacturer, model, description, iBwave type and unit. The defaults come from ANS quote history: the part used on the most jobs for the role, with the job count in `source`. A role with no usable history has an empty `model` and the source `no ANS standard yet`. Remotes and head-end units stay generic (`oem.remote`, `oem.source`, `oem.repeater`) until OEM packages are added. The catalog holds identifiers and descriptions only. `tests/test_builders.py` fails if a price or cost field appears in it.
+
+### iBwave equipment list
+
+`GET /projects/{id}/bom_ibwave.csv` and `.xlsx` write an equipment list in the column order of the estimating tool's BOM Import paste zone:
+
+`Type | Manufacturer | (blank) | Model | Description | (blank) | (blank) | Inventory# | Qty`
+
+The file has one header row and one row per part, with quantities summed across floors. Cable is counted in feet, and the metre rows of the element BOM are skipped. `?by_floor=true` adds a `Floor` column after `Qty` and writes one row per part per floor; builder lines are filed under `Site`. An element whose role has no catalog part returns 422 until the role is added to the catalog. The `Type` strings are ROMtool's labels for iBwave classes and should be checked against the iBwave library before the first import.
+
+When the BOM comes from ROMtool, leave the estimating tool's takeoff modules 3a to 3e empty so the same parts are not counted twice.
+
+### Assembly builders
+
+`POST /projects/{id}/builders/{name}` stores the inputs on the project and returns the lines the builder produces. `GET /projects/{id}/builders` lists the stored builders with their lines. Stored builders add their lines to the project BOM under the category `builder: {name}`. Each quantity rule sits in the `builders` block of `config/default.json` with its grade (E or C) and reference.
+
+```
+curl -s -X POST $BASE/projects/1/builders/rooftop -H "Content-Type: application/json" -d '{"carriers": ["Carrier A", "Carrier B"]}'
+```
+
+| Builder | Inputs | Lines and limits |
+|---|---|---|
+| `rooftop` | `carriers` (list) or `donor_count`; `mount` `roof` (default) or `wall` | Per donor line: donor antenna, donor mount, roof or wall base, surge arrestor, grounding kit, two weatherproofing kits, 150 ft outdoor-rated 1/2 in coax, 150 ft indoor plenum 1/2 in coax, connectors and jumpers. One roof entry per building. Donor coax per carrier is the ANS standard (grade C). No link budget is checked. |
+| `closet` | `racks`, `fiber_runs`, `ladder_ft`, `ground_cable_ft` | Two-post rack, backboard and PDU per rack, ground bar and ground cable, fiber panels, splice cassettes (one per fiber run), fiber housing, fiber jumpers, labels. Head-end units are not repeated: the closet adds one shelf and one label per unit the element BOM already counts. The rack, backboard, ladder rack and ground cable have no ANS part yet, so those lines carry no model. |
+| `riser` | `floors_served` (at least 2), `shafts`, `coax_runs`, `fiber_runs`, `coax_cable_id`, `floor_height_m` | Run length is floor height times floors served, plus the autoplace slack per run. Penetrations are one per floor slab per shaft, each with a sleeve and a firestop. J-hooks at the configured spacing. No riser clamps and no fiber connectors. |
+| `gps` | `coax_ft` | GPS antenna, rooftop mount, coax run on 1/2 in plenum (assumed), surge arrestor, two connectors. |
+| `power` | `load_amps`, `runtime_hours`, `string_ah` | Battery strings and rectifiers from the O-zone sizing (`power_plant_counts` in `romtool/estimate.py`). Defaults come from `config/rflink.json` (booster load) and `config/estimating.json` (string size and rectifier size). The chosen parts do not match the default string and rectifier sizes; see the catalog notes. |
+| `monitoring` | `annunciators` | One annunciator panel per unit and alarm wiring at the configured length per unit. A placeholder count. |
 
 ## Non-goals (per SPEC)
 

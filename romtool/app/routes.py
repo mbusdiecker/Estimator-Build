@@ -50,6 +50,8 @@ from romtool.clutter_map import (PNG_SIG, ClutterMapError, apply_overrides, buil
 from romtool.perimeter import (PerimeterError, edit_outline, normalize_roi, polygon_area,
                                scale_from_area, trace_floor)
 from romtool.bom import bom_csv, generate_bom
+from romtool.builders import BUILDER_NAMES, build_lines, builder_items
+from romtool.ibwave import ibwave_csv, ibwave_sheet, ibwave_table
 from romtool.bidform import build_bid_form, bid_form_pdf, bid_form_xlsx
 from romtool.cascade import solve_cascade
 from romtool.composite import composite_heatmap_view, predict_floor_multiband
@@ -2577,13 +2579,18 @@ def floor_layout_png_endpoint(pid: int, fid: str, include_image: bool = Query(Tr
 
 # ---------------------------------------------------------------- BOM + exports
 
+def _project_bom_items(model, cfg):
+    """Element BOM lines plus the lines of every builder stored on the project."""
+    return generate_bom(model, cfg)["items"] + builder_items(model, cfg)
+
+
 @router.get("/projects/{pid}/bom")
 def project_bom(pid: int):
     proj = _load_or_404(pid)
     model = proj["model"]
     cfg = _proj_config(model)
     try:
-        return {"project_id": pid, **generate_bom(model, cfg)}
+        return {"project_id": pid, "items": _project_bom_items(model, cfg)}
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
 
@@ -2592,7 +2599,7 @@ def project_bom(pid: int):
 def export_bom_csv(pid: int):
     proj = _load_or_404(pid)
     try:
-        text = bom_csv(generate_bom(proj["model"], _proj_config(proj["model"]))["items"])
+        text = bom_csv(_project_bom_items(proj["model"], _proj_config(proj["model"])))
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return Response(
@@ -2607,11 +2614,78 @@ def export_bom_json(pid: int):
     proj = _load_or_404(pid)
     try:
         body = {"project_id": pid, "project": proj["name"],
-                **generate_bom(proj["model"], _proj_config(proj["model"]))}
+                "items": _project_bom_items(proj["model"], _proj_config(proj["model"]))}
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     return Response(
         content=json.dumps(body, indent=1),
         media_type="application/json",
         headers={"Content-Disposition": 'attachment; filename="bom-%s.json"' % pid},
+    )
+
+
+# ---------------------------------------------------------------- assembly builders
+
+@router.get("/projects/{pid}/builders")
+def list_builders(pid: int):
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    cfg = _proj_config(model)
+    stored = model.get("builders") or {}
+    out = {}
+    try:
+        for name in BUILDER_NAMES:
+            if name in stored:
+                out[name] = {"inputs": stored[name],
+                             "lines": build_lines(name, stored[name], cfg, model=model)}
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return {"project_id": pid, "available": list(BUILDER_NAMES), "builders": out}
+
+
+@router.post("/projects/{pid}/builders/{name}")
+def set_builder(pid: int, name: str, payload: dict = Body(default_factory=dict)):
+    proj = _load_or_404(pid)
+    model = proj["model"]
+    if name not in BUILDER_NAMES:
+        raise HTTPException(status_code=404, detail="unknown builder '%s' (known: %s)"
+                            % (name, ", ".join(BUILDER_NAMES)))
+    try:
+        lines = build_lines(name, payload, _proj_config(model), model=model)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    model.setdefault("builders", {})[name] = dict(payload)
+    _save(pid, proj["name"], model)
+    return {"project_id": pid, "builder": name, "inputs": payload, "lines": lines}
+
+
+# ---------------------------------------------------------------- iBwave equipment list
+
+@router.get("/projects/{pid}/bom_ibwave.csv")
+def export_bom_ibwave_csv(pid: int, by_floor: bool = Query(False)):
+    proj = _load_or_404(pid)
+    try:
+        header, rows = ibwave_table(proj["model"], _proj_config(proj["model"]),
+                                    by_floor=by_floor)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return Response(
+        content=ibwave_csv(header, rows),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="bom-ibwave-%s.csv"' % pid},
+    )
+
+
+@router.get("/projects/{pid}/bom_ibwave.xlsx")
+def export_bom_ibwave_xlsx(pid: int, by_floor: bool = Query(False)):
+    proj = _load_or_404(pid)
+    try:
+        header, rows = ibwave_table(proj["model"], _proj_config(proj["model"]),
+                                    by_floor=by_floor)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return Response(
+        content=encode_xlsx([ibwave_sheet(header, rows)]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="bom-ibwave-%s.xlsx"' % pid},
     )

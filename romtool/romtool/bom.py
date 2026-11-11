@@ -70,55 +70,68 @@ def generate_bom(model, config):
         elif t is not None:
             raise ValueError("element '%s' has unknown type '%s'" % (el.get("id"), t))
 
+    # "role" names the part a line stands for (config/parts_catalog.json). It is
+    # an extra key: the four original fields and bom_csv() are unchanged.
     items = []
     for cid in sorted(cable_len):
         label = cables[cid].get("label", cid)
         meters = round(cable_len[cid], 2)
-        items.append({"category": "cable", "item": label, "qty": meters, "unit": "m"})
+        items.append({"category": "cable", "item": label, "qty": meters, "unit": "m",
+                      "role": "cable.%s" % cid})
         items.append({
             "category": "cable", "item": label,
             "qty": round(cable_len[cid] / M_PER_FT, 1), "unit": "ft",
+            "role": "cable.%s" % cid,
         })
         conn_label = (cables[cid].get("connector_label")
                       or "N-type connectors (pairs per %s run)" % label)
+        is_fiber = cables[cid].get("medium") == "fiber"
         items.append({
             "category": "connectors", "item": conn_label,
             "qty": 2 * cable_runs[cid], "unit": "ea",
+            "role": "connector.fiber" if is_fiber else "connector.coax",
         })
     for ways in sorted(splitter_ways):
         key = "%dway" % ways
         label = parts.get("splitters", {}).get(key, {}).get("label", "Splitter, %d-way" % ways)
         items.append({"category": "splitter", "item": label,
-                      "qty": splitter_ways[ways], "unit": "ea"})
+                      "qty": splitter_ways[ways], "unit": "ea",
+                      "role": "splitter.%s" % key})
     for pid in sorted(tapper_count):
         label = parts.get("tappers", {}).get(pid, {}).get("label", "Tap (through + taps)")
-        items.append({"category": "tapper", "item": label, "qty": tapper_count[pid], "unit": "ea"})
+        items.append({"category": "tapper", "item": label, "qty": tapper_count[pid],
+                      "unit": "ea", "role": "tapper.%s" % pid})
     for pid in sorted(coupler_count):
         label = (parts.get("couplers", {}).get(pid, {}).get("label")
                  or "Directional coupler")
-        items.append({"category": "coupler", "item": label, "qty": coupler_count[pid], "unit": "ea"})
+        items.append({"category": "coupler", "item": label, "qty": coupler_count[pid],
+                      "unit": "ea", "role": "coupler.%s" % pid})
     for aid in sorted(antenna_count):
         label = antennas[aid].get("label", aid)
         items.append({"category": "antenna", "item": label,
-                      "qty": antenna_count[aid], "unit": "ea"})
+                      "qty": antenna_count[aid], "unit": "ea",
+                      "role": "antenna.%s" % aid})
     hw = config.get("branch_hardware", {})
+    branch_roles = {"connector": "connector.coax", "jumper": "jumper.coax",
+                    "diplexer": "diplexer.das"}
     for key in ("connector", "jumper", "diplexer"):
         if branch_parts.get(key + "s"):
             items.append({"category": "branch hardware",
                           "item": hw.get(key, {}).get("label", key),
-                          "qty": branch_parts[key + "s"], "unit": "ea"})
+                          "qty": branch_parts[key + "s"], "unit": "ea",
+                          "role": branch_roles[key]})
     if source_count:
         items.append({"category": "source",
                       "item": src_cfg.get("label", "Off-air source (donor)"),
-                      "qty": source_count, "unit": "ea"})
+                      "qty": source_count, "unit": "ea", "role": "oem.source"})
     if repeater_count:
         items.append({"category": "repeater",
                       "item": rep_cfg.get("label", "Off-air repeater (BDA)"),
-                      "qty": repeater_count, "unit": "ea"})
+                      "qty": repeater_count, "unit": "ea", "role": "oem.repeater"})
     if remote_count:
         items.append({"category": "remote",
                       "item": config.get("remote", {}).get("label", "Remote unit"),
-                      "qty": remote_count, "unit": "ea"})
+                      "qty": remote_count, "unit": "ea", "role": "oem.remote"})
 
     return {"items": items}
 

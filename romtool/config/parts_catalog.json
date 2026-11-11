@@ -1,0 +1,325 @@
+{
+  "comment": "ROMtool part roles mapped to ANS-standard parts for the iBwave-style BOM export (GET /projects/{pid}/bom_ibwave.csv and .xlsx) and the assembly builders. Each role names one part: manufacturer, model (MPN), description, iBwave Type, unit (ea or ft). Defaults come from ANS quote history: the part used on the most jobs for the role (ties go to the part that appears first in the history file). Roles with no usable history carry model \"\" and source \"no ANS standard yet\"; no part number is invented for them. Remotes and head-end OEM gear stay generic until OEM packages are added. This file holds identifiers and descriptions only.",
+  "history_note": "Source file: ANS quote history (Mfr, MPN, Description, Category, Jobs columns). Only those columns were read. Descriptions are rewritten in plain text where the history text is garbled. Re-run the job count check when the history changes.",
+  "iBwave_type_note": "Type strings are ROMtool's labels for iBwave equipment classes. Check them against the iBwave library used by the estimating tool's BOM Import before the first import.",
+  "roles": {
+    "cable.lmr400": {
+      "manufacturer": "Comba", "model": "CS-F38P",
+      "description": "3/8 in superflexible foam coax, 50 ohm (class jumper and feeder), per ft",
+      "ibwave_type": "Cable", "unit": "ft",
+      "source": "ANS quote history, 2 jobs",
+      "note": "Weak match: 2 jobs. No LMR-400 line in history."
+    },
+    "cable.coax_1_2in": {
+      "manufacturer": "CommScope", "model": "HL4RPV-50",
+      "description": "1/2 in corrugated air dielectric coax, plenum rated, per ft",
+      "ibwave_type": "Cable", "unit": "ft",
+      "source": "ANS quote history, 81 jobs"
+    },
+    "cable.coax_1_2in_plenum": {
+      "manufacturer": "CommScope", "model": "HL4RPV-50",
+      "description": "1/2 in corrugated air dielectric coax, plenum rated, per ft",
+      "ibwave_type": "Cable", "unit": "ft",
+      "source": "ANS quote history, 81 jobs"
+    },
+    "cable.coax_1_2in_outdoor": {
+      "manufacturer": "CommScope", "model": "LDF4-50A",
+      "description": "1/2 in annular corrugated coax, outdoor rated, per ft",
+      "ibwave_type": "Cable", "unit": "ft",
+      "source": "ANS quote history, 40 jobs"
+    },
+    "cable.coax_7_8in": {
+      "manufacturer": "RFS", "model": "HCA78-50JPL-A11",
+      "description": "7/8 in air dielectric coax, plenum rated, in-building, per ft",
+      "ibwave_type": "Cable", "unit": "ft",
+      "source": "ANS quote history, 1 job",
+      "note": "Weak match: 1 job. The other 7/8 in history line (LCF78-50JA) is standard jacket, outdoor."
+    },
+    "cable.fiber_sm": {
+      "manufacturer": "Corning", "model": "012E88-33131-A3",
+      "description": "12 fiber single-mode plenum armored cable (SMFe), per ft",
+      "ibwave_type": "Fiber cable", "unit": "ft",
+      "source": "ANS quote history, 19 jobs"
+    },
+    "connector.coax": {
+      "manufacturer": "JMA Wireless", "model": "UPL-4MT-12",
+      "description": "4.3-10 male torque connector for 1/2 in annular cable",
+      "ibwave_type": "Connector", "unit": "ea",
+      "source": "ANS quote history, 89 jobs"
+    },
+    "connector.fiber": {
+      "manufacturer": "", "model": "",
+      "description": "Fiber connector, per fiber run end",
+      "ibwave_type": "Connector", "unit": "ea",
+      "source": "no ANS standard yet"
+    },
+    "jumper.coax": {
+      "manufacturer": "Times Microwave Systems", "model": "SPP25043M43M3.0F",
+      "description": "3 ft 4.3-10 male to male low PIM plenum coax jumper",
+      "ibwave_type": "Jumper", "unit": "ea",
+      "source": "ANS quote history, 16 jobs",
+      "note": "Tied at 16 jobs with J-SF141-1H-4MR-4MR (Advanced RF Technologies, 1.5 ft right angle). The first listed in history is used."
+    },
+    "jumper.fiber": {
+      "manufacturer": "Corning", "model": "040402G5120006F",
+      "description": "Duplex LC/UPC to LC/UPC riser rated single-mode fiber jumper, 6 ft",
+      "ibwave_type": "Fiber jumper", "unit": "ea",
+      "source": "ANS quote history, 10 jobs"
+    },
+    "splitter.2way": {
+      "manufacturer": "CommScope", "model": "S-2-UW-H-43-i6",
+      "description": "2-way ultra wideband low PIM high power splitter, 555 to 6000 MHz",
+      "ibwave_type": "Splitter", "unit": "ea",
+      "source": "ANS quote history, 43 jobs"
+    },
+    "splitter.3way": {
+      "manufacturer": "CommScope", "model": "S-3-UW-H-43-i6",
+      "description": "3-way ultra wideband splitter",
+      "ibwave_type": "Splitter", "unit": "ea",
+      "source": "ANS quote history, 9 jobs"
+    },
+    "splitter.4way": {
+      "manufacturer": "JMA Wireless", "model": "TSC4W-X",
+      "description": "4-way combiner/splitter module",
+      "ibwave_type": "Splitter", "unit": "ea",
+      "source": "ANS quote history, 6 jobs",
+      "note": "Band check needed: TSC4W-X is listed for 2300 to 4200 MHz only. The Microlab/FXR D4-83FE (4 jobs, 617 to 5925 MHz) covers the DAS bands."
+    },
+    "tapper.default": {
+      "manufacturer": "Microlab/FXR", "model": "DN-34FE",
+      "description": "Unequal power splitter (tapper), 2:1 (3 dB), low PIM, 350 to 5930 MHz",
+      "ibwave_type": "Tap", "unit": "ea",
+      "source": "ANS quote history, 30 jobs",
+      "note": "Ratio check needed: config tappers.default tap_loss_db is 12 dB. Pick the ratio that matches the tap loss before ordering."
+    },
+    "coupler.default": {
+      "manufacturer": "CommScope", "model": "C-6-UW-43-Ai6",
+      "description": "6 dB air directional coupler, 555 to 6000 MHz",
+      "ibwave_type": "Coupler", "unit": "ea",
+      "source": "ANS quote history, 40 jobs",
+      "note": "Tied at 40 jobs with C-5-UW-43-Ai6 (5 dB). The first listed in history is used. Config couplers.default coupled_loss_db is 10 dB, so the coupling value needs a match before ordering."
+    },
+    "diplexer.das": {
+      "manufacturer": "Microlab/FXR", "model": "BK-263E",
+      "description": "Diplexer, 617 to 2690 and 3300 to 5925 MHz, 200 W",
+      "ibwave_type": "Diplexer", "unit": "ea",
+      "source": "ANS quote history, 12 jobs"
+    },
+    "antenna.omni_das": {
+      "manufacturer": "CommScope", "model": "CMAX-O-43-UW-i53",
+      "description": "Cell-Max low PIM omni in-building antenna, 617 to 6000 MHz",
+      "ibwave_type": "Antenna", "unit": "ea",
+      "source": "ANS quote history, 69 jobs"
+    },
+    "antenna.panel_das": {
+      "manufacturer": "Westell", "model": "CS03-777-999",
+      "description": "High isolation directional panel antenna, 698 to 940 MHz",
+      "ibwave_type": "Antenna", "unit": "ea",
+      "source": "ANS quote history, 9 jobs",
+      "note": "Single-band panel (698 to 940 MHz). The history has no multiband panel with more jobs."
+    },
+    "antenna.donor": {
+      "manufacturer": "Westell", "model": "CS03-003-430",
+      "description": "Yagi donor antenna, 746 to 896 MHz, 11 dBi",
+      "ibwave_type": "Antenna", "unit": "ea",
+      "source": "ANS quote history, 10 jobs",
+      "note": "The 10 jobs are on the history line with MPN \"CS03-003-430 (AY/746-896/11)\". The plain MPN line has 4 jobs."
+    },
+    "antenna.gps": {
+      "manufacturer": "PCTel", "model": "GPS-TMG-HR-26NCM",
+      "description": "GPS antenna, high rejection, 26 dB, narrow band filtering",
+      "ibwave_type": "Antenna", "unit": "ea",
+      "source": "ANS quote history, 17 jobs"
+    },
+    "mount.donor": {
+      "manufacturer": "Rohn", "model": "FRM238",
+      "description": "Donor antenna mount",
+      "ibwave_type": "Mount", "unit": "ea",
+      "source": "ANS quote history, 19 jobs"
+    },
+    "mount.roof": {
+      "manufacturer": "Rohn", "model": "FRM225HC",
+      "description": "Non-penetrating roof mount for wireless antenna",
+      "ibwave_type": "Mount", "unit": "ea",
+      "source": "ANS quote history, 9 jobs"
+    },
+    "mount.wall": {
+      "manufacturer": "Tessco Technologies", "model": "321321",
+      "description": "Wall mount kit with 2-3/8 in OD by 60 in mast",
+      "ibwave_type": "Mount", "unit": "ea",
+      "source": "ANS quote history, 3 jobs",
+      "note": "Weak match: 3 jobs."
+    },
+    "mount.gps": {
+      "manufacturer": "Rohn", "model": "FRM125",
+      "description": "GPS rooftop mount",
+      "ibwave_type": "Mount", "unit": "ea",
+      "source": "ANS quote history, 4 jobs"
+    },
+    "surge.coax": {
+      "manufacturer": "PolyPhaser", "model": "TSX-NFF",
+      "description": "Coax surge arrestor, N female to N female",
+      "ibwave_type": "Surge arrestor", "unit": "ea",
+      "source": "ANS quote history, 19 jobs"
+    },
+    "grounding.kit": {
+      "manufacturer": "Andrew", "model": "SG12-12B2U",
+      "description": "Grounding kit for 1/2 in coax (LDF4-50)",
+      "ibwave_type": "Grounding", "unit": "ea",
+      "source": "ANS quote history, 9 jobs",
+      "note": "The 9 jobs are on the history line with MPN \"Andrew SG12-12B2U\" and manufacturer \"Hardware\". Andrew is taken from the MPN."
+    },
+    "ground.bar": {
+      "manufacturer": "", "model": "",
+      "description": "Ground bar, 12 in",
+      "ibwave_type": "Grounding", "unit": "ea",
+      "source": "no ANS standard yet",
+      "note": "History has 5 jobs of a 12 in ground bar with no MPN recorded."
+    },
+    "ground.cable": {
+      "manufacturer": "", "model": "",
+      "description": "Ground cable, 6 AWG green",
+      "ibwave_type": "Grounding", "unit": "ft",
+      "source": "no ANS standard yet",
+      "note": "History has 6 jobs of 6 AWG green cable with no MPN recorded."
+    },
+    "weatherproof.kit": {
+      "manufacturer": "", "model": "",
+      "description": "Coax connection weatherproofing kit",
+      "ibwave_type": "Accessory", "unit": "ea",
+      "source": "no ANS standard yet",
+      "note": "History has 9 jobs of weatherproofing with no MPN recorded."
+    },
+    "roof.entry": {
+      "manufacturer": "", "model": "",
+      "description": "Rooftop coax entry port",
+      "ibwave_type": "Accessory", "unit": "ea",
+      "source": "no ANS standard yet",
+      "note": "History has 6 jobs of a coax entry port with no MPN recorded."
+    },
+    "rack.two_post": {
+      "manufacturer": "", "model": "",
+      "description": "19 in two-post equipment rack, floor mount",
+      "ibwave_type": "Rack", "unit": "ea",
+      "source": "no ANS standard yet",
+      "note": "History has single-job two-post rack lines only."
+    },
+    "rack.backboard": {
+      "manufacturer": "", "model": "",
+      "description": "Plywood backboard",
+      "ibwave_type": "Rack", "unit": "ea",
+      "source": "no ANS standard yet",
+      "note": "History has 29 jobs of plywood with no MPN recorded. Fire-rated boards appear on 6 jobs."
+    },
+    "rack.shelf": {
+      "manufacturer": "", "model": "",
+      "description": "19 in rack shelf for a head-end unit",
+      "ibwave_type": "Rack", "unit": "ea",
+      "source": "no ANS standard yet"
+    },
+    "rack.ladder": {
+      "manufacturer": "", "model": "",
+      "description": "Cable ladder rack, per ft",
+      "ibwave_type": "Rack", "unit": "ft",
+      "source": "no ANS standard yet"
+    },
+    "pdu.default": {
+      "manufacturer": "Vertiv", "model": "NetSure 5100",
+      "description": "Power distribution unit",
+      "ibwave_type": "Power", "unit": "ea",
+      "source": "ANS quote history, 17 jobs",
+      "note": "Verify: the history row labeled PDU is a Vertiv NetSure 5100 series entry. Tripp Lite PDUNV (4 jobs) is the other PDU line."
+    },
+    "fiber.panel": {
+      "manufacturer": "Corning", "model": "CCH-01U",
+      "description": "Sliding 1U fiber distribution panel, up to 3 L type cartridges",
+      "ibwave_type": "Fiber panel", "unit": "ea",
+      "source": "ANS quote history, 32 jobs"
+    },
+    "fiber.housing": {
+      "manufacturer": "Corning", "model": "CCH-04U",
+      "description": "Closet connector housing, 4 RU, holds 12 CCH connector panels",
+      "ibwave_type": "Fiber housing", "unit": "ea",
+      "source": "ANS quote history, 17 jobs"
+    },
+    "fiber.splice_cassette": {
+      "manufacturer": "Corning", "model": "CCH-CS12-A9-P00RE",
+      "description": "Splice cassette, 12 fiber",
+      "ibwave_type": "Fiber panel", "unit": "ea",
+      "source": "ANS quote history, 15 jobs"
+    },
+    "label.cable": {
+      "manufacturer": "Generic", "model": "TZE251",
+      "description": "P-touch cable labels",
+      "ibwave_type": "Accessory", "unit": "ea",
+      "source": "ANS quote history, 142 jobs"
+    },
+    "firestop.penetration": {
+      "manufacturer": "3M", "model": "",
+      "description": "Wall penetration firestop, per penetration",
+      "ibwave_type": "Accessory", "unit": "ea",
+      "source": "no ANS standard yet",
+      "note": "History has 4 jobs of 3M wall penetration firestop with no MPN recorded."
+    },
+    "sleeve.penetration": {
+      "manufacturer": "Hilti", "model": "CP 653",
+      "description": "2 in penetration sleeve",
+      "ibwave_type": "Accessory", "unit": "ea",
+      "source": "ANS quote history, 6 jobs",
+      "note": "The history row has no manufacturer; Hilti is taken from its description."
+    },
+    "jhook.default": {
+      "manufacturer": "Panduit", "model": "JP75DW-L20",
+      "description": "3/4 in plastic J-hook",
+      "ibwave_type": "Mount", "unit": "ea",
+      "source": "ANS quote history, 193 jobs"
+    },
+    "battery.string": {
+      "manufacturer": "DEKI", "model": "100AVR100ET",
+      "description": "12 VDC 100 Ah battery",
+      "ibwave_type": "Battery", "unit": "ea",
+      "source": "ANS quote history, 10 jobs",
+      "note": "Tied at 10 jobs with CS19-PYL12V160FT (Westell, 160 Ah). The first listed in history is used. Config battery_string_ah is 120 Ah, which matches neither part, so string counts need a check against the chosen part."
+    },
+    "charger.rectifier": {
+      "manufacturer": "Vertiv", "model": "1R482000E",
+      "description": "Rectifier, 2000 W, -48 VDC",
+      "ibwave_type": "Power", "unit": "ea",
+      "source": "ANS quote history, 13 jobs",
+      "note": "2000 W at 48 VDC is about 41.7 A. Config rectifier_size_amps is 50 A, so rectifier counts need a check against the chosen part."
+    },
+    "annunciator.panel": {
+      "manufacturer": "Westell", "model": "CS40-DASANNUNC",
+      "description": "ProtectLink public safety DAS remote annunciator",
+      "ibwave_type": "Annunciator", "unit": "ea",
+      "source": "ANS quote history, 9 jobs"
+    },
+    "alarm.wiring": {
+      "manufacturer": "", "model": "",
+      "description": "Alarm and supervision wiring, per ft",
+      "ibwave_type": "Cable", "unit": "ft",
+      "source": "no ANS standard yet"
+    },
+    "oem.source": {
+      "manufacturer": "", "model": "",
+      "description": "OEM head-end source (donor or base station feed)",
+      "ibwave_type": "Head end", "unit": "ea",
+      "source": "no ANS standard yet",
+      "note": "Placeholder until OEM packages are added."
+    },
+    "oem.repeater": {
+      "manufacturer": "", "model": "",
+      "description": "OEM repeater (BDA)",
+      "ibwave_type": "Repeater", "unit": "ea",
+      "source": "no ANS standard yet",
+      "note": "Placeholder until OEM packages are added."
+    },
+    "oem.remote": {
+      "manufacturer": "", "model": "",
+      "description": "OEM remote unit",
+      "ibwave_type": "Remote", "unit": "ea",
+      "source": "no ANS standard yet",
+      "note": "Placeholder until OEM packages are added."
+    }
+  }
+}
