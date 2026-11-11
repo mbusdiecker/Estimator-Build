@@ -53,6 +53,13 @@
       "ibwave_type": "Connector", "unit": "ea",
       "source": "no ANS standard yet"
     },
+    "adapter.n_to_4310": {
+      "manufacturer": "", "model": "",
+      "description": "Adapter, N to 4.3-10 (interface mismatch between a graded part and the pair)",
+      "ibwave_type": "Adapter", "unit": "ea",
+      "source": "no ANS standard yet",
+      "note": "Placeholder added with the grade selection. Used only when a graded tap, coupler or omni has no part with the pair's interface."
+    },
     "jumper.coax": {
       "manufacturer": "Times Microwave Systems", "model": "SPP25043M43M3.0F",
       "description": "3 ft 4.3-10 male to male low PIM plenum coax jumper",

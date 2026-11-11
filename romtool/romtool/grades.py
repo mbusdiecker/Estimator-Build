@@ -76,6 +76,17 @@ def check_bands(value, config):
     return list(value)
 
 
+def default_bands(model, config, grades):
+    """Bands checked when the project lists none: the cellular set. A project
+    whose system_type is listed in grades.public_safety_system_types also gets
+    the public-safety bands from config autoplace."""
+    ids = list(grades["default_bands"])
+    if (model or {}).get("system_type") in grades["public_safety_system_types"]:
+        ps = (config.get("autoplace") or {}).get("public_safety_band_ids", [])
+        ids += [b for b in ps if b not in ids]
+    return ids
+
+
 def settings_for(model, config, grade=None, budget_brand=None, grades=None):
     """Resolve the grade settings for a project. Explicit arguments (request
     query) win over the project's stored values, which win over the defaults."""
@@ -86,7 +97,8 @@ def settings_for(model, config, grade=None, budget_brand=None, grades=None):
     check_grade(grade)
     check_budget_brand(brand)
     freq = {b["id"]: float(b["freq_mhz"]) for b in config.get("bands", [])}
-    ids = check_bands(model["bands"], config) if model.get("bands") else list(freq)
+    ids = check_bands(model["bands"], config) if model.get("bands") else default_bands(
+        model, config, g)
     return {
         "grade": grade,
         "budget_brand": brand,
@@ -172,7 +184,20 @@ def _ibwave_part(kind, p):
             "ibwave_type": IBWAVE_TYPE[kind], "unit": "ea", "source": p["source"]}
 
 
-def _select(kind, scope, how, ratio, settings, band_check, exact_only):
+def target_interface(settings):
+    """Connector interface of the chosen 1/2 in pair. Every tapper, coupler and
+    omni in the same grade and brand is preferred to match it."""
+    return settings["grades"]["pairs"][_pair_key(settings)]["connector_interface"]
+
+
+def _prefer_interface(comp, target):
+    """Parts whose stated interface matches the target when any do; otherwise
+    the compliant set as it is (an adapter line is added later)."""
+    match = [p for p in comp if p.get("interface") == target]
+    return match or comp
+
+
+def _select(kind, scope, how, ratio, settings, band_check, exact_only, target=None):
     """(part, ratio_used) or (None, reason)."""
     cfg = settings["grades"]
     pool = [p for p in cfg["candidates"][CANDIDATE_KEY[kind]] if _in_scope(p, kind, scope, cfg)]
@@ -183,6 +208,8 @@ def _select(kind, scope, how, ratio, settings, band_check, exact_only):
         gap = _band_gap(pool, settings) if band_check else []
         detail = ", ".join(gap) if gap else "no candidate covers all project bands"
         return None, "no band-compliant %s (%s)" % (kind, detail)
+    if target is not None and scope != "carrier":
+        comp = _prefer_interface(comp, target)
     if ratio is None:
         return _pick(comp, how), None
     exact = [p for p in comp if p.get("ratio_db") == ratio]
@@ -220,27 +247,33 @@ def _finish(kind, part, used, label, ratio, reasons, settings):
     pieces = list(reasons)
     if ratio is not None and used != ratio:
         pieces.append("modeled %s dB, part %s dB" % (_fmt(ratio), _fmt(used)))
+    target = target_interface(settings)
+    adapter = bool(part.get("interface")) and part["interface"] != target
+    if adapter:
+        pieces.append("no %s part fits, so %s (%s) needs an adapter to the %s pair"
+                      % (target, _label(part), part["interface"], target))
     note = ""
     if pieces:
         note = "%s. Selected %s (%s)." % ("; ".join(pieces), _label(part), label)
     return {"part": _ibwave_part(kind, part), "ratio_used": used, "tier": label,
-            "notes": [note] if note else []}
+            "adapter": adapter, "notes": [note] if note else []}
 
 
 def resolve_part(kind, ratio, settings):
     """Pick the part for one graded role and modeled tap ratio.
 
-    Returns {part, ratio_used, tier, notes}. part is None when no candidate exists
-    at all for the role."""
+    Returns {part, ratio_used, tier, adapter, notes}. part is None when no
+    candidate exists at all for the role."""
     reasons = []
+    target = target_interface(settings)
     for label, scope, how, exact_only in _chain(settings["grade"], settings["budget_brand"]):
-        part, used = _select(kind, scope, how, ratio, settings, True, exact_only)
+        part, used = _select(kind, scope, how, ratio, settings, True, exact_only, target)
         if part is not None:
             return _finish(kind, part, used, label, ratio, reasons, settings)
         reasons.append("%s: %s" % (label, used))
     part, used = _select(kind, "carrier", "max_jobs", ratio, settings, False, False)
     if part is None:
-        return {"part": None, "ratio_used": None, "tier": None,
+        return {"part": None, "ratio_used": None, "tier": None, "adapter": False,
                 "notes": ["%s; no candidate for this role" % "; ".join(reasons)]}
     missing = ", ".join(_uncovered(part, settings)) or "none"
     reasons.append("no compliant part; carrier part kept, does not cover %s" % missing)
@@ -360,12 +393,37 @@ def grade_items(items, config, settings, catalog=None):
         _add_note(new, res["notes"])
         notes_all.extend(res["notes"])
         out.append(new)
+        if res.get("adapter"):
+            out.append(_adapter_item(it, 1 if kind == "omni" else 2, target_interface(settings)))
 
     uniq = []
     for n in notes_all:
         if n and n not in uniq:
             uniq.append(n)
     return out, overlay, uniq
+
+
+ADAPTER_ROLE = "adapter.n_to_4310"
+
+
+def _adapter_item(src, ports, target):
+    """An interface adapter line for a graded part that does not match the pair.
+    One adapter per port the part uses (a tap or coupler has two ports, an omni
+    one). The line keeps the source item's other keys (for example the floor)."""
+    a = dict(src)
+    for k in ("grade_kind", "ratio_db", "ratio_used", "graded_role", "grade_tier"):
+        a.pop(k, None)
+    a.update({
+        "category": "adapter",
+        "item": "Adapter, N to 4.3-10 (interface mismatch with the %s pair)" % target,
+        "qty": int(round(float(src["qty"]))) * ports,
+        "unit": "ea",
+        "role": ADAPTER_ROLE,
+        "note": "%d per %s, %d port(s): the part is %s and the pair is %s"
+                % (ports, src.get("item", "part"), ports,
+                   "4.3-10" if target == "N" else "N", target),
+    })
+    return a
 
 
 def _add_note(item, notes):

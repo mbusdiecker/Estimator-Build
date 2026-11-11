@@ -50,9 +50,11 @@ def ibwave_table(model, config, by_floor=False, catalog=None, settings=None):
             lines.append(("", it))
 
     if settings is not None:
-        graded, overlay, _notes = grade_items(
-            [it for _, it in lines], config, settings, cat)
-        lines = [(lines[i][0], graded[i]) for i in range(len(lines))]
+        # Grading can add adapter lines, so each line carries its floor label
+        # through the call instead of being matched by position.
+        tagged = [dict(it, _floor=label) for label, it in lines]
+        graded, overlay, _notes = grade_items(tagged, config, settings, cat)
+        lines = [(g.pop("_floor", ""), g) for g in graded]
         cat = dict(cat)
         cat.update(overlay)
 

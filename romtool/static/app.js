@@ -1212,9 +1212,41 @@ function renderKpi() {
   }
 }
 
+/* Band checkboxes: the project's bands (default cellular) decide which parts are compliant. */
+function renderBands() {
+  const box = $("bandBox");
+  box.innerHTML = "";
+  const on = new Set(S.bom && S.bom.bands ? S.bom.bands : []);
+  for (const b of S.cfg.bands) {
+    const lab = document.createElement("label");
+    lab.className = "chk";
+    lab.style.display = "block";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.value = b.id;
+    cb.checked = on.has(b.id);
+    cb.onchange = saveBands;
+    lab.appendChild(cb);
+    lab.appendChild(document.createTextNode(" " + b.label));
+    box.appendChild(lab);
+  }
+}
+async function saveBands() {
+  const ids = Array.from($("bandBox").querySelectorAll("input:checked")).map((c) => c.value);
+  if (!ids.length) { toast("Keep at least one band checked", true); renderBands(); return; }
+  try {
+    S.project = await api(P(), {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bands: ids }),
+    });
+    await refreshBom();
+  } catch (e) { toast(e.message, true); renderBands(); }
+}
+
 async function refreshBom() {
   try {
     S.bom = await api(P() + "/bom");
+    renderBands();
     const box = $("bomBox");
     if (!S.bom.items.length) { box.innerHTML = "No parts yet — build the chain."; return; }
     let html = '<div class="cat">Grade: ' + S.bom.grade + (S.bom.grade === "budget" ? " / " + S.bom.budget_brand : "") + "</div>";

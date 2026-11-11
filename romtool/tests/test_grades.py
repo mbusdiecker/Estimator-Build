@@ -52,11 +52,20 @@ def _floor(fid, elements):
 
 # ------------------------------------------------------------ settings
 
-def test_defaults_are_carrier_techwave_all_bands(cfg):
+def test_defaults_are_carrier_techwave_cellular_bands(cfg):
     s = settings_for({}, cfg)
     assert s["grade"] == "carrier"
     assert s["budget_brand"] == "techwave"
-    assert s["bands"] == [b["id"] for b in cfg["bands"]]
+    assert s["bands"] == CELL
+
+
+def test_public_safety_bands_only_for_bda_or_explicit_bands(cfg):
+    s = settings_for({"system_type": "bda"}, cfg)
+    assert "VHF_150" in s["bands"] and set(CELL) <= set(s["bands"])
+    s = settings_for({"system_type": "das"}, cfg)
+    assert s["bands"] == CELL
+    s = settings_for({"system_type": "bda", "bands": ["B2_1900"]}, cfg)
+    assert s["bands"] == ["B2_1900"]
 
 
 def test_bad_grade_brand_and_band_raise(cfg):
@@ -90,14 +99,35 @@ def test_enterprise_takes_the_median_compliant_part(cfg):
     assert _name(resolve_part("tapper", 12.0, s)["part"]) == "Sym Technology ST-13-60"
     # 3 dB compliant ranks 5, 16, 17, 26, 33; median is rank 17.
     assert _name(resolve_part("tapper", 3.0, s)["part"]) == "Microlab/FXR DN-34FE"
-    assert _name(resolve_part("omni", None, s)["part"]) == "CommScope CMAX-O-43-UW i53"
+    # Omni with 4.3-10 interface stated: CMAX-OUS1 (rank 4) is the median of
+    # JMA iV01OMI136-U4 (3), CMAX-OUS1 (4), JMA S4 (8) and ADRF (11).
+    assert _name(resolve_part("omni", None, s)["part"]) == "CommScope CMAX-OUS1-UW43-I53"
 
 
-def test_budget_cheapest_takes_the_lowest_rank(cfg):
+def test_budget_cheapest_takes_the_lowest_rank_of_the_pair_interface(cfg):
     s = _settings(cfg, grade="budget", brand="cheapest")
-    assert _name(resolve_part("tapper", 3.0, s)["part"]) == "Westell CS05-494-114 (PT3/340-2.7K/N)"
-    assert _name(resolve_part("omni", None, s)["part"]) == \
-        "Techwave TC AI698-2700V05i360B (PS)"
+    # 4.3-10 is the pair interface, so the lowest-ranked 4.3-10 part wins.
+    assert _name(resolve_part("tapper", 3.0, s)["part"]) == "Westell CS65-550-853 (PT3/380- 6G/4310)"
+    assert _name(resolve_part("omni", None, s)["part"]) == "JMA Wireless iV01OMI136-U4"
+
+
+def test_budget_techwave_prefers_n_type_parts(cfg):
+    s = _settings(cfg, grade="budget", brand="techwave")
+    tap = resolve_part("tapper", 3.0, s)
+    assert _name(tap["part"]) == "Westell CS05-494-114 (PT3/340-2.7K/N)"
+    assert tap["adapter"] is False
+    tap12 = resolve_part("tapper", 12.0, s)
+    assert _name(tap12["part"]) == "Westell CS05-482-114 (PT10/340- 2.7K/N)"
+    assert tap12["ratio_used"] == 10.0
+    assert "modeled 12 dB, part 10 dB" in tap12["notes"][0]
+
+
+def test_4310_tiers_prefer_4310_parts(cfg):
+    for grade, brand in (("enterprise", "techwave"), ("budget", "cheapest")):
+        s = _settings(cfg, grade=grade, brand=brand)
+        for kind, ratio in (("tapper", 12.0), ("coupler", 10.0), ("omni", None)):
+            res = resolve_part(kind, ratio, s)
+            assert res["adapter"] is False, (grade, kind)
 
 
 def test_budget_techwave_uses_techwave_parts_where_they_exist(cfg):
@@ -109,11 +139,14 @@ def test_budget_techwave_uses_techwave_parts_where_they_exist(cfg):
 
 # ------------------------------------------------------------ fallbacks with notes
 
-def test_n77_makes_budget_techwave_omni_fall_back_with_note(cfg):
+def test_n77_makes_budget_techwave_omni_fall_back_to_an_n_type_part(cfg):
     s = _settings(cfg, bands=CELL_N77, grade="budget", brand="techwave")
     res = resolve_part("omni", None, s)
-    assert _name(res["part"]) == "JMA Wireless iV01OMI136-U4"
+    # Techwave 698-2700 does not cover 3840 MHz. The N-type Westell CS03-043 (380-4000)
+    # is the cheapest N-type part that covers every band, so it is used before 4.3-10 parts.
+    assert _name(res["part"]).startswith("Westell CS03-043")
     assert res["tier"] == "budget cheapest"
+    assert res["adapter"] is False
     assert res["notes"] and "budget Techwave" in res["notes"][0]
     assert "N77_CBAND" in res["notes"][0]
 
@@ -125,13 +158,48 @@ def test_600_mhz_band_also_falls_back_for_techwave_omni(cfg):
     assert "N71_600" in res["notes"][0]
 
 
-def test_missing_tap_ratio_falls_back_to_nearest_cheapest(cfg):
+def test_missing_tap_ratio_falls_back_within_the_techwave_family(cfg):
     s = _settings(cfg, grade="budget", brand="techwave")
     res = resolve_part("coupler", 12.0, s)   # Techwave offers 6, 10 and 15 dB only
-    assert _name(res["part"]) == "Microlab/FXR CC-613E"
-    assert res["ratio_used"] == 13.0
+    assert _name(res["part"]) == "Techwave TC-PCCoM-10DI"
+    assert res["ratio_used"] == 10.0
     assert "no 12 dB coupler" in res["notes"][0]
-    assert "modeled 12 dB, part 13 dB" in res["notes"][0]
+    assert "modeled 12 dB, part 10 dB" in res["notes"][0]
+
+
+def test_adapter_is_used_only_when_no_n_type_part_fits(cfg):
+    # N77 rules out every N-type coupler (Techwave 698-2700 only), so the 4.3-10
+    # CC-613E is used with an adapter, and the note says why.
+    s = _settings(cfg, bands=CELL_N77, grade="budget", brand="techwave")
+    res = resolve_part("coupler", 12.0, s)
+    assert _name(res["part"]) == "Microlab/FXR CC-613E"
+    assert res["adapter"] is True
+    assert "needs an adapter to the N pair" in res["notes"][0]
+
+
+def test_adapter_lines_are_added_per_port_with_the_floor_kept(cfg, cat):
+    s = _settings(cfg, bands=CELL_N77, grade="budget", brand="techwave")
+    item = {"category": "coupler", "item": "c", "qty": 3, "unit": "ea",
+            "role": "coupler.default", "ratio_db": 12.0, "grade_kind": "coupler",
+            "_floor": "Level 2"}
+    out, _overlay, _notes = grade_items([item], cfg, s, cat)
+    adapters = [it for it in out if it["category"] == "adapter"]
+    assert len(adapters) == 1
+    assert adapters[0]["role"] == "adapter.n_to_4310"
+    assert adapters[0]["qty"] == 6                  # 3 couplers x 2 ports
+    assert adapters[0]["_floor"] == "Level 2"
+    assert cat["adapter.n_to_4310"]["model"] == ""
+    assert cat["adapter.n_to_4310"]["source"] == "no ANS standard yet"
+
+
+def test_ibwave_table_lists_the_adapter_row(cfg, cat):
+    model = {"environment": "office", "floors": [_floor("f1", [
+        {"id": "c1", "type": "coupler", "part_id": "default", "coupled_loss_db": 12.0},
+    ])]}
+    _h, rows = ibwave_table(model, cfg, catalog=cat,
+                            settings=_settings(cfg, bands=CELL_N77, grade="budget",
+                                               brand="techwave"))
+    assert any(r[0] == "Adapter" and r[8] == 2 for r in rows)
 
 
 def test_techwave_has_no_tapper_so_the_role_falls_back(cfg):
@@ -185,10 +253,11 @@ def test_carrier_pair_is_the_catalog_cable_and_jma_connector(cfg, cat):
 def test_enterprise_and_cheapest_use_the_lcf12_family(cfg, cat):
     ent = resolve_pair(_settings(cfg, grade="enterprise"), cat)
     assert _name(ent["connector"]) == "Windy City Wire WCW-43M-LCF12-D01"
-    assert ent["cable"]["model"] == "" and ent["cable"]["source"] == "no ANS standard yet"
+    assert ent["cable"]["model"] == "ICA12-50JPL"
+    assert ent["cable"]["source"] == "ANS quote history, 18 jobs"
     cheap = resolve_pair(_settings(cfg, grade="budget", brand="cheapest"), cat)
     assert _name(cheap["connector"]) == "RFS 43M-LCF12-E01"
-    assert cheap["cable"]["model"] == ""
+    assert cheap["cable"]["model"] == "ICA12-50JPL"
 
 
 def test_budget_techwave_pair_asks_for_confirmation(cfg, cat):
@@ -250,11 +319,11 @@ def test_ibwave_table_enterprise_has_lcf12_pair(cfg, cat):
     header, rows = ibwave_table(model, cfg, catalog=cat,
                                 settings=_settings(cfg, grade="enterprise"))
     cable = [r for r in rows if r[0] == "Cable"]
-    assert len(cable) == 1 and cable[0][1] == "RFS" and cable[0][3] == ""
+    assert len(cable) == 1 and cable[0][1] == "RFS" and cable[0][3] == "ICA12-50JPL"
     conn = [r for r in rows if r[0] == "Connector"]
     assert conn and conn[0][3] == "WCW-43M-LCF12-D01"
     ant = [r for r in rows if r[0] == "Antenna"]
-    assert ant and ant[0][3] == "CMAX-O-43-UW i53"
+    assert ant and ant[0][3] == "CMAX-OUS1-UW43-I53"
 
 
 def test_ibwave_table_without_settings_is_unchanged(cfg, cat):
@@ -355,7 +424,7 @@ def test_bands_patch_is_stored_and_used(client):
     body = client.get("/projects/%d/bom" % pid).json()
     assert body["bands"] == CELL
     client.patch("/projects/%d" % pid, json={"bands": None})
-    assert client.get("/projects/%d/bom" % pid).json()["bands"] != CELL
+    assert client.get("/projects/%d/bom" % pid).json()["bands"] == CELL
 
 
 def test_ibwave_endpoints_take_grade_parameters(client):
@@ -363,7 +432,7 @@ def test_ibwave_endpoints_take_grade_parameters(client):
     text = client.get("/projects/%d/bom_ibwave.csv?grade=enterprise" % pid).text
     rows = list(csv.reader(io.StringIO(text)))
     assert any(r[0] == "Connector" and r[3] == "WCW-43M-LCF12-D01" for r in rows)
-    assert any(r[0] == "Cable" and r[1] == "RFS" and r[3] == "" for r in rows)
+    assert any(r[0] == "Cable" and r[1] == "RFS" and r[3] == "ICA12-50JPL" for r in rows)
     r = client.get("/projects/%d/bom_ibwave.xlsx?grade=budget&budget_brand=techwave" % pid)
     assert r.status_code == 200
 

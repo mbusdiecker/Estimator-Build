@@ -1,8 +1,18 @@
 {
- "comment": "Grade and budget-brand options for ROMtool parts selection (romtool/romtool/grades.py). Each tier names a part family per role. The candidate lists are ANS quote history (2+ jobs) with band, ratio and interface specs filled from the description where it states them. budget_rank orders candidates by relative rank only (1 is the lowest-ranked part in the list); it is not catalog data. bands_mhz is a list of [low, high] MHz ranges; a part with no stated range is not compliant for bands it does not state. Connectors are checked against the cable family and interface, not bands.",
+ "comment": "Grade and budget-brand options for ROMtool parts selection (romtool/romtool/grades.py). Each tier names a part family per role. The candidate lists are ANS quote history (2+ jobs) with band, ratio and interface specs filled from the description where it states them. budget_rank orders candidates by relative rank only (1 is the lowest-ranked part in the list); it is not catalog data. bands_mhz is a list of [low, high] MHz ranges; a part with no stated range is not compliant for bands it does not state. Connectors are checked against the cable family and interface, not bands. Within one grade and brand the parts prefer the pair's connector interface (N for budget Techwave, 4.3-10 otherwise); a known-other interface gets an adapter line.",
  "source": "ANS quote history candidates (grade_candidates.json, 2026-11-10); owner decisions 2026-11-10",
  "default_grade": "carrier",
  "default_budget_brand": "techwave",
+ "default_bands": [
+  "B12_700",
+  "B5_850",
+  "B2_1900",
+  "B66_2100"
+ ],
+ "default_bands_note": "Cellular set used when the project lists no bands. A project with a system_type in public_safety_system_types also gets the autoplace public_safety_band_ids.",
+ "public_safety_system_types": [
+  "bda"
+ ],
  "tiers": {
   "carrier": {
    "label": "Carrier grade"
@@ -57,11 +67,11 @@
   "enterprise": {
    "cable": {
     "mfr": "RFS",
-    "model": "",
-    "description": "1/2 in LCF12/ICA12 family coax, per ft (model not on ANS file)",
+    "model": "ICA12-50JPL",
+    "description": "ClearFillLine 1/2 in low loss air dielectric cable, plenum, per ft",
     "ibwave_type": "Cable",
     "unit": "ft",
-    "source": "no ANS standard yet"
+    "source": "ANS quote history, 18 jobs"
    },
    "connector_family": "RFS LCF12/ICA12",
    "connector_interface": "4.3-10",
@@ -70,11 +80,11 @@
   "budget_cheapest": {
    "cable": {
     "mfr": "RFS",
-    "model": "",
-    "description": "1/2 in LCF12/ICA12 family coax, per ft (model not on ANS file)",
+    "model": "ICA12-50JPL",
+    "description": "ClearFillLine 1/2 in low loss air dielectric cable, plenum, per ft",
     "ibwave_type": "Cable",
     "unit": "ft",
-    "source": "no ANS standard yet"
+    "source": "ANS quote history, 18 jobs"
    },
    "connector_family": "RFS LCF12/ICA12",
    "connector_interface": "4.3-10",
@@ -83,21 +93,21 @@
   "budget_techwave": {
    "cable": {
     "mfr": "RFS",
-    "model": "",
-    "description": "1/2 in ICA12 family coax, per ft (model not on ANS file)",
+    "model": "ICA12-50JPL",
+    "description": "ClearFillLine 1/2 in low loss air dielectric cable, plenum, per ft",
     "ibwave_type": "Cable",
     "unit": "ft",
-    "source": "no ANS standard yet"
+    "source": "ANS quote history, 18 jobs"
    },
    "connector_source": "techwave_connectors",
    "connector_interface": "N",
-   "note": "Techwave N connector paired with the ICA12 family. No description is on file for the connector, so confirm the cable it is made for."
+   "note": "Techwave N connector paired with the ICA12 family cable ICA12-50JPL. No description on file for the connector names a cable, so confirm."
   }
  },
  "not_graded": [
   "Splitters (splitter.2way): TC-MSCoM-02NF is listed for budget Techwave, but it has no band range and no candidate row, so it is not wired and the catalog splitter stays.",
-  "Outdoor donor coax (cable.coax_1_2in_outdoor, LDF4-50A) and its connectors: the input has no 1/2 in outdoor candidates, so the catalog part stays.",
-  "Jumpers, diplexers, mounts, surge arrestors, 7/8 in trunk coax and its connectors, LMR-400 and fiber."
+  "Jumpers, diplexers, mounts, surge arrestors, 7/8 in trunk coax and its connectors, LMR-400 and fiber.",
+  "Outdoor donor coax (cable.coax_1_2in_outdoor, LDF4-50A) and its connectors: no 1/2 in outdoor candidate in the input, so the catalog part stays."
  ],
  "candidates": {
   "tapper": [
@@ -113,7 +123,7 @@
       2700.0
      ]
     ],
-    "interface": null,
+    "interface": "N",
     "ratio_db": 10.0,
     "cable_family": null,
     "budget_rank": 1
@@ -130,7 +140,7 @@
       2700.0
      ]
     ],
-    "interface": null,
+    "interface": "N",
     "ratio_db": 3.0,
     "cable_family": null,
     "budget_rank": 5
@@ -147,7 +157,7 @@
       2700.0
      ]
     ],
-    "interface": null,
+    "interface": "N",
     "ratio_db": 8.0,
     "cable_family": null,
     "budget_rank": 6
@@ -557,7 +567,7 @@
       5930.0
      ]
     ],
-    "interface": null,
+    "interface": "N",
     "ratio_db": 4.8,
     "cable_family": null,
     "budget_rank": 32
@@ -574,7 +584,7 @@
       5930.0
      ]
     ],
-    "interface": null,
+    "interface": "N",
     "ratio_db": 3.0,
     "cable_family": null,
     "budget_rank": 33
@@ -591,7 +601,7 @@
       5930.0
      ]
     ],
-    "interface": null,
+    "interface": "N",
     "ratio_db": 6.0,
     "cable_family": null,
     "budget_rank": 34
@@ -620,7 +630,7 @@
       960.0
      ]
     ],
-    "interface": null,
+    "interface": "N",
     "ratio_db": 3.0,
     "cable_family": null,
     "budget_rank": 37
@@ -637,7 +647,7 @@
       960.0
      ]
     ],
-    "interface": null,
+    "interface": "N",
     "ratio_db": 6.0,
     "cable_family": null,
     "budget_rank": 38
@@ -1482,5 +1492,6 @@
    "cable_family": null,
    "budget_rank": null
   }
- ]
+ ],
+ "cable_source": "RFS ICA12-50JPL: ANS quote history (18 jobs, Mfr/MPN/Description/Jobs from the ANS quote data file); the 'DO NOT BUY' rows are distinct MPN strings and are not used."
 }
