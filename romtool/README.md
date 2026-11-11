@@ -903,7 +903,7 @@ Candidate lists come from ANS quote history (parts on 2 or more jobs). They live
 
 A part is compliant when its stated range covers each project band centre frequency (`freq_mhz` in the band config). A part with no stated range is not compliant for any band. Connectors are checked by cable family and interface, not by band.
 
-Interface: the pair sets a target interface for the grade and brand (N for budget Techwave, 4.3-10 otherwise). Tappers, couplers and omnis whose stated interface matches the target are preferred, and the other candidates are used only when none of them covers the bands. A part of the other interface gets an adapter line (`adapter.n_to_4310`, one per port, two for a tap or coupler, one for an omni). Parts with no stated interface are not treated as matching. The carrier family is not interface-filtered.
+Interface: the pair sets a target interface for the grade and brand (N for budget Techwave, 4.3-10 otherwise). Tappers, couplers and omnis whose stated interface matches the target are preferred, and the other candidates are used only when none of them covers the bands. A matching part is preferred only when it sits within `ratio_tolerance_db` (2 dB) of the modeled ratio. Otherwise the nearest part of any interface that covers the bands is used, and it gets an adapter line (`adapter.n_to_4310`, one per port, two for a tap or coupler, one for an omni). The ratio is never moved further just to avoid an adapter, so a 12 dB tap stays near 13 dB. Parts with no stated interface are not treated as matching. The carrier family is not interface-filtered. CommScope and Commscope model numbers with the -43- or UW43 token (for example C-10-UW-43-Ai6 and CMAX-O-43-UW-i53) are 4.3-10 parts, as recorded in `interface_rules`.
 
 When the budget Techwave part is not compliant or the exact tap ratio is missing, the selection moves to the cheapest compliant part, then enterprise, then carrier. The carrier part is the last resort and is kept even when it does not cover a band. The note on that line says which band it misses. Each affected line carries a `note` in the BOM JSON and the builder responses, and `grade_notes` lists the notes for the project. The iBwave file has no note column, so the notes appear only in the JSON and on the BOM panel.
 
@@ -916,7 +916,6 @@ Open items:
 - The Techwave N connector has no description on file. The budget Techwave pairing uses the ICA12-50JPL cable and needs confirmation.
 - Splitter TC-MSCoM-02NF is not wired because it has no band range or candidate row.
 - The RFS ICA12-50JPL cable comes from the ANS quote data (18 jobs, exact MPN). Two "DO NOT BUY" rows with the same model text are not used.
-- Coupler C-10-UW-43-Ai6 and some other CommScope rows state no interface, so they are not matched to either interface.
 
 ## Area zones (mixed-use floors, ceiling height and pathway)
 

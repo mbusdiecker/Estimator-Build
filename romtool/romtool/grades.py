@@ -190,10 +190,15 @@ def target_interface(settings):
     return settings["grades"]["pairs"][_pair_key(settings)]["connector_interface"]
 
 
-def _prefer_interface(comp, target):
-    """Parts whose stated interface matches the target when any do; otherwise
-    the compliant set as it is (an adapter line is added later)."""
+def _prefer_interface(comp, target, ratio=None, tolerance=None):
+    """Parts whose stated interface matches the target, when any do. For a tap
+    or coupler the match must also sit within tolerance dB of the modeled ratio;
+    the ratio is never moved further just to avoid an adapter. Otherwise the
+    compliant set is returned as it is and an adapter line is added later."""
     match = [p for p in comp if p.get("interface") == target]
+    if ratio is not None and tolerance is not None:
+        match = [p for p in match if p.get("ratio_db") is not None
+                 and abs(p["ratio_db"] - ratio) <= tolerance]
     return match or comp
 
 
@@ -209,7 +214,8 @@ def _select(kind, scope, how, ratio, settings, band_check, exact_only, target=No
         detail = ", ".join(gap) if gap else "no candidate covers all project bands"
         return None, "no band-compliant %s (%s)" % (kind, detail)
     if target is not None and scope != "carrier":
-        comp = _prefer_interface(comp, target)
+        comp = _prefer_interface(comp, target, ratio,
+                                 settings["grades"].get("ratio_tolerance_db"))
     if ratio is None:
         return _pick(comp, how), None
     exact = [p for p in comp if p.get("ratio_db") == ratio]

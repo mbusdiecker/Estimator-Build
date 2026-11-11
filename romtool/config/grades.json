@@ -10,6 +10,9 @@
   "B66_2100"
  ],
  "default_bands_note": "Cellular set used when the project lists no bands. A project with a system_type in public_safety_system_types also gets the autoplace public_safety_band_ids.",
+ "ratio_tolerance_db": 2.0,
+ "ratio_tolerance_note": "Largest ratio move, in dB, allowed to match a pair interface. If no part of the pair interface is within this of the modeled ratio, the nearest part of any interface is used and adapter lines are added. The ratio is never moved further to avoid an adapter.",
+ "interface_rules": "CommScope and Commscope model numbers with the -43- or UW43 token (for example C-10-UW-43-Ai6, CMAX-O-43-UW-i53, CMAX-OUS1-UW43-I53) are 4.3-10 connector parts. The interface is set from that token, not from the description.",
  "public_safety_system_types": [
   "bda"
  ],
@@ -775,7 +778,7 @@
       6000.0
      ]
     ],
-    "interface": null,
+    "interface": "4.3-10",
     "ratio_db": 15.0,
     "cable_family": null,
     "budget_rank": 40
@@ -792,7 +795,7 @@
       6000.0
      ]
     ],
-    "interface": null,
+    "interface": "4.3-10",
     "ratio_db": 20.0,
     "cable_family": null,
     "budget_rank": 41
@@ -809,7 +812,7 @@
       6000.0
      ]
     ],
-    "interface": null,
+    "interface": "4.3-10",
     "ratio_db": 6.0,
     "cable_family": null,
     "budget_rank": 42
@@ -826,7 +829,7 @@
       6000.0
      ]
     ],
-    "interface": null,
+    "interface": "4.3-10",
     "ratio_db": 13.0,
     "cable_family": null,
     "budget_rank": 43
@@ -843,7 +846,7 @@
       6000.0
      ]
     ],
-    "interface": null,
+    "interface": "4.3-10",
     "ratio_db": 8.0,
     "cable_family": null,
     "budget_rank": 44
@@ -860,7 +863,7 @@
       6000.0
      ]
     ],
-    "interface": null,
+    "interface": "4.3-10",
     "ratio_db": 5.0,
     "cable_family": null,
     "budget_rank": 45
@@ -877,7 +880,7 @@
       6000.0
      ]
     ],
-    "interface": null,
+    "interface": "4.3-10",
     "ratio_db": 10.0,
     "cable_family": null,
     "budget_rank": 46
@@ -928,7 +931,7 @@
       6000.0
      ]
     ],
-    "interface": null,
+    "interface": "4.3-10",
     "ratio_db": 30.0,
     "cable_family": null,
     "budget_rank": 49
@@ -1342,7 +1345,7 @@
       6000.0
      ]
     ],
-    "interface": null,
+    "interface": "4.3-10",
     "ratio_db": null,
     "cable_family": null,
     "budget_rank": 5
@@ -1359,7 +1362,7 @@
       6000.0
      ]
     ],
-    "interface": null,
+    "interface": "4.3-10",
     "ratio_db": null,
     "cable_family": null,
     "budget_rank": 6

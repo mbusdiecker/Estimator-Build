@@ -99,9 +99,8 @@ def test_enterprise_takes_the_median_compliant_part(cfg):
     assert _name(resolve_part("tapper", 12.0, s)["part"]) == "Sym Technology ST-13-60"
     # 3 dB compliant ranks 5, 16, 17, 26, 33; median is rank 17.
     assert _name(resolve_part("tapper", 3.0, s)["part"]) == "Microlab/FXR DN-34FE"
-    # Omni with 4.3-10 interface stated: CMAX-OUS1 (rank 4) is the median of
-    # JMA iV01OMI136-U4 (3), CMAX-OUS1 (4), JMA S4 (8) and ADRF (11).
-    assert _name(resolve_part("omni", None, s)["part"]) == "CommScope CMAX-OUS1-UW43-I53"
+    # 4.3-10 compliant omnis by rank: 3, 4, 5, 6, 8, 11. The lower median is rank 5.
+    assert _name(resolve_part("omni", None, s)["part"]) == "CommScope CMAX-O-43-UW-i53"
 
 
 def test_budget_cheapest_takes_the_lowest_rank_of_the_pair_interface(cfg):
@@ -323,7 +322,7 @@ def test_ibwave_table_enterprise_has_lcf12_pair(cfg, cat):
     conn = [r for r in rows if r[0] == "Connector"]
     assert conn and conn[0][3] == "WCW-43M-LCF12-D01"
     ant = [r for r in rows if r[0] == "Antenna"]
-    assert ant and ant[0][3] == "CMAX-OUS1-UW43-I53"
+    assert ant and ant[0][3] == "CMAX-O-43-UW-i53"
 
 
 def test_ibwave_table_without_settings_is_unchanged(cfg, cat):
@@ -458,3 +457,40 @@ def test_example_project_bom_still_builds_for_every_grade(client):
         assert client.get("/projects/%d/bom%s" % (pid, q)).status_code == 200
         assert client.get("/exports/projects/%d/bom.csv%s" % (pid, q)).status_code == 200
         assert client.get("/projects/%d/bom_ibwave.csv%s" % (pid, q)).status_code == 200
+
+
+def test_n77_budget_techwave_12db_tapper_keeps_the_ratio_and_adds_adapters(cfg, cat):
+    # No N-type tapper within 2 dB of 12 dB covers N77, so the ratio is not moved
+    # to a 6 dB N-type part. The nearest part (13 dB, 4.3-10) is used with adapters.
+    s = _settings(cfg, bands=CELL_N77, grade="budget", brand="techwave")
+    res = resolve_part("tapper", 12.0, s)
+    assert res["ratio_used"] == 13.0
+    assert res["adapter"] is True
+    assert _name(res["part"]) == "Sym Technology ST-13-60"
+    item = {"category": "tapper", "item": "t", "qty": 2, "unit": "ea",
+            "role": "tapper.default", "ratio_db": 12.0, "grade_kind": "tapper"}
+    out, _o, _n = grade_items([item], cfg, s, cat)
+    adapters = [it for it in out if it["category"] == "adapter"]
+    assert adapters and adapters[0]["qty"] == 4          # 2 taps x 2 ports
+
+
+def test_interface_match_never_moves_the_ratio_beyond_tolerance(cfg):
+    assert load_grades()["ratio_tolerance_db"] == 2.0
+    s = _settings(cfg, bands=CELL_N77, grade="budget", brand="techwave")
+    for ratio in (12.0, 15.0, 20.0):
+        res = resolve_part("coupler", ratio, s)
+        assert res["part"] is not None
+        if abs(res["ratio_used"] - ratio) > 2.0:
+            assert res["adapter"] is True, ratio
+
+
+def test_commscope_43_token_parts_are_4310():
+    g = load_grades()
+    seen = 0
+    for row in g["candidates"]["coupler"] + g["candidates"]["omni"]:
+        if row["mfr"] == "CommScope" and row["model"] in (
+                "C-10-UW-43-Ai6", "CMAX-O-43-UW-i53", "CMAX-OUS1-UW43-I53"):
+            assert row["interface"] == "4.3-10", row["model"]
+            seen += 1
+    assert seen == 3
+    assert "interface_rules" in g
