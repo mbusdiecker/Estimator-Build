@@ -68,16 +68,18 @@ def _remote_chain(cfg, remote_extra=None, band_cap=None):
 
 def test_remote_cascade_caps_output_per_band(cfg):
     # hand math: 15 dBm injected, +65 dB gain capped at 33 dBm; fiber adds no RF
-    # loss; the remote passes 33 and caps at its own max_dl_out_dbm (30 default)
+    # loss; the remote adds its default link gain to 33 and caps at its own
+    # default max_dl_out_dbm (both from config: 33 dBm cap, +10 dB gain since run 5)
+    out = min(33.0 + cfg["remote"]["dl_gain_db"], cfg["remote"]["max_dl_out_dbm"])
     m = _remote_chain(cfg)
     sol = solve_cascade(m, cfg)
     assert sol["errors"] == []
     b = sol["bands"]["B2_1900"]
     ru = next(n for n in b["nodes"] if n["element_id"] == "ru")
     assert ru["in_dbm"] == pytest.approx(33.0)
-    assert ru["out_dbm"] == pytest.approx(30.0)
+    assert ru["out_dbm"] == pytest.approx(out)
     loss = cable_loss_db(cfg["cables"]["coax_1_2in"], 10.0, 1960.0)
-    assert b["antennas"][0]["in_dbm"] == pytest.approx(30.0 - loss, abs=0.01)
+    assert b["antennas"][0]["in_dbm"] == pytest.approx(out - loss, abs=0.01)
     assert any("Remote" in w for w in b["warnings"])  # clamp is reported
     # per-band cap on the element wins for that band only
     m2 = _remote_chain(cfg, {"max_dl_out_dbm_per_band": {"B2_1900": 24.0}})
@@ -85,7 +87,7 @@ def test_remote_cascade_caps_output_per_band(cfg):
     n2 = next(n for n in s2["bands"]["B2_1900"]["nodes"] if n["element_id"] == "ru")
     assert n2["out_dbm"] == pytest.approx(24.0)
     n3 = next(n for n in s2["bands"]["B5_850"]["nodes"] if n["element_id"] == "ru")
-    assert n3["out_dbm"] == pytest.approx(30.0)
+    assert n3["out_dbm"] == pytest.approx(min(33.0 + cfg["remote"]["dl_gain_db"], cfg["remote"]["max_dl_out_dbm"]))
     # a gain adds before the cap: -50 dBm injected - 2 m LMR-400 + 65 dB gain
     # reaches the remote at about 14.6 dBm; +6 dB gain leaves it below the cap
     m3 = _remote_chain(cfg, {"dl_gain_db": 6.0, "max_dl_out_dbm": 40.0})
@@ -116,7 +118,13 @@ def test_remotes_off_by_default_and_unchanged(cfg):
 
 
 def test_remotes_sized_so_zone_budgets_close(cfg):
-    # a head-end level of 12 dBm per remote forces zones; default 30 dBm does not
+    # a head-end level of 12 dBm per remote forces zones; a full-power remote does not.
+    # Measured on office clutter 0.3 dB/m with a level-neutral remote link, so pin both
+    # (the run 5 defaults, 0.2 dB/m and +10 dB, let one fewer remote close here).
+    cfg = copy.deepcopy(cfg)
+    cfg["building_types"]["office"]["clutter_db_per_m"] = 0.3
+    cfg["remote"]["dl_gain_db"] = 0.0
+    cfg["remote"]["max_dl_out_dbm"] = 30.0
     body = request(threshold_dbm=-60.0)
     m1 = make_model(900, 600)
     r1 = autoplace_floor(m1, cfg, "f1", dict(body, remotes=True))
@@ -199,7 +207,7 @@ def test_remote_config_values_are_graded(cfg):
     for key in ("dl_gain", "max_dl_out", "ports"):
         assert r[key + "_grade"] in ("P", "G", "C", "E"), key
         assert r[key + "_ref"], key
-    assert r["max_dl_out_grade"] == "E"
+    assert r["max_dl_out_grade"] == "C" and "stand-in" in r["max_dl_out_ref"]
     assert cfg["autoplace"]["max_remotes_grade"] == "E"
     assert cfg["cables"]["fiber_sm"]["medium"] == "fiber"
 
@@ -737,21 +745,23 @@ def _hand_map(codes_row, cell_px=30.0):
 
 
 def test_field_trace_is_the_per_square_length_sum(cfg):
-    # four 3 m squares: open (0.1), open, core (1.0), open at 10 px/m
+    # four 3 m squares: open, open, core, open at 10 px/m (class values from config)
+    cl = cfg["clutter_map"]["classes"]
+    o, c = cl["open"]["db_per_m"], cl["core"]["db_per_m"]
     f = ClutterField(_hand_map("ooco"), cfg, 10.0)
     # straight along the middle: 6 m open + 3 m core + 3 m open
-    assert f.trace(0, 15, 120, 15) == pytest.approx(6 * 0.1 + 3 * 1.0 + 3 * 0.1)
+    assert f.trace(0, 15, 120, 15) == pytest.approx(6 * o + 3 * c + 3 * o)
     # ends inside squares: from x=15 (mid square 0) to x=105 (mid square 3)
-    assert f.trace(15, 15, 105, 15) == pytest.approx(4.5 * 0.1 + 3.0 + 1.5 * 0.1)
+    assert f.trace(15, 15, 105, 15) == pytest.approx(4.5 * o + 3.0 * c + 1.5 * o)
     # reversed direction gives the same value
     assert f.trace(105, 15, 15, 15) == pytest.approx(f.trace(15, 15, 105, 15))
     # a diagonal inside one square: 0.1 dB/m x length
-    assert f.trace(2, 2, 14, 11) == pytest.approx(0.1 * math.hypot(12, 9) / 10.0)
+    assert f.trace(2, 2, 14, 11) == pytest.approx(o * math.hypot(12, 9) / 10.0)
     # same point: zero
     assert f.trace(40, 5, 40, 5) == 0.0
     # exterior squares do not enter the mean / min
     g = ClutterField(_hand_map("oxxc"), cfg, 10.0)
-    assert g.mean_db == pytest.approx(0.55) and g.min_db == 0.1 and g.max_db == 1.0
+    assert g.mean_db == pytest.approx((o + c) / 2) and g.min_db == o and g.max_db == c
 
 
 def test_field_uniform_map_is_exact_everywhere(cfg):
@@ -761,7 +771,8 @@ def test_field_uniform_map_is_exact_everywhere(cfg):
     ys = [29.0, 5.0, 14.0, 0.0]
     got = f.loss_list(ent, xs, ys)
     for x, y, v in zip(xs, ys, got):
-        assert v == pytest.approx(0.3 * math.hypot(x - 37.0, y - 11.0) / 10.0, abs=1e-9)
+        assert v == pytest.approx(cfg["clutter_map"]["classes"]["light_office"]["db_per_m"]
+                                  * math.hypot(x - 37.0, y - 11.0) / 10.0, abs=1e-9)
 
 
 def _interp_errors(f, ax, ay, xs, ys):
@@ -804,8 +815,8 @@ def _predict_pct(m, cfg, thr, step=4):
 
 
 def test_predict_uniform_map_equals_uniform_building_type_clutter(cfg):
-    # a map of light_office everywhere (0.3 dB/m) must give the same prediction
-    # as the building type office (clutter 0.3 dB/m, N 30)
+    # a map of light_office everywhere must give the same prediction as the
+    # building type office (same clutter value, N 30)
     def model(with_map):
         fl = make_floor(400, 300)
         fl["elements"] = [
@@ -820,10 +831,11 @@ def test_predict_uniform_map_equals_uniform_building_type_clutter(cfg):
     a = predict_floor(model(False), cfg, "f1", "B2_1900", step_px=5)
     b = predict_floor(model(True), cfg, "f1", "B2_1900", step_px=5)
     assert b["loss_model"]["source"] == "clutter_map" and a["loss_model"]["source"] == "building_type"
-    assert b["loss_model"]["clutter_map"]["mean_db_per_m"] == pytest.approx(0.3)
+    office = cfg["building_types"]["office"]["clutter_db_per_m"]
+    assert b["loss_model"]["clutter_map"]["mean_db_per_m"] == pytest.approx(office)
     assert b["values_dbm"] == a["values_dbm"]
     # without a map nothing changed: the building type path is untouched
-    assert a["loss_model"]["clutter_db_per_m"] == 0.3
+    assert a["loss_model"]["clutter_db_per_m"] == office
 
 
 def test_predict_with_core_strip_matches_hand_math(cfg):
@@ -836,11 +848,13 @@ def test_predict_with_core_strip_matches_hand_math(cfg):
         {"id": "r", "type": "cable_run", "from_id": "s", "to_id": "a",
          "cable_id": "coax_1_2in", "length_m": 0.0}]
     fl["clutter_map"] = _hand_map("ooco")
+    cl = cfg["clutter_map"]["classes"]
+    o, c = cl["open"]["db_per_m"], cl["core"]["db_per_m"]
     m = {"environment": "office", "floors": [fl]}
     pr = predict_floor(m, cfg, "f1", "B2_1900", step_px=15)
     eirp = pr["antennas"][0]["eirp_dbm"]
     pl = (20 * math.log10(1960.0) + 30.0 * math.log10(9.0) - 28.0
-          + (4.5 * 0.1 + 3.0 * 1.0 + 1.5 * 0.1))
+          + (4.5 * o + 3.0 * c + 1.5 * o))
     cols = pr["grid"]["cols"]
     idx = 1 * cols + 7          # row y=15, column x=105
     assert pr["values_dbm"][idx] == pytest.approx(eirp - pl, abs=0.06)

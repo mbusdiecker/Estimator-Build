@@ -27,6 +27,16 @@ Already built:
 - One-line and floor layout drawings.
 - Parts catalog, grade tiers, assembly builders (rooftop, closet, riser, GPS, power, monitoring) and the iBwave-style BOM export.
 - OEM packages for ten OEMs (config/oem_packages.json). Selecting one replaces the generic head end, remote and repeater lines with that OEM's most-quoted parts, counted from ANS quote-history ratios. A ratio is applied only when at least three jobs support it.
+- Calibration run 5 (2026-11-11): building-type clutter fitted on 32 ANS designs, with floors and areas taken from the design documents instead of the budgets. Leave-one-out, 14 of 32 jobs land within 15% of the design antenna count, with a median error of 17% (run 4a was 10 of 33 and 36%).
+
+Calibration, still to do before the accuracy bar (8 of 10 jobs within 15%) is met:
+1. Turn fiber remotes on by default in auto-placement, or per system type. The run 5 clutter values were fitted with remotes on, and auto-placement still defaults to remotes off.
+2. Load the OEM remote specs (Matt's Thursday download) in place of the 33 dBm and +10 dB stand-in remote defaults, then refit clutter.
+3. Add a covered square footage and floor count input. Budget area and floor counts were wrong on most of the office test jobs (25 floors on a 3-level parking deck, 13 floors on a 4-floor building), so the ROM should take them from the design documents or the estimator.
+4. Grow the dense office set. It rests on three FLETC buildings and misses both ways.
+5. Look at the step size of remote sizing. On Burnett Plaza the count jumps from 33 to 77 to 121 as remotes are added, which limits how close one clutter value can land. NYC OTI, a DRAN design at about 2,000 sq ft per antenna, also misses badly.
+6. Calibrate parking garage and school, which have one job each (grade E).
+7. Rerun the 15% test after items 1 to 3.
 
 ## Day 2
 

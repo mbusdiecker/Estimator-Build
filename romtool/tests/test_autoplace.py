@@ -122,10 +122,10 @@ def test_unknown_building_type_rejected(cfg):
 def test_office_subtypes_select_their_clutter(cfg):
     band = _band(cfg)
     expected = {  # building type: (N, clutter dB/m, clutter grade)
-        "office": (30.0, 0.3, "C"),
+        "office": (30.0, 0.2, "C"),
         "office_open": (30.0, 0.1, "E"),
-        "office_standard": (30.0, 0.3, "C"),
-        "office_dense": (30.0, 0.6, "E"),
+        "office_standard": (30.0, 0.2, "C"),
+        "office_dense": (30.0, 0.6, "C"),
     }
     for bt, (n, clutter, grade) in expected.items():
         m = make_model(100, 100, building_type=bt)
@@ -133,12 +133,14 @@ def test_office_subtypes_select_their_clutter(cfg):
         assert (lm["source"], lm["building_type"]) == ("building_type", bt)
         assert (lm["n"], lm["clutter_db_per_m"], lm["grade_clutter"]) == (n, clutter, grade), bt
         assert lm["grade_n"] == "P" and lm["clutter_source"] == "building_type", bt
-    # open and dense start from the clutter_map classes; standard keeps the office value
+    # open starts from the clutter_map open class; standard and dense are fitted (run 5),
+    # and the pooled office value equals the standard fit
     classes = cfg["clutter_map"]["classes"]
     bts = cfg["building_types"]
     assert bts["office_open"]["clutter_db_per_m"] == classes["open"]["db_per_m"]
-    assert bts["office_dense"]["clutter_db_per_m"] == classes["dense_rooms"]["db_per_m"]
-    assert bts["office_standard"]["clutter_ref"] == bts["office"]["clutter_ref"]
+    assert bts["office_dense"]["clutter_db_per_m"] == classes["office_dense"]["db_per_m"]
+    assert bts["office_standard"]["clutter_db_per_m"] == bts["office"]["clutter_db_per_m"]
+    assert "run 5" in bts["office_standard"]["clutter_ref"] and "run 5" in bts["office_dense"]["clutter_ref"]
 
 
 SYS_CFG = {"building_types": {"office": {
@@ -172,7 +174,7 @@ def test_system_type_falls_back_when_building_type_has_no_value(cfg):
     m = make_model(100, 100, building_type="office")
     m["system_type"] = "bda"                        # office has no bda value
     lm = resolve_loss_model(m, c, m["floors"][0], band, "office")
-    assert (lm["clutter_db_per_m"], lm["clutter_source"]) == (0.3, "building_type")
+    assert (lm["clutter_db_per_m"], lm["clutter_source"]) == (0.2, "building_type")
     assert lm["grade_clutter"] == "C"
 
     m = make_model(100, 100, building_type="retail_mall")   # no clutter_by_system block
@@ -197,7 +199,7 @@ def test_system_type_absent_keeps_building_type_clutter(cfg):
     lm = resolve_loss_model(m, c, m["floors"][0], _band(c), "office")
     base = resolve_loss_model(m, cfg, m["floors"][0], _band(cfg), "office")
     assert (lm["clutter_db_per_m"], lm["clutter_source"], lm["system_type"]) == (
-        0.3, "building_type", None)
+        0.2, "building_type", None)
     assert lm["clutter_db_per_m"] == base["clutter_db_per_m"]
 
 
