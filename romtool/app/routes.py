@@ -316,6 +316,18 @@ def patch_project(pid: int, payload: dict = Body(...)):
             model.pop("oem", None)
         else:
             model["oem"] = key
+    if "covered_area_sqft" in payload:
+        v = payload["covered_area_sqft"]
+        if v in (None, ""):
+            model.pop("covered_area_sqft", None)
+        else:
+            try:
+                v = float(v)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=422, detail="covered_area_sqft must be a number")
+            if not v > 0:
+                raise HTTPException(status_code=422, detail="covered_area_sqft must be above 0")
+            model["covered_area_sqft"] = v
     if "bands" in payload:
         if payload["bands"] is None:
             model.pop("bands", None)

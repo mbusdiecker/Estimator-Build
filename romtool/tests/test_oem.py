@@ -137,6 +137,91 @@ def test_grade_items_applies_project_oem_and_bad_oem_raises():
         settings_for({"oem": "nope"}, cfg)
 
 
+# ------------------------------------------------ spec packages (SureCall FiberMax)
+
+from romtool.oem import DEFAULT_SPEC_PATH
+
+FM = "surecall_fibermax"
+
+
+def _fm_items(antennas, remotes=1, sources=1, repeaters=0):
+    out = [{"category": "antenna", "item": "Omni", "qty": antennas, "unit": "ea", "role": "antenna.omni_das"},
+           {"category": "antenna", "item": "Donor", "qty": sources, "unit": "ea", "role": "antenna.donor"}]
+    for role, q in (("oem.remote", remotes), ("oem.source", sources), ("oem.repeater", repeaters)):
+        if q:
+            out.append({"category": role.split(".")[1], "item": role, "qty": q, "unit": "ea", "role": role})
+    return out
+
+
+def test_spec_file_is_merged_and_has_no_prices_or_job_numbers():
+    assert FM in PKG and PKG[FM]["source"] == "spec"
+    assert any(p["key"] == FM for p in list_packages())
+    assert check_oem(FM) == FM
+    text = open(DEFAULT_SPEC_PATH, encoding="utf-8").read()
+    assert not re.search(r'"[^"]*(price|cost|usd|dollar|amount)[^"]*"\s*:', text, re.I)
+    assert not re.search(r"\b2\d-\d{5}\b", text)
+
+
+def test_quote_history_package_wins_over_spec_of_same_key(tmp_path):
+    hist = {"min_jobs": 3, "packages": {"x": {"label": "Hist", "system_type": "das", "jobs": 5, "ratios": {}, "parts": {}}}}
+    spec = {"packages": {"x": {"label": "Spec", "system_type": "das", "jobs": 0, "source": "spec", "ratios": {}, "parts": {}},
+                         "y": {"label": "OnlySpec", "system_type": "das", "jobs": 0, "source": "spec", "ratios": {}, "parts": {}}}}
+    hp, sp = tmp_path / "h.json", tmp_path / "s.json"
+    hp.write_text(json.dumps(hist)); sp.write_text(json.dumps(spec))
+    cfg = load_oem_packages(str(hp), str(sp))
+    assert cfg["packages"]["x"]["label"] == "Hist" and cfg["packages"]["y"]["label"] == "OnlySpec"
+
+
+def test_fibermax_sized_from_design_density_when_area_known():
+    # 251,974 sq ft at 4,230 sq ft per antenna = 60 antennas -> 4 remotes at 16 -> 1 master (kit holds 1 RU) + 3 RU kits
+    out, overlay, notes = expand_oem(_fm_items(126, remotes=1, sources=1), FM, "das", area_sqft=251974)
+    got = _by_role(out)
+    assert got == {"master_unit": 1, "remote_unit": 3}
+    assert not [it for it in out if it["role"] in ("oem.remote", "oem.source")]
+    assert any("126 service antennas" in n and "gives 60" in n for n in notes)
+    assert any("4 remotes per master, 16 antennas per remote" in n for n in notes)
+    assert "SureCall" in overlay["oem.%s.master_unit" % FM]["manufacturer"]
+    assert all("grade B" in it["note"] for it in out if it.get("oem_role"))
+
+
+def test_fibermax_without_area_uses_modeled_antennas_and_caps_per_remote():
+    # 126 antennas / 16 = 8 remotes -> 2 masters (4 each) -> 2 kit RUs + 6 RU kits
+    out, _overlay, notes = expand_oem(_fm_items(126, remotes=1, sources=1), FM, "das")
+    assert _by_role(out) == {"master_unit": 2, "remote_unit": 6}
+    assert any("no covered area" in n for n in notes)
+
+
+def test_fibermax_one_master_per_offair_source_and_repeater_dropped():
+    out, _overlay, notes = expand_oem(_fm_items(40, remotes=3, sources=2, repeaters=1), FM, "das")
+    got = _by_role(out)
+    assert got["master_unit"] == 2                  # two donors, one per master
+    assert got["remote_unit"] == 1                  # 3 remotes less 2 in the kits
+    assert any("repeater" in n for n in notes)
+    assert [it for it in out if it["role"] == "antenna.donor"]   # passive donor line untouched
+
+
+def test_fibermax_small_job_still_gets_one_kit():
+    out, _overlay, _notes = expand_oem(_fm_items(4, remotes=1, sources=1), FM, "das", area_sqft=15000)
+    assert _by_role(out) == {"master_unit": 1}       # 4 antennas, 1 RU, in the kit
+
+
+def test_grade_items_passes_covered_area_to_spec_package():
+    cfg = load_config()
+    s = settings_for({"oem": FM, "system_type": "das", "covered_area_sqft": 251974}, cfg)
+    assert s["covered_area_sqft"] == 251974
+    items, overlay, _notes = grade_items(_fm_items(126, remotes=1, sources=1), cfg, s)
+    assert "oem.%s.master_unit" % FM in overlay
+    assert {it["oem_role"]: it["qty"] for it in items if it.get("oem_role")} == {"master_unit": 1, "remote_unit": 3}
+
+
+def test_api_covered_area_validation(client):
+    pid = [p for p in client.get("/projects").json()["projects"] if p["example"]][0]["id"]
+    assert client.patch("/projects/%d" % pid, json={"covered_area_sqft": "abc"}).status_code == 422
+    assert client.patch("/projects/%d" % pid, json={"covered_area_sqft": 0}).status_code == 422
+    assert client.patch("/projects/%d" % pid, json={"covered_area_sqft": 251974}).status_code == 200
+    assert client.patch("/projects/%d" % pid, json={"covered_area_sqft": None}).status_code == 200
+
+
 def test_api_sets_oem_and_bom_reports_it(client):
     pid = [p for p in client.get("/projects").json()["projects"] if p["example"]][0]["id"]
     assert client.get("/oem_packages").json()["packages"]

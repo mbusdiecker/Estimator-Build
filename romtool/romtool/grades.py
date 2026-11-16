@@ -108,6 +108,7 @@ def settings_for(model, config, grade=None, budget_brand=None, grades=None, oem=
         "grade": grade,
         "budget_brand": brand,
         "oem": oem_key,
+        "covered_area_sqft": model.get("covered_area_sqft"),
         "system_type": model.get("system_type"),
         "bands": ids,
         "freqs": [freq[i] for i in ids],
@@ -410,7 +411,8 @@ def grade_items(items, config, settings, catalog=None):
             out.append(_adapter_item(it, 1 if kind == "omni" else 2, target_interface(settings)))
 
     if settings.get("oem"):
-        out, oem_overlay, oem_notes = expand_oem(out, settings["oem"], settings.get("system_type"))
+        out, oem_overlay, oem_notes = expand_oem(out, settings["oem"], settings.get("system_type"),
+                                                 area_sqft=settings.get("covered_area_sqft"))
         overlay.update(oem_overlay)
         notes_all.extend(oem_notes)
 

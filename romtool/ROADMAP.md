@@ -27,6 +27,7 @@ Already built:
 - One-line and floor layout drawings.
 - Parts catalog, grade tiers, assembly builders (rooftop, closet, riser, GPS, power, monitoring) and the iBwave-style BOM export.
 - OEM packages for ten OEMs (config/oem_packages.json). Selecting one replaces the generic head end, remote and repeater lines with that OEM's most-quoted parts, counted from ANS quote-history ratios. A ratio is applied only when at least three jobs support it.
+- Spec OEM packages (2026-11-16): config/oem_specs.json holds hand-maintained packages from OEM data sheets and OEM designs, merged into the quote-history packages at load (a history package of the same key wins). The first is SureCall FiberMax (SignalMax): remotes are sized from the OEM design density (4,230 sq ft per antenna, grade D, from a SureCall hospital design) when the project's covered_area_sqft is set, else from the modeled antennas; capped at 16 antennas per remote and 4 remotes per master; the remote, donor and 4 antennas in each master kit are credited. RF output is not modeled yet (Day 1 item 2). The same rule is in Downloads\ROMcalcs\ROM Tool r1.2-FiberMax.xlsx (patch script romtool-test/scripts/patch_r12_fibermax.ps1).
 - Calibration run 5 (2026-11-11): building-type clutter fitted on 32 ANS designs, with floors and areas taken from the design documents instead of the budgets. Leave-one-out, 14 of 32 jobs land within 15% of the design antenna count, with a median error of 17% (run 4a was 10 of 33 and 36%).
 
 Calibration, still to do before the accuracy bar (8 of 10 jobs within 15%) is met:

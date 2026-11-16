@@ -1,0 +1,55 @@
+{
+ "_note": "Hand-maintained OEM packages from manufacturer data sheets and OEM designs, not ANS quote history. They are merged into oem_packages.json at load time, so a rebuild of oem_packages.json does not drop them. Grade B: OEM data sheet. Grade D: a single OEM design or a vendor claim. No prices.",
+ "packages": {
+  "surecall_fibermax": {
+   "label": "SureCall FiberMax (SignalMax hybrid fiber DAS)",
+   "system_type": "das",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "source_label": "SureCall SignalMax Fiber DAS data sheet (2025)",
+   "ratios": {},
+   "parts": {
+    "master_unit": {
+     "manufacturer": "SureCall",
+     "model": "SC-MaxFiberMURU",
+     "description": "SignalMax fiber DAS master + remote unit kit: master unit, 1 remote unit, SC-530W donor yagi, 4 SC-628CBM antennas, 500 ft SC-400, 250 ft terminated SM fiber",
+     "jobs": 0
+    },
+    "remote_unit": {
+     "manufacturer": "SureCall",
+     "model": "SC-MaxFiberRU",
+     "description": "SignalMax fiber DAS remote unit kit: remote unit, power supply, 250 ft terminated SM fiber",
+     "jobs": 0
+    }
+   },
+   "kit": {
+    "master_unit_includes": {"remote_unit": 1, "donor_antenna": 1, "service_antenna": 4, "coax_ft": 500, "fiber_ft": 250},
+    "remote_unit_includes": {"fiber_ft": 250}
+   },
+   "limits": {
+    "remote_units_per_master_max": 4,
+    "ports_per_remote_unit": 4,
+    "antennas_per_port_max": 4,
+    "antennas_per_remote_unit_max": 16,
+    "fiber_reach_m": 4000,
+    "dl_max_dbm_per_band": {"B12": 15.15, "B13": 15.15, "B5": 15.71, "B25": 14.29, "B4": 14.13},
+    "bands": ["B12", "B13", "B17", "B5", "B2", "B25", "B4"],
+    "fcc": "Part 20",
+    "grade": "B",
+    "ref": "SureCall SignalMax Fiber DAS data sheet (2025)"
+   },
+   "design_density": {
+    "sq_ft_per_antenna": 4230,
+    "grade": "D",
+    "ref": "SureCall iBwave design for a 33,832 sq ft behavioral hospital, 8 SC-528W omni antennas (SureCall, 2026-09-16)"
+   },
+   "vendor_claim": {
+    "sq_ft_per_remote_unit_with_4_antennas": 50000,
+    "sq_ft_per_remote_unit_max": 125000,
+    "grade": "D",
+    "ref": "SureCall data sheet claim, not used for sizing"
+   }
+  }
+ }
+}
