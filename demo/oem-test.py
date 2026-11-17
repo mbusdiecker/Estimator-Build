@@ -1,9 +1,10 @@
-"""ROMtool OEM test: auto-placed antenna count and BOM vs the design, with leave-one-out calibration.
+﻿"""ROMtool OEM test: auto-placed antenna count and BOM vs the design, with leave-one-out calibration.
 
 Usage: oem-test.py <jobs.json> <oem summary.csv> <out dir> [--clutter 0,0.1,...]
 
 jobs.json: [{"job": "...", "building_type": "office", "bands": ["B2_1900", "B66_2100"],
              "floors": [{"sq_ft": 25000, "count": 3}], "threshold_dbm": -95, "rsrp_offset_db": -31,
+             "remotes": {"max_dl_out_dbm_per_band": {...}} (optional, merged over ROMTOOL_EXTRA remotes),
              "coverage_target_pct": 95, "notes": "..."}]
 Each floor is a 1.6:1 rectangle of its square footage (no walls), so the building type's default loss applies.
 For every clutter value in the sweep, each distinct floor size is auto-placed once and multiplied by its count.
@@ -13,7 +14,7 @@ Pass bar (Matt): antenna count and BOM within 15% of the design on 8 of 10 jobs.
 """
 import copy, csv, json, math, os, statistics, sys, time
 
-ROMTOOL = os.environ.get('ROMTOOL_DIR', r'C:\Users\MattBusdiecker\Documents\Estimator Build\romtool')
+ROMTOOL = os.environ.get('ROMTOOL_DIR', r'C:\Users\MattBusdiecker\Documents\AI Automations\Estimator Build\romtool')
 EXTRA = json.loads(os.environ.get('ROMTOOL_EXTRA', '{}'))   # extra autoplace request keys, e.g. {"remotes": true}
 sys.path.insert(0, ROMTOOL)
 from romtool.autoplace import AutoplaceError, autoplace_floor   # noqa: E402
@@ -40,7 +41,9 @@ def run_floor(cfg, job, sq_ft):
            "coverage_target_pct": job.get("coverage_target_pct", 95)}
     if "threshold_dbm" in job: req["threshold_dbm"] = job["threshold_dbm"]
     if "rsrp_offset_db" in job: req["rsrp_offset_db"] = job["rsrp_offset_db"]
-    req.update(EXTRA)
+    req.update(copy.deepcopy(EXTRA))
+    if isinstance(job.get("remotes"), dict) and isinstance(req.get("remotes"), dict):
+        req["remotes"].update(job["remotes"])   # per-job OEM remote spec (remote_specs.json) over the stand-in
     res = autoplace_floor(model, cfg, "f1", req)
     bom = generate_bom(model, cfg)["items"]
     agg = {"antennas": len(res["antennas"]), "coax_half_ft": 0.0, "coax_other_ft": 0.0, "splitters": 0, "tappers": 0, "couplers": 0}

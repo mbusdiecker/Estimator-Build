@@ -43,6 +43,7 @@ from fastapi import APIRouter, Body, File, HTTPException, Query, Request, Respon
 from fastapi.responses import JSONResponse
 
 from romtool import ai as ai_mod
+from romtool.lossmodel import LOSS_MODES
 from romtool import actuals as actuals_mod
 from romtool.autoplace import AutoplaceError, autoplace_floor
 from romtool.clutter_map import (PNG_SIG, ClutterMapError, apply_overrides, build_clutter_map,
@@ -316,6 +317,14 @@ def patch_project(pid: int, payload: dict = Body(...)):
             model.pop("oem", None)
         else:
             model["oem"] = key
+    if "loss_mode" in payload:
+        lm = payload["loss_mode"]
+        if lm in (None, ""):
+            model.pop("loss_mode", None)
+        elif lm not in LOSS_MODES:
+            raise HTTPException(status_code=422, detail="loss_mode must be one of %s" % ", ".join(LOSS_MODES))
+        else:
+            model["loss_mode"] = lm
     if "covered_area_sqft" in payload:
         v = payload["covered_area_sqft"]
         if v in (None, ""):
@@ -1625,6 +1634,14 @@ def patch_floor(pid: int, fid: str, payload: dict = Body(...)):
             floor.pop("outline", None)
         else:
             floor["outline"] = ol
+    if "loss_mode" in payload:
+        lm = payload["loss_mode"]
+        if lm in (None, ""):
+            floor.pop("loss_mode", None)
+        elif lm not in LOSS_MODES:
+            raise HTTPException(status_code=422, detail="loss_mode must be one of %s" % ", ".join(LOSS_MODES))
+        else:
+            floor["loss_mode"] = lm
     _save(pid, proj["name"], model)
     return {"floor": {k: v for k, v in floor.items() if k != "image"}}
 

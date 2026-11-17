@@ -173,12 +173,12 @@ def test_quote_history_package_wins_over_spec_of_same_key(tmp_path):
 
 
 def test_fibermax_sized_from_design_density_when_area_known():
-    # 251,974 sq ft at 4,230 sq ft per antenna = 60 antennas -> 4 remotes at 16 -> 1 master (kit holds 1 RU) + 3 RU kits
+    # 251,974 sq ft at 3,500 sq ft per antenna = 72 antennas -> 5 remotes at 16 -> 2 masters (kits hold 2 RU) + 3 RU kits
     out, overlay, notes = expand_oem(_fm_items(126, remotes=1, sources=1), FM, "das", area_sqft=251974)
     got = _by_role(out)
-    assert got == {"master_unit": 1, "remote_unit": 3}
+    assert got == {"master_unit": 2, "remote_unit": 3}
     assert not [it for it in out if it["role"] in ("oem.remote", "oem.source")]
-    assert any("126 service antennas" in n and "gives 60" in n for n in notes)
+    assert any("126 service antennas" in n and "gives 72" in n for n in notes)
     assert any("4 remotes per master, 16 antennas per remote" in n for n in notes)
     assert "SureCall" in overlay["oem.%s.master_unit" % FM]["manufacturer"]
     assert all("grade B" in it["note"] for it in out if it.get("oem_role"))
@@ -211,7 +211,7 @@ def test_grade_items_passes_covered_area_to_spec_package():
     assert s["covered_area_sqft"] == 251974
     items, overlay, _notes = grade_items(_fm_items(126, remotes=1, sources=1), cfg, s)
     assert "oem.%s.master_unit" % FM in overlay
-    assert {it["oem_role"]: it["qty"] for it in items if it.get("oem_role")} == {"master_unit": 1, "remote_unit": 3}
+    assert {it["oem_role"]: it["qty"] for it in items if it.get("oem_role")} == {"master_unit": 2, "remote_unit": 3}
 
 
 def test_api_covered_area_validation(client):

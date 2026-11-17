@@ -40,9 +40,9 @@
     "ref": "SureCall SignalMax Fiber DAS data sheet (2025)"
    },
    "design_density": {
-    "sq_ft_per_antenna": 4230,
-    "grade": "D",
-    "ref": "SureCall iBwave design for a 33,832 sq ft behavioral hospital, 8 SC-528W omni antennas (SureCall, 2026-09-16)"
+    "sq_ft_per_antenna": 3500,
+    "grade": "C",
+    "ref": "Matt's rule (2026-11-16): 3,500 sq ft per antenna. Company check: 12 ANS hospital designs run 2,165 to 5,769 sq ft per antenna (median about 3,400); SureCall's own designs run 4,238 (hospital) and 6,097 (office). Booster link budget not verified by walk test."
    },
    "vendor_claim": {
     "sq_ft_per_remote_unit_with_4_antennas": 50000,

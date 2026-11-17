@@ -164,7 +164,8 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
     field = None
     if loss.get("clutter_map"):
         try:
-            field = ClutterField(loss["clutter_map"], config, float(floor.get("ppm", 10.0)))
+            field = ClutterField(loss["clutter_map"], config, float(floor.get("ppm", 10.0)),
+                                 wall_db=loss.get("physics_wall_db"))
         except ClutterMapError as exc:
             raise PredictError(str(exc))
     wall_scale_db = float(band.get("wall_loss_scale_db") or 0.0)

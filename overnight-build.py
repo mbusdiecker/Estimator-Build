@@ -1,4 +1,4 @@
-"""Overnight estimator build (2026-11-09, Matt: build the estimator next steps and the strategy-session items with
+﻿"""Overnight estimator build (2026-11-09, Matt: build the estimator next steps and the strategy-session items with
 Qwen, as few Claude tokens as possible). Runs on Matt's PC against the home Qwen server; no Claude.
   Step 1 (Python, no LLM): company labor units and pricing facts from the budget store (vzw-budgets.sqlite) and
   the intel export: unit minutes per install category, hours per antenna/remote/BDA and per 1,000 ft of cable by
@@ -19,7 +19,7 @@ import urllib.request
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 HERE = os.path.dirname(os.path.abspath(__file__))
-AUTO = r"C:\Users\MattBusdiecker\Documents\VZW Intel Automation"
+AUTO = r"C:\Users\MattBusdiecker\Documents\AI Automations\VZW Intel Automation"
 LIB = r"C:\Users\MattBusdiecker\Downloads\Estimator_Source_Library.md"
 STRAT = r"C:\Users\MattBusdiecker\.claude\projects\C--windows-system32\memory\project-2027-strategy-sessions.md"
 os.makedirs(os.path.join(HERE, "drafts"), exist_ok=True); os.makedirs(os.path.join(HERE, "data"), exist_ok=True)

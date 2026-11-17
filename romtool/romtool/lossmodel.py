@@ -27,9 +27,41 @@ no stored map); the building type clutter fills squares outside every zone.
 Zone ceiling heights change the distance term in predict and autoplace, not N.
 """
 
+from .physics import scale_wall_loss_db
 from .zones import effective_clutter_map
 
 DEFAULT_MIN_WALLS = 1
+LOSS_MODES = ("calibrated", "physics")
+
+
+def active_loss_mode(model, floor):
+    """'physics' or 'calibrated' (default). Floor value wins over the project."""
+    m = (floor or {}).get("loss_mode") or (model or {}).get("loss_mode") or "calibrated"
+    if m not in LOSS_MODES:
+        raise LossModelError("unknown loss_mode '%s' (known: %s)" % (m, ", ".join(LOSS_MODES)))
+    return m
+
+
+def _physics(config, cmap, band):
+    """Physics mode: free-space distance exponent plus measured wall crossings x
+    material loss. No fitted values."""
+    ph = config.get("physics_loss") or {}
+    mats = config.get("wall_materials") or {}
+    mat = ph.get("wall_material", "drywall")
+    if mat not in mats:
+        raise LossModelError("physics_loss.wall_material '%s' is not in wall_materials" % mat)
+    if not cmap or not cmap.get("cpm"):
+        raise LossModelError("loss_mode physics needs a clutter map built from the floor plan "
+                             "(it carries the measured wall crossings per metre)")
+    ref = float(config.get("wall_loss_ref_mhz", 2000.0))
+    wall_db = scale_wall_loss_db(float(mats[mat]["loss_db"]), float(band["freq_mhz"]), ref)
+    return {
+        "source": "physics", "n": float(ph.get("n", 20.0)), "n_source": "physics_loss",
+        "clutter_db_per_m": 0.0, "clutter_source": "physics_walls", "clutter_ref": ph.get("ref"),
+        "grade_n": ph.get("n_grade"), "grade_clutter": ph.get("wall_grade"),
+        "reference_n": ph.get("n_ref"), "clutter_map": cmap,
+        "physics_wall_db": round(wall_db, 4), "physics_wall_material": mat,
+    }
 
 
 class LossModelError(Exception):
@@ -111,6 +143,10 @@ def resolve_loss_model(model, config, floor, band, env, system_type=None):
     # term; walls drawn win. Squares outside every zone fall back to the
     # building type clutter when the grid is built from zones alone.
     cmap = floor_clutter_map(model, config, floor, system_type=st) if no_walls else None
+    if no_walls and active_loss_mode(model, floor) == "physics":
+        res = _physics(config, cmap, band)
+        res.update({"system_type": st, "building_type": bt_id})
+        return res
     use_bt = bt_id is not None and no_walls
     if use_bt:
         entry = types[bt_id]

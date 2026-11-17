@@ -1,4 +1,4 @@
-"""Overnight estimator build, part 2 (2026-11-09, Matt: "do it"). Five jobs on the home Qwen server, no Claude:
+﻿"""Overnight estimator build, part 2 (2026-11-09, Matt: "do it"). Five jobs on the home Qwen server, no Claude:
   A  self-review of the 12 drafts: numbers not in the company data or library, style breaks  -> reviews/*.review.md
   B  proposed lost reasons for the unverified losses, from the Smartsheet notes in lost-reason-review.xlsx
                                                                                                -> data/lost-reason-proposals.csv
@@ -23,7 +23,7 @@ from collections import Counter, defaultdict
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 HERE = os.path.dirname(os.path.abspath(__file__))
-AUTO = r"C:\Users\MattBusdiecker\Documents\VZW Intel Automation"
+AUTO = r"C:\Users\MattBusdiecker\Documents\AI Automations\VZW Intel Automation"
 for d in ("data", "drafts", "reviews", "cache"):
     os.makedirs(os.path.join(HERE, d), exist_ok=True)
 LOG = open(os.path.join(HERE, "build-log.txt"), "a", encoding="utf-8")

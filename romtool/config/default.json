@@ -171,6 +171,11 @@
   },
   "floor_loss_db_per_floor": 15.4,
   "wall_loss_ref_mhz": 2000.0,
+  "physics_loss": {
+    "n": 20.0, "n_grade": "P", "n_ref": "free-space distance exponent (Friis): 20*log10(f)+20*log10(d)-28 is free-space path loss in dB at 1 m reference; walls are added explicitly instead of being folded into N",
+    "wall_material": "drywall", "wall_grade": "G",
+    "ref": "physics loss mode (loss_mode = physics on a project or floor): PL = FSPL + sum over clutter squares of measured wall crossings per metre (from the plan) x wall_materials[wall_material].loss_db scaled to the band frequency x path length in the square. No fitted clutter. Wall loss per crossing is the material table value (drywall 4 dB at 2 GHz); hospitals with CMU, shielded or lead-lined rooms need a heavier material."
+  },
   "wall_materials": {
     "concrete": { "label": "Concrete", "loss_db": 15.0, "color": "#555555" },
     "cmu": { "label": "CMU block", "loss_db": 10.0, "color": "#8a7f70" },

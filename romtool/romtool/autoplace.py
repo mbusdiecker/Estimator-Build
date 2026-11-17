@@ -200,6 +200,14 @@ class _Band:
             raise AutoplaceError(str(exc))
         self.n = self.loss["n"]
         self.clutter = self.loss["clutter_db_per_m"]
+        # physics loss mode: a per-band field from measured wall density x the
+        # frequency-scaled wall loss replaces the shared class-based field
+        if self.loss.get("physics_wall_db") is not None:
+            try:
+                field = ClutterField(self.loss["clutter_map"], config, ppm,
+                                     wall_db=self.loss["physics_wall_db"])
+            except ClutterMapError as exc:
+                raise AutoplaceError(str(exc))
         # clutter map: the per-square field replaces the uniform clutter term;
         # seeding uses the map mean dB/m, candidate windows the smallest class
         self.field = field if self.loss.get("clutter_map") else None

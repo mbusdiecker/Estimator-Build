@@ -259,7 +259,8 @@ def clutter_params(config, **over):
     cm = config.get("clutter_map") or {}
     p = {"cell_m": 3.0, "dark_threshold": 128, "min_wall_len_m": 0.9,
          "smooth_cells": 1, "core_fill_pct": 55.0, "light_cpm": 0.05,
-         "dense_cpm": 0.20, "exterior_max_dark_pct": 0.1, "detect_exterior": True}
+         "dense_cpm": 0.20, "exterior_max_dark_pct": 0.1, "detect_exterior": True,
+         "wall_merge_m": 0.3}
     for k in p:
         if k in cm:
             p[k] = cm[k]
@@ -278,6 +279,7 @@ def clutter_params(config, **over):
         p["dense_cpm"] = float(p["dense_cpm"])
         p["exterior_max_dark_pct"] = float(p["exterior_max_dark_pct"])
         p["detect_exterior"] = bool(p["detect_exterior"])
+        p["wall_merge_m"] = float(p["wall_merge_m"])
     except (TypeError, ValueError):
         raise ClutterMapError("clutter map options must be numbers")
     if not 0.5 <= p["cell_m"] <= 50.0:
@@ -356,8 +358,14 @@ def build_clutter_map(gray, iw, ih, floor, config, outline=None, **options):
             wall[s * iw + x:e * iw + x:iw] = b"\x01" * (e - s)
 
     any_run = re.compile(b"\x01+")
+    # physics count: the two drawn faces of one wall (lines closer than the
+    # wall thickness, wall_merge_m) are one crossing, not two
+    merge_px = max(1, int(round(p["wall_merge_m"] * ppm * min(sx, sy))))
+    wall_run = re.compile(b"\x01+(?:\x00{1,%d}\x01+)*" % merge_px)
     hx = [[0] * cols for _ in range(rows)]
     vx = [[0] * cols for _ in range(rows)]
+    hw = [[0] * cols for _ in range(rows)]
+    vw = [[0] * cols for _ in range(rows)]
     dk = [[0] * cols for _ in range(rows)]
     for y in range(ih):
         base = y * iw
@@ -366,6 +374,8 @@ def build_clutter_map(gray, iw, ih, floor, config, outline=None, **options):
         if 1 in wrow:
             for m in any_run.finditer(wrow):
                 hx[r][col_of[m.start()]] += 1
+            for m in wall_run.finditer(wrow):
+                hw[r][col_of[m.start()]] += 1
         drow = dark[base:base + iw]
         if 1 in drow:
             for c in range(cols):
@@ -376,6 +386,8 @@ def build_clutter_map(gray, iw, ih, floor, config, outline=None, **options):
         if 1 in wcol:
             for m in any_run.finditer(wcol):
                 vx[row_of[m.start()]][c] += 1
+            for m in wall_run.finditer(wcol):
+                vw[row_of[m.start()]][c] += 1
 
     lines_h = [yb[r + 1] - yb[r] for r in range(rows)]
     lines_v = [xb[c + 1] - xb[c] for c in range(cols)]
@@ -385,18 +397,24 @@ def build_clutter_map(gray, iw, ih, floor, config, outline=None, **options):
     ppm_img_x, ppm_img_y = ppm * sx, ppm * sy
 
     cpm = [[0.0] * cols for _ in range(rows)]
+    wpm = [[0.0] * cols for _ in range(rows)]
     for r in range(rows):
         for c in range(cols):
-            hs = vs = hl = vl = 0
+            hs = vs = hl = vl = ws = wv = 0
             for rr in range(max(0, r - s), min(rows, r + s + 1)):
                 for cc in range(max(0, c - s), min(cols, c + s + 1)):
                     hs += hx[rr][cc]
                     vs += vx[rr][cc]
+                    ws += hw[rr][cc]
+                    wv += vw[rr][cc]
                     hl += lines_h[rr]
                     vl += lines_v[cc]
             ch_h = (hs / hl) / p["cell_m"] if hl else 0.0
             ch_v = (vs / vl) / p["cell_m"] if vl else 0.0
             cpm[r][c] = 0.5 * (ch_h + ch_v)
+            wh = (ws / hl) / p["cell_m"] if hl else 0.0
+            wvv = (wv / vl) / p["cell_m"] if vl else 0.0
+            wpm[r][c] = 0.5 * (wh + wvv)
 
     empty = [[dk[r][c] <= p["exterior_max_dark_pct"] / 100.0 * cell_area[r][c]
               for c in range(cols)] for r in range(rows)]
@@ -444,6 +462,9 @@ def build_clutter_map(gray, iw, ih, floor, config, outline=None, **options):
         "version": 1, "cell_m": p["cell_m"], "cell_px": cell_px, "cols": cols,
         "rows": rows, "ppm": ppm, "codes": dict(codes),
         "grid": list(auto), "auto_grid": list(auto), "overrides": {},
+        # measured wall crossings per metre per square (the physics loss mode
+        # multiplies these by a wall material loss instead of using class dB/m)
+        "cpm": [[round(v, 4) for v in row] for row in wpm],
         "source": {"image_w": iw, "image_h": ih, "options": p, "run_px": run_len},
         "stats": stats, "warnings": warnings,
     }
@@ -556,12 +577,32 @@ class ClutterField:
 
     _CACHE_MAX = 600
 
-    def __init__(self, cmap, config, ppm):
+    def __init__(self, cmap, config, ppm, wall_db=None):
+        """wall_db (physics loss mode): dB per wall crossing. Each square's dB/m
+        is then its measured crossings per metre (cmap["cpm"]) x wall_db, and
+        exterior squares are 0; the class table is not used."""
         classes, _ = class_table(config)
         self.cols, self.rows = int(cmap["cols"]), int(cmap["rows"])
         self.cs = float(cmap["cell_px"])
         self.ppm = float(ppm)
         codes = cmap["codes"]
+        if wall_db is not None:
+            cpm = cmap.get("cpm")
+            if not cpm or len(cpm) != self.rows or any(len(r) != self.cols for r in cpm):
+                raise ClutterMapError("physics loss mode needs the measured wall density "
+                                      "(cpm) on the clutter map; rebuild the map from the plan")
+            self.db, live = [], []
+            for row, crow in zip(cmap["grid"], cpm):
+                for ch, v in zip(row, crow):
+                    val = 0.0 if codes[ch] == "exterior" else float(v) * float(wall_db)
+                    self.db.append(val)
+                    if codes[ch] != "exterior":
+                        live.append(val)
+            self.mean_db = sum(live) / len(live) if live else 0.0
+            self.min_db = min(live) if live else 0.0
+            self.max_db = max(live) if live else 0.0
+            self._cache = {}
+            return
         db = {}
         for ch, cid in codes.items():
             if cid == FALLBACK_ID:
