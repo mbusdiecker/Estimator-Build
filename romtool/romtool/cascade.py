@@ -250,6 +250,27 @@ def remote_max_out_dbm(el, rem_cfg, band_id):
     return _num(el.get("max_dl_out_dbm", rem_cfg.get("max_dl_out_dbm", 30.0)), 30.0)
 
 
+def remote_operators_sharing(el):
+    """Operators (carriers) sharing one remote element's composite per-band
+    output.
+
+    Only the element's own operators_sharing key applies: a remote element that
+    does not declare it is treated as ONE operator (composite rating as before).
+    The config remote.operators_sharing standing assumption enters through
+    autoplace, which stamps the key on the remote elements it builds. Returns
+    a float >= 1."""
+    v = el.get("operators_sharing")
+    if v is None:
+        return 1.0
+    n = _num(v, 1.0)
+    return float(n) if n >= 1.0 else 1.0
+
+
+def remote_per_operator_split(rated_dbm, operators):
+    """Power one operator's carrier gets from a composite rating (dB)."""
+    return float(rated_dbm) - 10.0 * math.log10(max(float(operators or 1.0), 1.0))
+
+
 def _source_subtypes(config):
     """Accepted source subtypes: what the engine implements plus any extras
     declared in config source.subtypes."""
@@ -358,10 +379,15 @@ def solve_cascade(model, config):
                 )
                 edge_pow = out
             elif t == "remote":
-                # fiber-fed active unit: level-neutral by default, own cap per band
+                # fiber-fed active unit: level-neutral by default, own cap per
+                # band. The cap is the remote's COMPOSITE rating per band, split
+                # across the operators that share it: each operator's carrier is
+                # capped at rated - 10*log10(operators_sharing).
                 rem_cfg = config.get("remote", {})
                 gain = _num(el.get("dl_gain_db", rem_cfg.get("dl_gain_db", 0.0)))
-                cap = remote_max_out_dbm(el, rem_cfg, bid)
+                rated = remote_max_out_dbm(el, rem_cfg, bid)
+                ops = remote_operators_sharing(el)
+                cap = remote_per_operator_split(rated, ops)
                 raw = arrival + gain
                 out = min(raw, cap)
                 if raw > cap + 1e-9:
@@ -369,7 +395,12 @@ def solve_cascade(model, config):
                         "Remote '%s': clamped, input %.1f + %.1f dB gain exceeds "
                         "max out %.1f dBm" % (label, arrival, gain, cap)
                     )
-                detail = "in %.2f + %.1f dB gain, max out %.1f dBm" % (arrival, gain, cap)
+                if ops > 1.0:
+                    detail = ("in %.2f + %.1f dB gain, max out %.1f dBm "
+                              "(rated %.1f dBm composite / %.4g operators = %.2f dBm per operator)"
+                              % (arrival, gain, cap, rated, ops, cap))
+                else:
+                    detail = "in %.2f + %.1f dB gain, max out %.1f dBm" % (arrival, gain, cap)
                 node_rows.append(
                     {"element_id": nid, "label": label, "type": t,
                      "in_dbm": round(arrival, 3), "out_dbm": round(out, 3), "detail": detail}

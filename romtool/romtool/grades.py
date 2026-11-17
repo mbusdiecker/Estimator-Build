@@ -108,7 +108,9 @@ def settings_for(model, config, grade=None, budget_brand=None, grades=None, oem=
         "grade": grade,
         "budget_brand": brand,
         "oem": oem_key,
-        "covered_area_sqft": model.get("covered_area_sqft"),
+        # covered area for the OEM spec-package density: the project's own
+        # covered_sq_ft input overrides the budget figure (covered_area_sqft)
+        "covered_area_sqft": model.get("covered_sq_ft") or model.get("covered_area_sqft"),
         "system_type": model.get("system_type"),
         "bands": ids,
         "freqs": [freq[i] for i in ids],

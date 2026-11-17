@@ -10,6 +10,7 @@
   linearly in the log-frequency domain:
       loss(f) = loss(ref) * log10(f)/log10(ref)
 - Composite signal levels by linear (mW-domain) power summation.
+- Uplink maximum path loss for a DAS antenna branch (handset -> antenna).
 """
 
 import math
@@ -79,3 +80,35 @@ def composite_dbm(dbm_values):
     if not vals:
         return None
     return mw_to_dbm(sum(dbm_to_mw(v) for v in vals))
+
+
+def uplink_max_path_loss_db(params, antenna_gain_dbi=0.0, l_dist_db=0.0):
+    """Uplink maximum path loss (dB) for a DAS antenna branch.
+
+    params carries the config `uplink` values: handset_tx_dbm, edge_rbs,
+    rb_bw_hz, ul_sinr_db, system_noise_figure_db, margin_db. A cell-edge
+    handset puts handset_tx_dbm - 10*log10(edge_rbs) on the resource blocks it
+    transmits on; the antenna must receive one resource block above the noise
+    floor -174 dBm/Hz + 10*log10(rb_bw_hz) + system_noise_figure_db plus
+    ul_sinr_db, less margin_db, through the same passive distribution loss
+    (L_dist) the downlink sees:
+
+        UL max PL = handset_tx_dbm - 10*log10(edge_rbs) + antenna_gain_dbi
+                    - L_dist - (-174 + 10*log10(rb_bw_hz)
+                                + system_noise_figure_db + ul_sinr_db)
+                    - margin_db
+    """
+    handset = float(params.get("handset_tx_dbm", 23.0))
+    rbs = float(params.get("edge_rbs", 6.0))
+    rb_bw = float(params.get("rb_bw_hz", 180000.0))
+    sinr = float(params.get("ul_sinr_db", 0.0))
+    nf = float(params.get("system_noise_figure_db", 20.0))
+    margin = float(params.get("margin_db", 0.0))
+    if handset < 0:
+        raise ValueError("uplink.handset_tx_dbm must be >= 0")
+    if rbs < 1 or rb_bw <= 0:
+        raise ValueError("uplink.edge_rbs must be >= 1 and rb_bw_hz > 0")
+    return (handset - 10.0 * math.log10(rbs) + float(antenna_gain_dbi)
+            - float(l_dist_db)
+            - (-174.0 + 10.0 * math.log10(rb_bw) + nf + sinr)
+            - margin)

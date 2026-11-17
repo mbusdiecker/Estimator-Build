@@ -269,8 +269,33 @@ def create_project(payload: dict = Body(default_factory=dict)):
         model["building_type"] = _check_building_type(payload["building_type"])
     if payload.get("system_type"):
         model["system_type"] = _check_system_type(payload["system_type"])
+    if payload.get("covered_sq_ft") is not None:
+        model["covered_sq_ft"] = _positive_num(payload["covered_sq_ft"], "covered_sq_ft")
+    if payload.get("floor_count") is not None:
+        model["floor_count"] = _positive_int(payload["floor_count"], "floor_count")
     proj = db.create_project(name, model)
     return _public_project(proj)
+
+
+def _positive_num(value, name):
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=422, detail="%s must be a number" % name)
+    if not v > 0:
+        raise HTTPException(status_code=422, detail="%s must be above 0" % name)
+    return v
+
+
+def _positive_int(value, name):
+    try:
+        f = float(value)
+        v = int(value)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=422, detail="%s must be an integer" % name)
+    if f != v or v < 1:
+        raise HTTPException(status_code=422, detail="%s must be a whole number >= 1" % name)
+    return v
 
 
 @router.get("/projects/{pid}")
@@ -337,6 +362,18 @@ def patch_project(pid: int, payload: dict = Body(...)):
             if not v > 0:
                 raise HTTPException(status_code=422, detail="covered_area_sqft must be above 0")
             model["covered_area_sqft"] = v
+    if "covered_sq_ft" in payload:
+        v = payload["covered_sq_ft"]
+        if v in (None, ""):
+            model.pop("covered_sq_ft", None)
+        else:
+            model["covered_sq_ft"] = _positive_num(v, "covered_sq_ft")
+    if "floor_count" in payload:
+        v = payload["floor_count"]
+        if v in (None, ""):
+            model.pop("floor_count", None)
+        else:
+            model["floor_count"] = _positive_int(v, "floor_count")
     if "bands" in payload:
         if payload["bands"] is None:
             model.pop("bands", None)

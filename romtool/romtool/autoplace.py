@@ -40,12 +40,13 @@ import time
 from array import array
 
 from . import config as cfgmod
-from .cascade import remote_max_out_dbm, solve_cascade
+from .cascade import (remote_max_out_dbm, remote_operators_sharing,
+                      remote_per_operator_split, solve_cascade)
 from .clutter_map import ClutterField, ClutterMapError
 from .lossmodel import (LossModelError, floor_clutter_map, resolve_loss_model,
                         system_types)
 from .zones import height_offset_fn, height_offset_range, resolve_zones, zone_at
-from .physics import scale_wall_loss_db
+from .physics import scale_wall_loss_db, uplink_max_path_loss_db
 from .geometry import build_wall_index, ray_wall_crossings
 
 AUTO_FLAG = "auto"
@@ -75,6 +76,9 @@ SOURCE_KEYS = ("subtype", "donor_gain_db", "feeder_loss_db", "injection_dbm",
                "ambient_dbm")
 REPEATER_KEYS = ("dl_gain_db", "max_dl_out_dbm", "ports", "dl_gain_db_per_band")
 REMOTE_KEYS = ("dl_gain_db", "max_dl_out_dbm", "max_dl_out_dbm_per_band", "ports")
+TOPOLOGIES = ("auto", "star", "trunk4")
+UPLINK_KEYS = ("handset_tx_dbm", "edge_rbs", "rb_bw_hz", "ul_sinr_db",
+               "system_noise_figure_db", "margin_db")
 
 _FILL_SAMPLES = 24
 _MIN_CRIT_POINTS = 12
@@ -255,6 +259,15 @@ class _Band:
             else:
                 hi = mid
         return lo
+
+    def radius_from_pl(self, pl_db, clutter=None, dv=0.0):
+        """Distance where the band's propagation loss reaches pl_db (no walls).
+        A link-budget limit (downlink EIRP - threshold, or the uplink formula)
+        becomes a coverage radius through this same model.
+
+        radius_m(eirp, thr) solves eirp - PL(d) = thr; with eirp = pl_db and
+        thr = 0 that is exactly PL(d) = pl_db."""
+        return self.radius_m(float(pl_db), 0.0, clutter=clutter, dv=dv)
 
 
 def _contrib(grid, b, ax, ay, eirp, extra_db, walls, dv=None):
@@ -482,7 +495,14 @@ def _parse_taps(config, ap, raw, ways, nmax):
 def _parse_remotes(config, ap, raw, feed_element_id):
     """`remotes`: omitted/false (off, the default), true (auto-size), an int
     (fixed count) or a dict {count, max_count, fiber_cable_id, dl_gain_db,
-    max_dl_out_dbm, max_dl_out_dbm_per_band, ports, enabled}."""
+    max_dl_out_dbm, max_dl_out_dbm_per_band, ports, operators, enabled}.
+
+    `operators` (optional) is how many operators (carriers) share each
+    remote's COMPOSITE per-band output. Omitted = 1 operator, which is exactly
+    the old behaviour (the rating is used as one operator's power). `true`
+    takes the standing assumption from config remote.operators_sharing; a
+    number sets it directly. The per-operator cap used for coverage is
+    rated_dbm - 10*log10(operators) per band."""
     if raw is None or raw is False:
         return {"enabled": False}
     if raw is True:
@@ -509,17 +529,75 @@ def _parse_remotes(config, ap, raw, feed_element_id):
     fiber = raw.get("fiber_cable_id") or ap["fiber_cable_id"]
     if fiber not in config.get("cables", {}):
         raise AutoplaceError("fiber_cable_id '%s' is not in config cables" % fiber)
+    ops_raw = raw.get("operators")
+    if ops_raw is None or ops_raw is False:
+        operators = 1.0
+    elif ops_raw is True:
+        ops_cfg = config["remote"].get("operators_sharing")
+        if ops_cfg is None:
+            raise AutoplaceError("remotes.operators=true needs config "
+                                 "remote.operators_sharing")
+        operators = _num(ops_cfg, "remote.operators_sharing")
+    else:
+        operators = _num(ops_raw, "remotes.operators")
+    if operators < 1.0:
+        raise AutoplaceError("remotes.operators must be >= 1")
     element = {}
     for k in REMOTE_KEYS:
         if k in raw:
             element[k] = raw[k]
     for k in raw:
-        if k not in REMOTE_KEYS + ("count", "max_count", "fiber_cable_id", "enabled"):
+        if k not in REMOTE_KEYS + ("count", "max_count", "fiber_cable_id",
+                                   "enabled", "operators"):
             raise AutoplaceError("remotes option '%s' not allowed (use %s)"
                                  % (k, ", ".join(REMOTE_KEYS + ("count", "max_count",
                                                                 "fiber_cable_id"))))
     return {"enabled": True, "count": count, "max_count": max_count,
-            "fiber": fiber, "element": element}
+            "fiber": fiber, "element": element, "operators": float(operators)}
+
+
+def _parse_uplink(config, raw):
+    """`uplink` request key: omitted (on, config uplink values, the default),
+    false (the check is off), true, or an object overriding select config
+    uplink values. Returns {"enabled", "params" | None}."""
+    base = dict(config.get("uplink") or {})
+    enabled = True
+    if raw is None:
+        raw = {}
+    if isinstance(raw, bool):
+        enabled, raw = bool(raw), {}
+    if not isinstance(raw, dict):
+        raise AutoplaceError("uplink must be omitted, false, true or an object")
+    if raw.get("enabled") is False:
+        enabled = False
+    for k in raw:
+        if k not in UPLINK_KEYS + ("enabled",):
+            raise AutoplaceError("uplink option '%s' not allowed (use %s)"
+                                 % (k, ", ".join(UPLINK_KEYS)))
+    if not enabled:
+        return {"enabled": False, "params": None}
+    params = {}
+    for k in UPLINK_KEYS:
+        v = raw.get(k, base.get(k))
+        if v is None:
+            raise AutoplaceError("uplink.%s must be set in config 'uplink' or "
+                                 "the request" % k)
+        params[k] = _num(v, "uplink.%s" % k)
+    if params["edge_rbs"] < 1.0 or params["rb_bw_hz"] <= 0.0:
+        raise AutoplaceError("uplink.edge_rbs must be >= 1 and uplink.rb_bw_hz > 0")
+    if params["handset_tx_dbm"] < 0.0:
+        raise AutoplaceError("uplink.handset_tx_dbm must be >= 0")
+    return {"enabled": True, "params": params}
+
+
+def _parse_topology(raw):
+    """`topology`: "auto" (the default, the existing splitter/tap trees), or
+    "star" / "trunk4" (distribution topology per remote)."""
+    if raw is None:
+        return "auto"
+    if raw not in TOPOLOGIES:
+        raise AutoplaceError("topology must be one of %s" % ", ".join(TOPOLOGIES))
+    return raw
 
 
 WALL_INSET_M = 0.5
@@ -639,7 +717,12 @@ def _parse_request(model, config, floor, request):
 
     head = req.get("headend") or {}
     remotes = _parse_remotes(config, ap, req.get("remotes"), req.get("feed_element_id"))
+    topology = _parse_topology(req.get("topology"))
+    uplink = _parse_uplink(config, req.get("uplink"))
     taps = _parse_taps(config, ap, req.get("taps"), ways, max(cap, 2))
+    if taps["enabled"] and topology != "auto":
+        raise AutoplaceError("taps apply to the 'auto' topology only; choose "
+                             "taps or topology='%s'" % topology)
     branch_hw = _parse_branch_losses(config, req.get("branch_losses"), len(ids))
     st = req.get("system_type") or None
     if st is not None and st not in system_types(config):
@@ -654,6 +737,7 @@ def _parse_request(model, config, floor, request):
         "use_repeater": bool(req.get("use_repeater", True)),
         "trunk": trunk, "branch": branch, "donor": donor, "ways": ways,
         "outline": outline, "headend": head, "remotes": remotes, "taps": taps,
+        "topology": topology, "uplink": uplink,
         "branch_hw": branch_hw,
         "feed_element_id": req.get("feed_element_id"),
     }
@@ -762,6 +846,7 @@ class _Chain:
         self.fid = p["_prefix"]
         self.ppm = ppm
         self.p = p
+        self.config = config
         self.slack = float(p["ap"]["slack_m_per_run"])
         self.elements = []
         self.counts = {"antenna": 0, "splitter": 0, "run": 0, "remote": 0,
@@ -769,6 +854,7 @@ class _Chain:
         self.tree_stats = []      # per distribution tree: (antennas, plan entry)
         self.remote_info = []
         self.fiber_m = 0.0
+        self._cur_coax = None     # set while walking one remote's distribution
 
     def _run(self, frm, to, cable_id, fiber=False, port=None):
         route = route_points((frm["x"], frm["y"]), (to["x"], to["y"]),
@@ -778,6 +864,8 @@ class _Chain:
         if fiber:
             self.counts["fiber_run"] += 1
             self.fiber_m += length
+        elif getattr(self, "_cur_coax", None) is not None:
+            self._cur_coax += length
         run = {
             "id": "%s_auto_r%d" % (self.fid, self.counts["run"]),
             "type": "cable_run", "label": "AR%d" % self.counts["run"],
@@ -820,6 +908,11 @@ class _Chain:
               "label": "RU%d" % n, "x": round(x, 1), "y": round(y, 1),
               AUTO_FLAG: True}
         el.update(copy.deepcopy(self.p["remotes"]["element"]))
+        # the per-operator split: the composite rating is shared by the
+        # operators on the remote, so the element carries how many share it
+        ops = self.p["remotes"]["operators"]
+        if ops > 1.0:
+            el["operators_sharing"] = ops
         self.elements.append(el)
         return {"id": el["id"], "x": el["x"], "y": el["y"], "kind": "remote"}
 
@@ -833,9 +926,22 @@ class _Chain:
         return {"id": el["id"], "x": el["x"], "y": el["y"], "kind": kind}
 
     def tree(self, ants, feed_xy=None):
-        """Distribution tree over antenna nodes; returns its root node (the
-        single antenna when only one). Equal splitters, or the tap-aware plan
-        when the request asks for taps."""
+        """Distribution over antenna nodes; returns its root node (the single
+        antenna when only one). The topology decides the shape:
+
+        - "auto": equal splitters, or the tap-aware plan when the request asks
+          for taps (the existing behaviour, unchanged);
+        - "star": splitter stages stacked at the feed, one home run per antenna;
+        - "trunk4": a splitter at the feed (4-way when four trunks leave it)
+          feeding orthogonal coax trunks that tap off at each antenna.
+        """
+        topo = self.p["topology"]
+        if len(ants) == 1:
+            return ants[0]
+        if topo != "auto":
+            if topo == "star":
+                return self.tree_star(ants, feed_xy)
+            return self.tree_trunk4(ants, feed_xy)
         taps = self.p["taps"]
         if taps["enabled"] and len(ants) > 1:
             if feed_xy is None:
@@ -845,6 +951,119 @@ class _Chain:
                                     taps["equal"][len(ants)]))
             return self._node(list(ants), feed_xy)
         return self.tree_equal(ants)
+
+    def _feed_xy(self, feed_xy, ants):
+        if feed_xy is None:
+            return (sum(a["x"] for a in ants) / len(ants),
+                    sum(a["y"] for a in ants) / len(ants))
+        return feed_xy
+
+    def tree_star(self, ants, feed_xy):
+        """Spoke and wheel per remote: every splitter stage is stacked at the
+        remote (2/3/4-way parts from config), and each antenna gets one home
+        run of coax from its splitter. Loss to an antenna = the splitter ILs
+        on its path + its own run length x cable loss per metre at the band
+        (the cascade computes exactly that from the elements). Grouping uses
+        the same <=ways-groups recursion as the auto tree, only the splitter
+        positions change."""
+        fx, fy = self._feed_xy(feed_xy, ants)
+        ways = self.p["ways"]
+        cur = list(ants)
+        while len(cur) > 1:
+            groups = _partition(cur, int(math.ceil(len(cur) / float(ways))), ways)
+            nxt = []
+            for grp in groups:
+                if len(grp) == 1:
+                    nxt.append(grp[0])
+                    continue
+                sp = self.splitter(fx, fy, len(grp))
+                for c in grp:
+                    if c["kind"] == "splitter":
+                        # stage-to-stage jumper between two splitters at the remote
+                        self._run(sp, c, self.p["trunk"])
+                    else:
+                        self._run(sp, c, self._cable_for(c))   # the home run
+                nxt.append(sp)
+            cur = nxt
+        return cur[0] if len(cur) == 1 else self.splitter(fx, fy, 2)
+
+    # trunk4 ---------------------------------------------------------------
+
+    def _trunk_dirs(self, ants, fx, fy):
+        """Antennas grouped onto the four orthogonal trunk directions from the
+        feed (north/east/south/west by the larger delta; ties go to N/S),
+        each trunk's antennas in order from the trunk head outward."""
+        groups = {"N": [], "E": [], "S": [], "W": []}
+        for a in ants:
+            dx, dy = a["x"] - fx, a["y"] - fy
+            if abs(dy) >= abs(dx):
+                groups["N" if dy <= 0 else "S"].append(a)
+            else:
+                groups["E" if dx > 0 else "W"].append(a)
+        out = []
+        for name in ("N", "E", "S", "W"):
+            grp = sorted(groups[name], key=lambda a: ((a["x"] - fx) ** 2
+                                                      + (a["y"] - fy) ** 2, a["id"]))
+            if grp:
+                out.append((name, grp))
+        return out
+
+    def _sorted_tap_devices(self):
+        """Tap/coupler inventory (the same device list _tap_table builds its
+        plans from), ascending by coupled loss."""
+        return sorted(_tap_devices(self.config), key=lambda d: (d[3], d[0], d[1]))
+
+    def _pick_tap_device(self, devs, need):
+        """Device whose coupled loss comes smallest to `need` from below (ties:
+        kind, part_id). None stays available; callers handle an empty list."""
+        return min(devs, key=lambda d: (max(d[3] - need, 0.0), d[3], d[0], d[1]))
+
+    def _tap_chain(self, grp, head, devs):
+        """Tappers/couplers at each antenna of one trunk, in trunk order: the
+        antenna taps (or couples) off its device, the through port continues
+        to the next. The first device (nearest the trunk head) gets the
+        largest available tap loss; each later one needs k_max minus the
+        through losses already passed, so the far antennas tap the smallest
+        ratios. Returns the chain's first device element (the trunk root)."""
+        prev, first, through = head, None, 0.0
+        k_max = devs[-1][3] if devs else 0.0
+        for ant in grp:
+            dev = self._pick_tap_device(devs, k_max - through) if devs else None
+            kind, pid, thru = (dev[0], dev[1], dev[2]) if dev else ("tapper", "default", 0.0)
+            node = self.tap_device(kind, pid, ant["x"], ant["y"])
+            if first is None:
+                first = node
+            if prev is not None:
+                self._run(prev, node, self.p["trunk"], port="through")
+            self._run(node, ant, self._cable_for(ant),
+                      port="tap" if kind == "tapper" else "coupled")
+            through += thru
+            prev = node
+        return first
+
+    def tree_trunk4(self, ants, feed_xy):
+        """A splitter at the remote feeds orthogonal coax trunks (north, east,
+        south, west of the remote); each trunk taps off at its antennas in
+        order, using the tap/coupler parts in config, so the tap values
+        equalise antenna power along the trunk. Loss to an antenna = splitter
+        loss + tap coupling loss + through losses of earlier taps + trunk
+        length x cable loss per metre - all computed by the cascade from the
+        real elements."""
+        fx, fy = self._feed_xy(feed_xy, ants)
+        trunks = self._trunk_dirs(ants, fx, fy)
+        devs = self._sorted_tap_devices()
+        if not devs:
+            raise AutoplaceError("config parts has no tappers or couplers for "
+                                 "topology 'trunk4'")
+        if len(trunks) > 1:
+            ways = min(max(len(trunks), 2), self.p["ways"])
+            hub = self.splitter(fx, fy, ways)
+            for _name, grp in trunks:
+                self._tap_chain(grp, hub, devs)
+            return hub
+        # a single trunk: its first tap device is the chain root and takes the
+        # feed run from the remote
+        return self._tap_chain(trunks[0][1], None, devs)
 
     def _node(self, items, feed_xy):
         n = len(items)
@@ -976,8 +1195,10 @@ class _Chain:
                                                 a["id"]))
                 cx, cy = near["x"], near["y"]
             ru = self.remote(cx, cy)
+            self._cur_coax = 0.0                      # this zone's coax footage
             root = self.tree(zone, (ru["x"], ru["y"]))
             self._run(ru, root, self._cable_for(root))
+            zone_coax, self._cur_coax = self._cur_coax, None
             fiber_len = self._run(head, ru, p["remotes"]["fiber"], fiber=True)
             self.remote_info.append({
                 "element_id": ru["id"], "label": "RU%d" % self.counts["remote"],
@@ -985,6 +1206,7 @@ class _Chain:
                 "x_m": round(ru["x"] / self.ppm, 2),
                 "y_m": round(ru["y"] / self.ppm, 2),
                 "antennas": len(zone), "fiber_length_m": fiber_len,
+                "coax_m": round(zone_coax, 2),
                 "antenna_ids": [a["id"] for a in zone]})
         return head
 
@@ -993,7 +1215,7 @@ class _Chain:
 
 class _Planner:
     def __init__(self, grid, bands, reqs, eirp, fixed_lin, margin, cap, ppm,
-                 outline, walls, min_radius_m):
+                 outline, walls, min_radius_m, ul_pl=None):
         self.grid = grid
         self.bands = bands                      # id -> _Band
         self.reqs = reqs
@@ -1010,9 +1232,14 @@ class _Planner:
         self.seed_n = 0
         self.pruned = 0
         self.min_radius_m = min_radius_m
-        # coverage radius from the link budget (no walls), most demanding req
+        self.ul_pl = dict(ul_pl or {})          # id -> uplink max path loss (dB)
+        # coverage radius from the link budget (no walls), most demanding req.
+        # Per band the downlink and uplink limits each give a radius (the same
+        # propagation model inverts both); coverage planning uses the smaller.
         self.radius_m = None
         self.cut_m = {}
+        self.dl_radius_m = {}
+        self.ul_radius_m = {}
         for r in reqs:
             b = bands[r.band]
             # seed spacing uses the lowest-reaching height (max dv); the window
@@ -1020,6 +1247,14 @@ class _Planner:
             rad = b.radius_m(eirp[r.band], r.thr_dbm, dv=b.dv_max)
             cut = b.radius_m(eirp[r.band], r.thr_dbm - 10.0, clutter=b.clutter_min,
                              dv=b.dv_min)
+            self.dl_radius_m[r.band] = rad
+            if r.band in self.ul_pl:
+                ul = b.radius_from_pl(self.ul_pl[r.band], dv=b.dv_max)
+                ul_cut = b.radius_from_pl(self.ul_pl[r.band] - 10.0,
+                                          clutter=b.clutter_min, dv=b.dv_min)
+                self.ul_radius_m[r.band] = ul
+                rad = min(rad, ul)
+                cut = min(cut, ul_cut)
             self.radius_m = rad if self.radius_m is None else min(self.radius_m, rad)
             self.cut_m[r.band] = max(self.cut_m.get(r.band, 0.0), cut)
         self.k = {bid: bands[bid].k_lin(eirp[bid]) for bid in bands}
@@ -1053,11 +1288,17 @@ class _Planner:
         if self.met():
             return
         if self.radius_m < self.min_radius_m:
+            ul_tight = [bid for bid in self.bands
+                        if self.ul_radius_m.get(bid) is not None
+                        and self.ul_radius_m[bid] is not None
+                        and self.ul_radius_m[bid] < self.dl_radius_m.get(bid, 1e9)]
+            extra = (" the uplink budget sets the smallest radius (band %s)"
+                     % ", ".join(ul_tight)) if ul_tight else ""
             raise AutoplaceError(
                 "link budget supports only a %.1f m coverage radius (minimum %.1f m): "
-                "per-antenna EIRP is too low for the threshold. Raise the repeater "
+                "per-antenna EIRP is too low for the threshold%s. Raise the repeater "
                 "gain / injection level or lower the split count before placing."
-                % (self.radius_m, self.min_radius_m))
+                % (self.radius_m, self.min_radius_m, extra))
         r_px = self.radius_m * self.ppm
         xs = g.xs
         ys = g.ys
@@ -1298,6 +1539,43 @@ def _eirps_from_solve(sol, band_ids):
     return out
 
 
+def _unit_out_dbm(sol, band_ids, remotes_on):
+    """Out of the floor's feeding active unit per band (dBm): the remote units
+    when remotes are on, else the repeater, else the source. The uplink check
+    takes the passive distribution loss the downlink sees from this level."""
+    out = {}
+    for bid in band_ids:
+        bd = sol["bands"].get(bid)
+        if bd is None:
+            raise AutoplaceError("band '%s' was not solved" % bid)
+        node = None
+        if remotes_on:
+            node = next((n for n in bd["nodes"] if n["type"] == "remote"), None)
+        if node is None:
+            node = next((n for n in bd["nodes"] if n["type"] == "repeater"), None)
+        if node is None:
+            node = next((n for n in bd["nodes"] if n["type"] == "source"), None)
+        out[bid] = node["out_dbm"] if node else None
+    return out
+
+
+def _uplink_plan_limits(uplink, bands, e_plan, unit_out, ant_gain):
+    """Per-band uplink maximum path loss used for planning: the handset's
+    power per resource block must get through the same passive distribution
+    loss the downlink planning assumed (the solved unit output minus the
+    per-antenna planning port). None entries: band skipped."""
+    if not (uplink or {}).get("enabled"):
+        return None
+    out = {}
+    for bid, b in bands.items():
+        e, u = e_plan.get(bid), (unit_out or {}).get(bid)
+        if e is None or u is None:
+            continue
+        dist = max(float(u) - (float(e) - float(ant_gain)), 0.0)
+        out[bid] = uplink_max_path_loss_db(uplink["params"], ant_gain, dist)
+    return out or None
+
+
 def _fixed_antennas(model, floor, base_elements):
     """Non-auto antennas anywhere in the model: [(element, floor_dict)]."""
     out = []
@@ -1354,6 +1632,69 @@ def _summarize(reqs, lin, grid):
             "min_area_pct": r.min_pct, "n_points": r.n_in, "n_covered": cov,
             "covered_pct": pct, "pass": ok})
     return rows, ok_all
+
+
+def _limiting_report(p, uplink, bands, eirps, sol, chain, ant_gain, thr_dl,
+                     unit_out):
+    """Per-band downlink and uplink maximum path loss (dB) and coverage radius
+    (m) on the final layout, the direction that limits each band, and the one
+    band + direction that sets antenna spacing (the smallest radius).
+
+    Downlink max path loss = per-antenna EIRP - the RSRP threshold (the same
+    basis the coverage planning uses). Uplink max path loss = the config
+    uplink formula with, per antenna, L_dist = the passive loss between the
+    feeding active unit and the antenna (unit output - arrival at the
+    antenna, plus the antenna's branch hardware). Both limits become radii
+    through the band's propagation model, exactly as planning inverts them."""
+    ids = [e["id"] for e in chain.elements if e["type"] == "antenna"]
+    branch = {e["id"]: float(e.get("branch_loss_db") or 0.0)
+              for e in chain.elements if e["type"] == "antenna"}
+    per_band = {}
+    top = None
+    for bid in p["bands"]:
+        b = bands[bid]
+        in_dbm = {a["element_id"]: float(a["in_dbm"])
+                  for a in sol["bands"][bid]["antennas"]}
+        dl_pl = ul_pl = dl_r = ul_r = None
+        direction = radius = None
+        if ids:
+            dl_pl = min(eirps[bid][a][0] - thr_dl for a in ids if a in eirps[bid])
+            dl_r = b.radius_from_pl(dl_pl)
+            if uplink["enabled"] and (unit_out or {}).get(bid) is not None:
+                uls = [uplink_max_path_loss_db(
+                           uplink["params"], ant_gain,
+                           float(unit_out[bid]) - in_dbm[a] + branch.get(a, 0.0))
+                       for a in ids if a in in_dbm]
+                if uls:
+                    ul_pl = min(uls)
+                    ul_r = b.radius_from_pl(ul_pl)
+            if ul_r is None or dl_r <= ul_r:
+                direction, radius = "downlink", dl_r
+            else:
+                direction, radius = "uplink", ul_r
+            radius = dl_r if ul_r is None else min(dl_r, ul_r)
+        per_band[bid] = {
+            "downlink_max_path_loss_db": (round(dl_pl, 2) if dl_pl is not None else None),
+            "uplink_max_path_loss_db": (round(ul_pl, 2) if ul_pl is not None else None),
+            "downlink_radius_m": (round(dl_r, 2) if dl_r is not None else None),
+            "uplink_radius_m": (round(ul_r, 2) if ul_r is not None else None),
+            "limiting": direction,
+            "radius_m": (round(radius, 2) if radius is not None else None)}
+        if radius is not None and (top is None or radius < top[2]):
+            top = (bid, direction, radius)
+    return {
+        "uplink_enabled": bool(uplink["enabled"]),
+        "downlink_basis": "per-antenna EIRP minus the RSRP threshold",
+        "uplink_basis": ("handset power per resource block through the same "
+                         "passive loss as the downlink, against the "
+                         "base-station noise floor and required SINR"
+                         if uplink["enabled"] else None),
+        "bands": per_band,
+        "limiting_band": top[0] if top else None,
+        "limiting_direction": top[1] if top else None,
+        "radius_m": (round(top[2], 2) if top is not None and top[2] is not None
+                     else None),
+    }
 
 
 def _headend_xy(p, outline, grid, ppm):
@@ -1525,8 +1866,14 @@ def autoplace_floor(model, config, floor_id, request):
     def install_remotes(positions):
         """Smallest remote count (zones) whose link budget closes: every
         antenna port at or above min_antenna_port_dbm on every band. A fixed
-        remotes.count skips the search. When no count closes (for example a
-        head-end level that is too low), grow only while the worst port
+        remotes.count skips the search. Each count is solved through the real
+        cascade, so the per-operator cap (when remotes.operators is set) and
+        the distribution topology carry into the size. Lower counts leave more
+        antennas per remote (deeper splits, less power each), so the search
+        starts at the fewest remotes whose per-operator power, after the
+        distribution loss, can cover the floor at the planned antenna count
+        and adds remotes until the budget closes; if no count closes (for
+        example a head-end level that is too low), grow only while the worst port
         return the smallest count whose worst port is within 0.25 dB of the best."""
         rem = p["remotes"]
         n = len(positions)
@@ -1559,11 +1906,18 @@ def autoplace_floor(model, config, floor_id, request):
 
     fixed = _fixed_antennas(model, floor, base_elements)
 
+    # the placed antenna is the model default for this request (never a
+    # directional type): its gain enters both link budgets
+    ant_gain = float(((config.get("antennas") or {}).get(p["antenna_id"]) or {}
+                      ).get("gain_db", 2.0))
+    uplink = p["uplink"]
+
     # --- iteration 0: stub chain to estimate per-antenna EIRP --------------
     n0 = max(1, int(math.ceil(area_m2 / 300.0)))
     stub_pos = _stub_positions(grid_plan, p["outline"], ppm, n0, None)
     ch0, sol0 = install_and_solve(stub_pos)
     eirps = _eirps_from_solve(sol0, p["bands"])
+    unit_out = _unit_out_dbm(sol0, p["bands"], p["remotes"]["enabled"])
     auto_ids = [e["id"] for e in ch0.elements if e["type"] == "antenna"]
     e_plan = {bid: _percentile25([eirps[bid][a][0] for a in auto_ids])
               for bid in p["bands"]}
@@ -1579,8 +1933,10 @@ def autoplace_floor(model, config, floor_id, request):
         for it in range(int(ap["max_outer_iterations"])):
             outer_total += 1
             fixed_lin = _fixed_lin(grid_plan, bands, floor, fixed, eirps)
+            ul_pl = _uplink_plan_limits(uplink, bands, e_plan, unit_out, ant_gain)
             pl = _Planner(grid_plan, bands, reqs_plan, e_plan, fixed_lin, margin,
-                          p["cap"], ppm, p["outline"], walls, float(ap["min_radius_m"]))
+                          p["cap"], ppm, p["outline"], walls, float(ap["min_radius_m"]),
+                          ul_pl=ul_pl)
             pl.seed()
             stalled = pl.fill()
             pl.prune()
@@ -1591,6 +1947,7 @@ def autoplace_floor(model, config, floor_id, request):
                 positions = positions[:p["cap"]]
             ch, sol = install_and_solve(positions)
             eirps = _eirps_from_solve(sol, p["bands"])
+            unit_out = _unit_out_dbm(sol, p["bands"], p["remotes"]["enabled"])
             ids = [e["id"] for e in ch.elements if e["type"] == "antenna"]
             auto_xy = [(e["id"], e["x"], e["y"]) for e in ch.elements
                        if e["type"] == "antenna"]
@@ -1740,7 +2097,10 @@ def autoplace_floor(model, config, floor_id, request):
         ch = final["chain"]
         counts["remotes"] = ch.counts["remote"]
         counts["fiber_runs"] = ch.counts["fiber_run"]
+        counts.update({k: v for k, v in (("tappers", ch.counts["tapper"]),
+                                         ("couplers", ch.counts["coupler"])) if v})
         rem_el = {e["id"]: e for e in ch.elements if e["type"] == "remote"}
+        ops = p["remotes"]["operators"]
         units = []
         for ri in ch.remote_info:
             u = dict(ri)
@@ -1752,12 +2112,18 @@ def autoplace_floor(model, config, floor_id, request):
                 bid: remote_max_out_dbm(rem_el[ri["element_id"]],
                                         config.get("remote", {}), bid)
                 for bid in p["bands"]}
+            u["operators_sharing"] = ops
+            u["per_operator_out_dbm"] = {
+                bid: (round(remote_per_operator_split(v, ops), 2)
+                      if v is not None else None)
+                for bid, v in u["max_dl_out_dbm"].items()}
             units.append(u)
         closed = getattr(ch, "closed", True)
         remotes_out = {
             "count": ch.counts["remote"], "fixed_count": p["remotes"]["count"],
             "fiber_m": round(ch.fiber_m, 2), "fiber_cable_id": p["remotes"]["fiber"],
             "head_end": {"x_px": headend_xy[0], "y_px": headend_xy[1]},
+            "operators_sharing": ops,
             "budget_closed": bool(closed),
             "worst_antenna_port_dbm": (round(ch.worst_port_dbm, 2)
                                        if getattr(ch, "worst_port_dbm", None) is not None
@@ -1769,6 +2135,10 @@ def autoplace_floor(model, config, floor_id, request):
                 "(worst antenna port %.1f dBm < %.1f dBm); raise the head-end "
                 "level or the remote output, or allow more remotes"
                 % (ch.counts["remote"], ch.worst_port_dbm, min_port))
+    elif final["chain"].counts["tapper"] or final["chain"].counts["coupler"]:
+        counts.update({k: v for k, v in (("tappers", final["chain"].counts["tapper"]),
+                                         ("couplers", final["chain"].counts["coupler"]))
+                       if v})
     total_ants = sum(1 for fl in model.get("floors", [])
                      for el in fl.get("elements", []) if el.get("type") == "antenna")
 
@@ -1786,6 +2156,42 @@ def autoplace_floor(model, config, floor_id, request):
                  for bid in p["bands"]}
     coverage = {bid: (rows[bid][0]["covered_pct"] if bid in rows and rows[bid] else None)
                 for bid in p["bands"]}
+
+    # limiting band and direction (downlink EIRP - RSRP threshold vs the
+    # uplink budget, per band, on the final solved layout)
+    thr_dl = p["threshold_dbm"] - p["rsrp_offset_db"]
+    limiting = _limiting_report(p, uplink, bands, eirps, sol, final["chain"],
+                                ant_gain, thr_dl,
+                                _unit_out_dbm(sol, p["bands"],
+                                              p["remotes"]["enabled"]))
+    lb, ld = limiting["limiting_band"], limiting["limiting_direction"]
+    limit_row = (limiting["bands"][lb] if lb else None)
+    limit_pl = (limit_row["downlink_max_path_loss_db" if ld == "downlink"
+                            else "uplink_max_path_loss_db"]
+                if limit_row else None)
+    if remotes_out is not None:
+        u0 = remotes_out["units"][0] if remotes_out["units"] else None
+        rem_txt = ("remotes %d" % remotes_out["count"])
+        if u0:
+            avg = sum(u0["antennas"] for u0 in remotes_out["units"]) / len(remotes_out["units"])
+            rem_txt += " (%.1f antennas/remote, %.1f m coax/remote)" % (
+                avg, sum(u["coax_m"] for u in remotes_out["units"])
+                / max(len(remotes_out["units"]), 1))
+        rated = next(iter(u0["max_dl_out_dbm"].values()), None) if u0 else None
+        perop = next(iter(u0["per_operator_out_dbm"].values()), None) if u0 else None
+        if rated is not None and remotes_out["operators_sharing"] > 1:
+            rem_txt += "; rated %.1f dBm/band = %.1f dBm per operator (%s sharing)" % (
+                rated, perop, remotes_out["operators_sharing"])
+    else:
+        rem_txt = "head-end fed"
+    summary = (
+        "placed %d antenna(s) (omni %s), %s; coverage target %s; "
+        "limiting radio: band %s on the %s link, %.1f dB max path loss, %.2f m "
+        "coverage radius"
+        % (counts["antennas"], p["antenna_id"], rem_txt,
+           "met" if ok_all else "NOT met",
+           lb or "-", ld or "-", limit_pl if limit_pl is not None else 0.0,
+           limit_row["radius_m"] if limit_row else 0.0))
 
     return {
         "floor_id": floor_id,
@@ -1812,6 +2218,11 @@ def autoplace_floor(model, config, floor_id, request):
             "history": history},
         "planning_eirp_dbm": {bid: round(v, 2) for bid, v in e_plan.items()},
         "antennas": ant_rows,
+        "topology": p["topology"],
+        "uplink": ({"enabled": True, "params": uplink["params"]}
+                   if uplink["enabled"] else {"enabled": False}),
+        "limiting": limiting,
+        "summary": summary,
         "elements_added": counts,
         "routing": {"trunk_axis": p["_axis"], "bend": "L-shaped, one bend point",
                     "length_rule": "sum of segment lengths / ppm + slack_m_per_run"},

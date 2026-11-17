@@ -87,6 +87,73 @@ def _count_by_floor(model, types):
     return per_floor, total
 
 
+def covered_inputs(model):
+    """Covered area (sq ft) and floor count with the source that supplied each.
+
+    Order: the project's own inputs (model covered_sq_ft / floor_count), then
+    the floor plans (the sum of the floor outlines or canvas rectangles at the
+    floors' ppm; the number of floors in the model), then the budget figure
+    (model covered_area_sqft) for the area. Values are informational for the
+    draft basis, and covered_sq_ft also feeds the OEM spec-package density
+    when it is set."""
+    floors = _floors(model)
+    area_plans = 0.0
+    has_area = False
+    for fl in floors:
+        ppm = float(fl.get("ppm") or 0.0)
+        if ppm <= 0:
+            continue
+        w, h = float(fl.get("w_px") or 0.0), float(fl.get("h_px") or 0.0)
+        if w <= 0 or h <= 0:
+            continue
+        if fl.get("outline"):
+            pts = fl["outline"]
+            a2 = 0.0
+            n = len(pts)
+            for i in range(n):
+                x1, y1 = pts[i]
+                x2, y2 = pts[(i + 1) % n]
+                a2 += x1 * y2 - x2 * y1
+            area_px = abs(a2) / 2.0
+        else:
+            area_px = w * h
+        if area_px > 0:
+            has_area = True
+            area_plans += area_px / (ppm * ppm)
+    covered = None
+    source = None
+    if model.get("covered_sq_ft") is not None:
+        try:
+            covered = float(model["covered_sq_ft"])
+            source = "project_input"
+        except (TypeError, ValueError):
+            covered = source = None
+    if covered is None and has_area:
+        covered = round(area_plans * 10.7639104, 1)   # m^2 -> sq ft
+        source = "floor_plans"
+    if covered is None and not has_area and model.get("covered_area_sqft") is not None:
+        try:
+            covered = float(model["covered_area_sqft"])
+            source = "budget"
+        except (TypeError, ValueError):
+            covered = source = None
+    floor_count = len(floors)
+    fc_source = "floor_plans"
+    if model.get("floor_count") is not None:
+        try:
+            fc = int(model["floor_count"])
+        except (TypeError, ValueError):
+            fc = None
+        if fc is not None and fc >= 1:
+            floor_count, fc_source = fc, "project_input"
+    return {
+        "covered_sq_ft": covered,
+        "covered_sq_ft_source": source,
+        "floor_count": floor_count,
+        "floor_count_source": fc_source,
+    }
+
+
 def model_basis(model, config):
     """The RF-side numbers the draft is built from (returned alongside the
     draft so the estimator sees where every quantity came from)."""
@@ -134,6 +201,7 @@ def model_basis(model, config):
         "solved_bands": [b["id"] for b in (config.get("bands") or [])],
         "critical_areas_total": sum(len(fl.get("critical_areas") or [])
                                     for fl in floors),
+        **covered_inputs(model),
     }
 
 
@@ -423,6 +491,12 @@ def draft_from_model(model, romtool_cfg, catalog=None, rflink_cfg=None):
         "name": "%s (RF auto-draft)" % (model.get("name") or "RF project"),
         "locations": locations,
     }
+    cov = covered_inputs(model)
+    definition["covered_sq_ft"] = cov["covered_sq_ft"]
+    definition["floor_count"] = cov["floor_count"]
+    definition["covered_input_sources"] = {
+        "covered_sq_ft": cov["covered_sq_ft_source"],
+        "floor_count": cov["floor_count_source"]}
     if antenna_points:
         definition["antenna_points"] = antenna_points
     return {"definition": definition, "basis": basis, "warnings": []}

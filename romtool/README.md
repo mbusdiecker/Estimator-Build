@@ -606,7 +606,9 @@ cascade (the loss anchors are 0). A remote outputs `min(in + dl_gain_db,
 max_dl_out_dbm)` per band, like the repeater; `max_dl_out_dbm_per_band` sets a
 cap per band. The count is the smallest whose antenna ports all meet
 `min_antenna_port_dbm` on every band, searched from 1 to `max_remotes`
-(config, 16). A fixed `count` skips the search. When no count closes, the
+(config, 16). A fixed `count` skips the search. The count search and the
+output cap are per-operator aware when the request sets `remotes.operators`
+(see the physics update section). When no count closes, the
 count with the best worst port (smallest within 0.25 dB) is kept and a warning
 says so. The response has `remotes` (count, locations in px and m, antennas per
 remote, fiber length per remote and total, output per band, `budget_closed`).
@@ -699,6 +701,125 @@ bands B2_1900 and B12_700, threshold -72 dBm (composite domain), step 4: 37
 antennas in 3.4 s plain; 12.3 s with a clutter map (33 antennas, map build 0.1
 s); remotes with taps and branch losses 3.1 s. Verification at step 1 on that
 floor still takes tens of seconds (`verify_max_points=0`).
+
+## Physics update: real remote ratings, uplink limit, limiting band, distribution topologies
+
+This section changes how a remote's rated output enters the engine (per remote
+composite ratings instead of one 33 dBm stand-in per operator), adds an uplink
+coverage check and a per-band limiting report, and adds two distribution
+topologies per remote. Defaults are the legacy engine: with `topology` "auto",
+`uplink: false` and no `remotes.operators`, results are unchanged (pinned by
+`tests/test_physics_update.py`).
+
+**Operator power split.** A remote's rated output (config `remote.max_dl_out_dbm`
+or `max_dl_out_dbm_per_band`, or the element override) is the COMPOSITE power of
+the remote per band, shared by the operators (carriers) on it. The standing
+assumption is config `remote.operators_sharing` 3 (grade D, ref "Matt
+2026-11-16: assume 3 operators share each remote"). The request key is
+`remotes.operators`: omitted (1 operator, the rating is used as one operator's
+power, exactly as before), `true` (take the config standing assumption), or a
+number >= 1. The per-operator cap used for coverage is
+`rated_dbm - 10*log10(operators)` per band. It enters the cascade through the
+remote element's `operators_sharing` key (autoplace stamps the resolved value
+on every remote it builds; a hand-built remote element that does not set the
+key keeps one-operator behaviour), and it enters coverage planning and the
+remote sizing search through the solved cascade. The autoplace result reports
+both values per unit: `max_dl_out_dbm` (rated composite) and
+`per_operator_out_dbm`, plus `operators_sharing`. Limits: the split is applied
+per band independently (composite power sharing ACROSS bands is still not
+modeled); the repeater cap is not split (the brief covers remotes only).
+
+**Uplink limit.** Config block `uplink` (each value carries grade + ref):
+`handset_tx_dbm` 23 (B, 3GPP UE power class 3), `edge_rbs` 6 (E, resource
+blocks a cell-edge phone transmits on), `rb_bw_hz` 180000 (B, 3GPP RB), 
+`ul_sinr_db` 0 (E), `system_noise_figure_db` 20 (E, DAS uplink noise figure at
+the base station including noise funneling, to be calibrated), `margin_db` 0
+(E). Per band,
+
+    uplink_max_PL = handset_tx_dbm - 10*log10(edge_rbs) + antenna_gain_dbi
+                    - L_dist - (-174 + 10*log10(rb_bw_hz)
+                                + system_noise_figure_db + ul_sinr_db) - margin_db
+
+where `L_dist` is the passive cable and splitter loss between the remote (or
+head end) and the antenna, the same loss the downlink sees. Downlink max path
+loss stays per-antenna EIRP minus the RSRP threshold. Coverage planning uses
+the smaller of the two limits per band: each limit turns into a coverage
+radius through the same propagation model, and the smaller radius sets the
+seed lattice and the fill window. The request key is `uplink`: omitted (on,
+config values), `false` (the check is off), `true`, or an object overriding
+select config values (for example `{"margin_db": 10}`). The result carries
+`uplink: {enabled, params}`. Limits: planning-time `L_dist` is the solved unit
+output minus the planning port of the 25th-percentile antenna (the same basis
+the EIRP planning uses); the greedy fill and prune still evaluate the DL
+coverage requirement per point, so the uplink enters as spacing, not as a
+per-point requirement, and prune can end slightly below UL spacing; LMR/PS
+bands get the same UE-class handset figure unless the request overrides it
+(the formula has no frequency term).
+
+**Limiting band and direction.** The result adds `limiting`: per band
+`downlink_max_path_loss_db`, `uplink_max_path_loss_db` (None when the check is
+off), `downlink_radius_m`, `uplink_radius_m`, the limiting `direction` and the
+band's `radius_m`; at the top level `uplink_enabled`, the two basis strings,
+`limiting_band`, `limiting_direction` and `radius_m` — the single band and
+direction that set antenna spacing (smallest radius). The result also carries
+a human-readable `summary` string ending in the limiting radio. Limits: the
+downlink basis is the weakest solved antenna's EIRP minus the single-tier
+threshold with the request `rsrp_offset_db`; NFPA-tiered thresholds are not
+decomposed per tier here.
+
+**Distribution topology per remote.** Request key `topology`, three values.
+`"auto"` (the default) is the existing behaviour, unchanged: antennas split
+evenly across the remotes, coax split evenly per remote, clustered equal
+splitter trees (plus the tap/coupler stage when asked). `"star"`: each remote
+feeds a central splitter tree (2/3/4-way splitters from `parts`) stacked at
+the remote, one home run of coax to each antenna; loss to an antenna =
+splitter ILs on its path + its own run length x cable loss per metre.
+`"trunk4"`: a splitter at the remote feeds up to 4 orthogonal coax trunks
+(north, east, south, west — reduced to a 2/3-way part when fewer than four
+trunks leave it); each trunk taps off at its antennas in order, nearest
+antenna first, so the tap ratios equalise power along the trunk: the first
+device takes the largest available tap loss and each later one takes the
+largest ratio still at or below the largest ratio minus the through losses
+already passed; loss to an antenna = 4-way splitter loss + tap coupling loss
++ through losses of earlier taps + trunk length x cable loss per metre. Both
+build real elements (splitters, tappers/couplers, cable runs with L-shaped
+routes), so the BOM counts them and the cascade computes each antenna's
+power from the elements exactly as it does for the auto trees — verified per
+antenna in the tests. The result reports `topology`, the element counts
+(`tappers` / `couplers` included) and, per remote unit, `antennas` and
+`coax_m` (its coax footage). Limits: `taps` does not combine with an explicit
+`topology` (422); tap equalisation uses device losses only (the cascade adds
+cable loss), and the shipped part set has two ratios (12 dB tap, 10 dB
+coupler), so balance is coarse until more ratios are added to `parts`;
+star stage-to-stage jumpers between co-located splitters carry only the
+3 m-per-run slack.
+
+**Remote count.** Unchanged search, made operator-aware: with remotes on, the
+engine starts from the fewest remotes whose per-operator power, after the
+distribution loss, can cover the floor at the planned antenna count and adds
+remotes until the antenna-port budget closes (a fixed `remotes.count` skips
+the search). The result reports the count per floor, per unit antennas, coax
+and fiber, rated and per-operator output. Limit: the search is still gated on
+`min_antenna_port_dbm` per band plus the coverage target; no capacity model.
+
+**Omnis.** Every placed antenna is the request/`p["antenna_id"]` default omni;
+no directional antennas are added by any topology.
+
+**Covered area and floor count inputs.** Optional project-level inputs
+`covered_sq_ft` (sq ft > 0) and `floor_count` (whole number >= 1), set with
+`POST /projects` or `PATCH /projects/{id}` and stored on the model JSON
+(`null` clears). The RF-link draft (`POST /projects/{id}/draft-estimate`)
+reports in `draft_basis` both `covered_sq_ft` and `floor_count` with
+`covered_sq_ft_source` / `floor_count_source` — `project_input` (these keys),
+`floor_plans` (the sum of the floors' outline or canvas area at their ppm,
+and the number of model floors), or `budget` (the legacy `covered_area_sqft`,
+used only when the floor plans carry no scale). The draft definition carries
+`covered_sq_ft`, `floor_count` and `covered_input_sources`, so a stored
+estimate remembers which source it used. The OEM spec-package density sizing
+prefers `covered_sq_ft` over `covered_area_sqft`. Limit: the draft's labor
+quantities still come from the model walk (the covered inputs do not re-open
+takeoffs); the estimate engine doesn't consume them beyond the definition
+fields.
 
 ## Drawings: one-line diagram and floor layout
 

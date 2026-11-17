@@ -338,8 +338,16 @@ def _node_text(el, cfg, power):
                   if el.get("max_dl_out_dbm") is not None else "repeater")
     elif t == "remote":
         title = name
-        detail = ("max out %s dBm" % _n(el["max_dl_out_dbm"])
-                  if el.get("max_dl_out_dbm") is not None else "remote unit")
+        cap = el.get("max_dl_out_dbm")
+        if cap is None:
+            detail = "remote unit"
+        elif float(el.get("operators_sharing") or 1.0) > 1.0:
+            ops = float(el["operators_sharing"])
+            per_op = float(cap) - 10.0 * math.log10(ops)
+            detail = ("max out %s dBm rated, %s per operator (%s sharing)"
+                      % (_n(cap), _n(per_op), ops))
+        else:
+            detail = "max out %s dBm" % _n(cap)
     elif t == "splitter":
         title = name
         ways = int(el.get("ways") or 2)

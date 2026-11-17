@@ -279,10 +279,12 @@
     }
   },
   "repeater": { "label": "Off-air repeater (BDA)", "dl_gain_db": 65.0, "max_dl_out_dbm": 33.0, "ports": 2 },
-  "remote_note": "Remote unit: an active element fed from the head end (repeater or source) by a fiber run, with its own downlink output cap per band. Modeled like the repeater: out = min(in + dl_gain_db, max_dl_out_dbm), per-band cap via max_dl_out_dbm_per_band. Every value below is grade E (no published figure, no vendor datasheet loaded): replace with the selected OEM remote spec. dl_gain_db 0 means the fiber link is level-neutral (the head-end port power is passed through, then capped); optical splitting and fiber loss are not modeled. Each band is capped independently (composite power sharing across bands is not modeled).",
+  "remote_note": "Remote unit: an active element fed from the head end (repeater or source) by a fiber run, with its own downlink output cap per band. Modeled like the repeater: out = min(in + dl_gain_db, max_dl_out_dbm), per-band cap via max_dl_out_dbm_per_band. Every value below is grade E (no published figure, no vendor datasheet loaded): replace with the selected OEM remote spec. dl_gain_db 0 means the fiber link is level-neutral (the head-end port power is passed through, then capped); optical splitting and fiber loss are not modeled. Each band is capped independently (composite power sharing across bands is not modeled). The per-band output cap is COMPOSITE: max_dl_out_dbm is the rated total power of the remote on that band, shared by every operator (carrier) on it. Remote elements may set operators_sharing; the cascade then caps one operator's carrier at rated_dbm - 10*log10(operators_sharing). A remote element that does not set operators_sharing is treated as one operator (the old behaviour).",
   "remote": { "label": "Remote unit (fiber-fed active DAS)", "dl_gain_db": 10.0, "dl_gain_grade": "C", "dl_gain_ref": "fitted 2026-11-11 (run 5) together with the building-type clutter values on 32 ANS designs; a stand-in until the selected OEM remote spec is loaded, then refit clutter",
     "max_dl_out_dbm": 33.0, "max_dl_out_grade": "C", "max_dl_out_ref": "fitted 2026-11-11 (run 5) together with the building-type clutter values on 32 ANS designs; a stand-in for the selected OEM remote output per band, then refit clutter",
-    "max_dl_out_dbm_per_band": {}, "ports": 1, "ports_grade": "E", "ports_ref": "estimate: one RF output feeding the zone distribution tree" },
+    "max_dl_out_dbm_per_band": {}, "ports": 1, "ports_grade": "E", "ports_ref": "estimate: one RF output feeding the zone distribution tree",
+    "operators_sharing": 3, "operators_sharing_grade": "D",
+    "operators_sharing_ref": "Matt 2026-11-16: assume 3 operators share each remote. Used by autoplace when the request asks for the operator split (remotes.operators = true) without an explicit count; remote.max_dl_out_dbm is the COMPOSITE per-band rating, so the per-operator carrier cap is rated_dbm - 10*log10(operators)" },
   "source": {
     "label": "Off-air source (donor)",
     "subtype_default": "off_air",
@@ -293,6 +295,21 @@
       "off_air": { "label": "Off-air donor (P25/FM/LTE ambient)", "injection_dbm": null },
       "direct": { "label": "Direct inject (base station / P25 source feed)", "injection_dbm": 5.0 }
     }
+  },
+  "uplink_note": "Uplink coverage check (autoplace.py applies it during coverage planning; the autoplace request key 'uplink: false' turns it off). A cell-edge handset transmits on edge_rbs resource blocks of rb_bw_hz at handset_tx_dbm; the DAS antenna receives it through the same passive cable and splitter loss the downlink sees (L_dist, computed per antenna from the solved cascade). The received level per resource block must reach the thermal floor -174 dBm/Hz + 10*log10(rb_bw_hz) + system_noise_figure_db plus ul_sinr_db, with margin_db on top: uplink max path loss = handset_tx_dbm - 10*log10(edge_rbs) + antenna_gain_dbi - L_dist - (-174 + 10*log10(rb_bw_hz) + system_noise_figure_db + ul_sinr_db) - margin_db. The check applies with or without remotes: it is blind to whether the receive path starts at a remote or a head end, L_dist is simply the passive loss between the antenna and the feeding active unit.",
+  "uplink": {
+    "handset_tx_dbm": 23.0, "handset_tx_dbm_grade": "B",
+    "handset_tx_dbm_ref": "3GPP TS 36.101 / 38.101-1 UE power class 3: 23 dBm maximum rated handset output",
+    "edge_rbs": 6, "edge_rbs_grade": "E",
+    "edge_rbs_ref": "estimate: resource blocks a cell-edge phone transmits on (about 1.08 MHz of a wider channel); placeholder, calibrate from the carrier's cell-edge allocation",
+    "rb_bw_hz": 180000.0, "rb_bw_hz_grade": "B",
+    "rb_bw_hz_ref": "3GPP NR/LTE resource block bandwidth: 12 subcarriers x 15 kHz = 180 kHz",
+    "ul_sinr_db": 0.0, "ul_sinr_db_grade": "E",
+    "ul_sinr_db_ref": "estimate: required uplink SINR per resource block at the cell edge (cell-edge QPSK works near 0 dB); placeholder, calibrate",
+    "system_noise_figure_db": 20.0, "system_noise_figure_db_grade": "E",
+    "system_noise_figure_db_ref": "estimate: DAS uplink noise figure at the base station including noise funneling from many antennas and carriers into the base-station receiver; placeholder, will be calibrated",
+    "margin_db": 0.0, "margin_db_grade": "E",
+    "margin_db_ref": "estimate: extra uplink margin (body loss, fading); default 0 so the formula shows raw in the limiting report"
   },
   "kpi_thresholds_dbm_note": "Coverage threshold(s); presets define required % of floor grid area at/above threshold. Tier scope: tier 1 always evaluates the whole floor; tier 2 evaluates inside critical-area polygons when any exist (else whole floor, with a note). 'scope' on a tier entry overrides the default. Bands whose technology matches nr_ssrsp.technology also get the SS-RSRP preset evaluated (whole floor), on the band's composite RSSI optionally shifted by a per-band ss_rsrp_offset_db.",
   "kpi_presets": {
