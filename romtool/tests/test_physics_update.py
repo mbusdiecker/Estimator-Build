@@ -315,12 +315,12 @@ def _loss_to_antenna(cfg, model, ant_id, bid="B2_1900"):
                            parts["splitters"]["%dway" % ways]["il_db"])
         elif src["type"] == "tapper":
             grp = parts["tappers"][src.get("part_id", "default")]
-            total += float(grp["through_il_db"] if role == "through" else
+            total += float((src.get("through_il_db") if src.get("through_il_db") is not None else grp["through_il_db"]) if role == "through" else
                            (src.get("tap_loss_db") if src.get("tap_loss_db") is not None
                             else grp["tap_loss_db"]))
         elif src["type"] == "coupler":
             grp = parts["couplers"][src.get("part_id", "default")]
-            total += float(grp["through_il_db"] if role == "through" else
+            total += float((src.get("through_il_db") if src.get("through_il_db") is not None else grp["through_il_db"]) if role == "through" else
                            (src.get("coupled_loss_db")
                             if src.get("coupled_loss_db") is not None
                             else grp["coupled_loss_db"]))
@@ -392,8 +392,9 @@ def test_star_topology_on_a_rectangular_floor(cfg):
 
 
 def test_trunk4_topology_on_a_rectangular_floor(cfg):
+    # a larger floor so each trunk carries several antennas
     body = request(remotes={"count": 1}, topology="trunk4")
-    m = make_model(600, 400)
+    m = make_model(750, 500)
     res = autoplace_floor(m, cfg, "f1", body)
     assert res["topology"] == "trunk4" and res["target_met"]
     n = res["antenna_count"]
@@ -403,20 +404,29 @@ def test_trunk4_topology_on_a_rectangular_floor(cfg):
     devices = els(m, "tapper") + els(m, "coupler")
     assert len(splitters) == 1                          # one splitter at the remote
     assert res["elements_added"]["splitters"] == 1
-    assert len(devices) == n                            # one tap device per antenna
+    trunk_count = sp_ways = splitters[0]["ways"]
+    # one tap device per antenna except the last on each trunk, which takes
+    # the trunk end directly (2026-11-17 fix: no tap on a trunk's end antenna)
+    assert len(devices) == n - trunk_count
     assert res["elements_added"].get("tappers", 0) \
-        + res["elements_added"].get("couplers", 0) == n
+        + res["elements_added"].get("couplers", 0) == n - trunk_count
     ru = els(m, "remote")[0]
     sp = splitters[0]
-    assert (sp["x"], sp["y"]) == (ru["x"], ru["y"])
+    assert (sp["x"], sp["y"]) == (ru["x"], ru["y"]) and sp_ways >= 2
     runs = _runmap(m)
     assert _every_antenna_fed(m) == n
-    # each antenna is tapped off its own device sitting at the antenna position
+    # an antenna is tapped off its own device at the antenna position, or is
+    # the trunk end fed from the previous device's through port (or the hub)
+    ends = 0
     for a in ants:
         feeds = [r for r in runs.values() if r["to_id"] == a["id"]]
-        assert len(feeds) == 1 and feeds[0]["port"] in ("tap", "coupled"), a["id"]
-        dev = next(e for e in devices if e["id"] == feeds[0]["from_id"])
-        assert (dev["x"], dev["y"]) == (a["x"], a["y"])
+        assert len(feeds) == 1, a["id"]
+        if feeds[0].get("port") in ("tap", "coupled"):
+            dev = next(e for e in devices if e["id"] == feeds[0]["from_id"])
+            assert (dev["x"], dev["y"]) == (a["x"], a["y"])
+        else:
+            ends += 1
+    assert ends == trunk_count
     # the cascade and the trunk path (splitter, taps, through losses, cable) agree
     _antenna_check(cfg, m)
     # taps equalise along each trunk: device loss never rises going outward
@@ -435,8 +445,9 @@ def test_trunk4_topology_on_a_rectangular_floor(cfg):
     for d, grp in trunks.items():
         ordered = sorted(grp, key=lambda a: (a["x"] - ru["x"]) ** 2
                          + (a["y"] - ru["y"]) ** 2)
-        vals = [ratio_of[next(r["from_id"] for r in runs.values()
-                              if r["to_id"] == a["id"])] for a in ordered]
+        # the trunk-end antenna has no device (0 dB coupling)
+        vals = [ratio_of.get(next(r["from_id"] for r in runs.values()
+                                  if r["to_id"] == a["id"]), 0.0) for a in ordered]
         assert vals == sorted(vals, reverse=True), (d, vals)
     # the tap values spread across the two shipped ratios, so the ports
     # balance within the ratio step plus cable spread on the trunk
@@ -444,10 +455,10 @@ def test_trunk4_topology_on_a_rectangular_floor(cfg):
     assert max(ports) - min(ports) <= 9.0, ports
     # the BOM carries the devices and the splitter
     items = generate_bom(m, cfg)["items"]
-    assert sum(i["qty"] for i in items if i["category"] in ("tapper", "coupler")) == n
+    assert sum(i["qty"] for i in items if i["category"] in ("tapper", "coupler")) == n - trunk_count
     assert sum(i["qty"] for i in items if i["category"] == "splitter") == 1
     # deterministic
-    again = autoplace_floor(make_model(600, 400), cfg, "f1", copy.deepcopy(body))
+    again = autoplace_floor(make_model(750, 500), cfg, "f1", copy.deepcopy(body))
     assert again["antennas"] == res["antennas"]
 
 

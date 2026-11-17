@@ -77,6 +77,12 @@ SOURCE_KEYS = ("subtype", "donor_gain_db", "feeder_loss_db", "injection_dbm",
 REPEATER_KEYS = ("dl_gain_db", "max_dl_out_dbm", "ports", "dl_gain_db_per_band")
 REMOTE_KEYS = ("dl_gain_db", "max_dl_out_dbm", "max_dl_out_dbm_per_band", "ports")
 TOPOLOGIES = ("auto", "star", "trunk4")
+# trunk4 taps: common commercial tapper ratios (dB coupled to the antenna);
+# the through loss follows from the split, 10*log10(1/(1-10^(-tap/10))), plus
+# TRUNK_TAP_EXCESS_DB of insertion loss (grade E estimate). Each antenna on a
+# trunk takes the ratio nearest its equal share, 10*log10(antennas left).
+TRUNK_TAP_RATIOS_DB = (3.0, 4.8, 6.0, 7.0, 8.0, 10.0, 13.0, 15.0, 20.0)
+TRUNK_TAP_EXCESS_DB = 0.3
 UPLINK_KEYS = ("handset_tx_dbm", "edge_rbs", "rb_bw_hz", "ul_sinr_db",
                "system_noise_figure_db", "margin_db")
 
@@ -1019,25 +1025,35 @@ class _Chain:
         return min(devs, key=lambda d: (max(d[3] - need, 0.0), d[3], d[0], d[1]))
 
     def _tap_chain(self, grp, head, devs):
-        """Tappers/couplers at each antenna of one trunk, in trunk order: the
-        antenna taps (or couples) off its device, the through port continues
-        to the next. The first device (nearest the trunk head) gets the
-        largest available tap loss; each later one needs k_max minus the
-        through losses already passed, so the far antennas tap the smallest
-        ratios. Returns the chain's first device element (the trunk root)."""
-        prev, first, through = head, None, 0.0
-        k_max = devs[-1][3] if devs else 0.0
-        for ant in grp:
-            dev = self._pick_tap_device(devs, k_max - through) if devs else None
-            kind, pid, thru = (dev[0], dev[1], dev[2]) if dev else ("tapper", "default", 0.0)
+        """Tappers/couplers along one trunk, in trunk order. With m antennas
+        left on the trunk (this one included), the antenna takes its equal
+        share: a tapper at the standard ratio closest to 10*log10(m) dB, and
+        the through port carries the rest on. The last antenna takes the
+        trunk end directly, with no device, so a one-antenna trunk is a plain
+        run. Returns the trunk's first node (a device, or the antenna itself
+        when the trunk has one antenna)."""
+        prev, first = head, None
+        m = len(grp)
+        for i, ant in enumerate(grp):
+            left = m - i
+            if left == 1:   # trunk end: straight into the antenna
+                if prev is not None:
+                    self._run(prev, ant, self._cable_for(ant), port="through" if i else None)
+                return first if first is not None else ant
+            need = 10.0 * math.log10(left)
+            tap_db = min(TRUNK_TAP_RATIOS_DB, key=lambda r: (abs(r - need), r))
+            kind, pid = "tapper", "default"
             node = self.tap_device(kind, pid, ant["x"], ant["y"])
+            el = next(e for e in reversed(self.elements) if e["id"] == node["id"])
+            el["tap_loss_db"] = tap_db
+            el["through_il_db"] = round(-10.0 * math.log10(1.0 - 10.0 ** (-tap_db / 10.0))
+                                        + TRUNK_TAP_EXCESS_DB, 2)
             if first is None:
                 first = node
             if prev is not None:
-                self._run(prev, node, self.p["trunk"], port="through")
+                self._run(prev, node, self.p["trunk"], port="through" if i else None)
             self._run(node, ant, self._cable_for(ant),
                       port="tap" if kind == "tapper" else "coupled")
-            through += thru
             prev = node
         return first
 
