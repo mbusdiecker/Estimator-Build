@@ -19,7 +19,8 @@ import math
 
 from . import config as cfgmod
 from .cascade import CascadeError, solve_cascade
-from .geometry import build_wall_index, polygon_membership, ray_wall_crossings
+from .geometry import polygon_membership, ray_wall_crossings
+from .raycache import WallRays, slow_rays as ray_slow_rays
 from .clutter_map import ClutterField, ClutterMapError
 from .lossmodel import LossModelError, resolve_loss_model
 from .physics import composite_dbm, itu_p1238_pl_db, scale_wall_loss_db
@@ -174,7 +175,7 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
     materials = config["wall_materials"]
 
     grid_level = floor.get("level", 0)
-    same_floor_walls = build_wall_index(floor.get("walls", []))
+    same_floor_walls = WallRays(floor.get("walls", []))
     mat_scaled = {}
     for mid in materials:
         mat_scaled[mid] = scale_wall_loss_db(materials[mid]["loss_db"], f_mhz, ref_mhz) + wall_scale_db
@@ -182,6 +183,18 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
     cols = max(1, int(math.ceil(w_px / step)))
     rows = max(1, int(math.ceil(h_px / step)))
     n_pts = rows * cols
+    # cached crossing counts for same-floor antennas: per-point loss is
+    # sum(count[m] * wall_db[m]) instead of a per-point ray loop; the grid
+    # lists use the same ci * step / ri * step int coordinates the loop below
+    # evaluates
+    use_counts = bool(same_floor_walls) and not ray_slow_rays()
+    grid_xs = grid_ys = None
+    if use_counts:
+        row_xs = [ci * step for ci in range(cols)]
+        grid_xs = row_xs * rows
+        grid_ys = []
+        for ri in range(rows):
+            grid_ys.extend([ri * step] * cols)
     const20 = 20.0 * math.log10(f_mhz)
 
     lin = [0.0] * n_pts
@@ -202,6 +215,9 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
         # zone ceiling height: slant distance in the N term (same floor only)
         dv = dv_at(ax, ay) if (dv_at is not None and same) else 0.0
         dv2 = dv * dv
+        counts_same = None
+        if same and use_counts:
+            counts_same = list(same_floor_walls.counts(ax, ay, grid_xs, grid_ys).items())
         for ri in range(rows):
             y = ri * step
             dy = y - ay
@@ -218,8 +234,17 @@ def predict_floor(model, config, floor_id, band_id, step_px=1, solve_result=None
                 if ent is not None:
                     pl += field.loss_at(ent, x, y, d_m)
                 if same:
-                    for w in ray_wall_crossings(same_floor_walls, (ax, ay), (x, y)):
-                        pl += mat_scaled[w[8]["material"]]
+                    if counts_same is not None:
+                        wloss = 0.0
+                        for m, carr in counts_same:
+                            n = carr[base + ci]
+                            if n:
+                                wloss += n * mat_scaled[m]
+                        pl += wloss
+                    else:
+                        for w in ray_wall_crossings(same_floor_walls.index,
+                                                    (ax, ay), (x, y)):
+                            pl += mat_scaled[w[8]["material"]]
                 else:
                     pl += floor_term
                 r = eirp - pl

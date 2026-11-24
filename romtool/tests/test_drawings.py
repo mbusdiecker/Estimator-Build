@@ -34,8 +34,11 @@ def built(cfg):
              "h_px": 400, "walls": [{"id": "w1", "x1": 300, "y1": 0, "x2": 300, "y2": 200,
                                      "material": "drywall"}], "elements": []}
     model = {"environment": "office", "building_type": "office", "floors": [floor]}
+    # threshold -52 (was -60): since the 47 dBm antenna port ceiling
+    # (2026-11-17) the antennas reach further at -60, and a splitter/tap
+    # layout needs the harder threshold to place enough antennas
     res = autoplace_floor(model, cfg, "f1", {
-        "bands": BANDS, "threshold_dbm": -60.0, "source": SRC, "repeater": REP,
+        "bands": BANDS, "threshold_dbm": -52.0, "source": SRC, "repeater": REP,
         "step_px": 4, "remotes": True, "taps": True})
     sol = solve_cascade(model, cfg)
     assert sol["errors"] == []

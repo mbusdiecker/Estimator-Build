@@ -265,14 +265,17 @@ def test_warehouse_half_gets_more_antennas_per_area(cfg):
     p_left, p_right = _half_counts(plain, 300)
     z_left, z_right = _half_counts(zoned, 300)
     assert zoned["target_met"] and plain["target_met"]
-    # measured at 60 m x 30 m / threshold -60 dBm, office 0.2 and rack 1.2 dB/m (run 5):
-    # without the zone 2 + 1, with it 3 + 5
+    # measured at 60 m x 30 m / threshold -60 dBm, office 0.2 and rack 1.2 dB/m
+    # (run 5): without the zone 2 + 1, with it 3 + 5; re-measured 2026-11-17
+    # after the antenna port ceiling moved 20 -> 47 dBm (calculated port power
+    # is no longer clamped), with it 4 + 6
     assert (p_left, p_right) == (2, 1)
-    assert (z_left, z_right) == (3, 5)
+    assert (z_left, z_right) == (4, 6)
     assert z_right > p_right and z_right >= z_left * 1.3
-    # the office half barely changes next to the rack zone (one antenna moves across
-    # the boundary at rack 1.2 dB/m)
-    assert abs(z_left - p_left) <= 1
+    # the office half barely changes next to the rack zone (at rack 1.2 dB/m
+    # one antenna used to move across the boundary; since the 2026-11-17 port
+    # ceiling change it is two, with the rack half one up as well)
+    assert abs(z_left - p_left) <= 2
 
 
 def test_autoplace_reports_zone_and_height_per_antenna(cfg):

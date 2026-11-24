@@ -145,6 +145,40 @@
     "pdf_dpi_min": 72,
     "pdf_dpi_max": 300
   },
+  "plan_walls": {
+    "grade": "D",
+    "ref": "provisional, from the 2026-11-18 QA of 16 job plans; tune on more plans. Sheet cleanup before the perimeter trace (plan_walls.isolate_building): frame_edge_tol_frac 0.015 is how close a cluster's box must sit to the raw line-work bounding box to count as hugging an edge; frame_min_sides 3 sides must hug; frame_hollow_band_frac 0.35 of the cluster box from each edge is the interior tested for hollowness and frame_hollow_frac 0.15 is the share of its ink allowed there (a frame ring is hollow, a building has interior walls); a frame candidate also needs other line work strictly inside it, so an outline-only building is never dropped. Title block: tb_slabs 40 density slabs across the sheet, tb_blank_frac 0.10 of the mean slab ink (tb_blank_lines 12 thin crossings allowed) marks a near-empty slab, tb_gap_frac 0.02 of the drawing is the separation band before the rest, tb_min_share 0.03 / tb_max_share 0.75 bound the strip's share of the line length, tb_axis_share 0.80 of it must be axis-aligned (tb_ang_tol_deg 5), tb_span_frac 0.50 of the edge must be spanned, and at least tb_dense_frac 0.20 of the strip's density slabs must be dense (a title block is patchy: long parallel verticals with sparse divider rows between); tb_max_depth_frac 0.45 caps the strip depth; tb_contact_frac 0.005 of the drawing is the touch distance that cancels a strip whose segments attach to kept line work (a building's exterior wall always touches its interior work). Cluster: cluster_gap_frac 0.02 of the drawing dilate to close gaps, bridge_frac 0.005 bridges raster jitter when labeling clusters, sat_min_share 0.15 / sat_gap_frac 0.05 / sat_min_dim_frac 0.15 keep detached wings and drop legend boxes, north arrows and scale bars. Flags: flag_keep_share 0.50 (kept line length), flag_frame_sides 3 sides at flag_touch_tol_frac 0.01 (outline still frame-like), flag_outline_bbox_frac 0.90 of the cleaned bounding box at under flag_density_half 0.35 of the busiest quarter's density of the cleaned line work (mostly empty outline). hug_tol_frac 0.02 / hug_min_sides 2 / hug_max_area_frac 0.35 flags cleaned line work that hugs the sheet box while covering only a small part of it (title-block-only sheets).",
+    "frame_edge_tol_frac": 0.015,
+    "frame_min_sides": 3,
+    "frame_hollow_band_frac": 0.35,
+    "frame_hollow_frac": 0.25,
+    "tb_slabs": 40,
+    "tb_blank_frac": 0.10,
+    "tb_blank_lines": 12,
+    "tb_gap_frac": 0.02,
+    "tb_axis_share": 0.80,
+    "tb_span_frac": 0.50,
+    "tb_min_share": 0.03,
+    "tb_max_share": 0.75,
+    "tb_dense_frac": 0.2,
+    "tb_max_depth_frac": 0.45,
+    "tb_ang_tol_deg": 5.0,
+    "tb_contact_frac": 0.005,
+    "cluster_raster_px": 600,
+    "cluster_gap_frac": 0.02,
+    "bridge_frac": 0.005,
+    "sat_min_share": 0.15,
+    "sat_gap_frac": 0.05,
+    "sat_min_dim_frac": 0.15,
+    "flag_keep_share": 0.50,
+    "flag_touch_tol_frac": 0.01,
+    "flag_frame_sides": 3,
+    "flag_outline_bbox_frac": 0.90,
+    "flag_density_half": 0.35,
+    "hug_tol_frac": 0.02,
+    "hug_min_sides": 2,
+    "hug_max_area_frac": 0.35
+  },
   "autoplace_note": "Defaults for POST /projects/{pid}/floors/{fid}/autoplace. Engineering values here are grade E (estimates, not measured or published): slack_m_per_run, donor feeder length, floor_height_m, max_plan_points, plan_margin_pct. public_safety_band_ids select the bands that get the NFPA two-tier rule instead of the single threshold.",
   "autoplace": {
     "public_safety_band_ids": ["VHF_150", "UHF_450", "PS700", "PS800"],
@@ -225,8 +259,12 @@
     }
   },
   "antennas": {
-    "omni_das": { "label": "Omni ceiling antenna", "gain_db": 2.0, "max_port_dbm": 20.0 },
-    "panel_das": { "label": "Panel antenna", "gain_db": 7.0, "max_port_dbm": 20.0 }
+    "omni_das": { "label": "Omni ceiling antenna", "gain_db": 2.0, "max_port_dbm": 47.0,
+      "max_port_dbm_grade": "D",
+      "max_port_dbm_ref": "typical DAS antenna power rating 50 W; the calculated port power from the remote, split and losses governs below it (Matt 2026-11-17)" },
+    "panel_das": { "label": "Panel antenna", "gain_db": 7.0, "max_port_dbm": 47.0,
+      "max_port_dbm_grade": "D",
+      "max_port_dbm_ref": "typical DAS antenna power rating 50 W; the calculated port power from the remote, split and losses governs below it (Matt 2026-11-17)" }
   },
   "branch_hardware_note": "Fixed loss between the end of the last cable run and the antenna port: connectors, a jumper and, where several bands share one antenna, a diplexer/combiner. The allowance per antenna branch = connectors*connector.loss_db + jumpers*jumper.loss_db + diplexers*diplexer.loss_db (dB) and is applied in the cascade to every auto antenna when the autoplace request sets branch_losses. Every number below is grade E (estimate): none is taken from a datasheet or a published source; replace with the selected product's insertion loss. connector.per_branch counts individual connectors (a jumper has two ends). diplexer.per_branch applies only when the request covers more than diplexer.when_bands_gt bands.",
   "branch_hardware": {

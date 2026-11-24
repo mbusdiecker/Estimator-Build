@@ -254,8 +254,12 @@ top of the rate card):
   low-E glass 8, wood 4, metal 30) — frequency-scaled linearly in the
   log-frequency domain per the P.2040-curve rule
 - Cables: dB/100m anchors, interpolated linearly in log-frequency
-- Splitters 2/3/4-way, taps, couplers, antennas, repeater gain/max-out/ports,
-  source subtypes incl. direct-inject level
+- Splitters 2/3/4-way, taps, couplers, antennas (omni_das and panel_das cap
+  the calculated port power at `max_port_dbm` **47 dBm**, grade D, "typical
+  DAS antenna power rating 50 W; the calculated port power from the remote,
+  split and losses governs below it (Matt 2026-11-17)" — the clamp logic is
+  unchanged, only the ceiling moved up from the old 20 dBm stand-in),
+  repeater gain/max-out/ports, source subtypes incl. direct-inject level
 - KPI presets: single tier (-95 dBm @ 95% area), NFPA two-tier
   (tier 1 -95 dBm @ 95% general, tier 2 -95 dBm @ 99% critical) with per-tier
   `scope` override, and the NR SS-RSRP preset (technology-matched bands)
@@ -282,7 +286,9 @@ additive entries in this file — see the Phase 3 section for the n78 snippet.
   the physical feeder cable run (source→repeater) so it lands in the BOM;
   `direct` sources replace the ambient term with a fixed injection level.
 - Port powers are per-band, single-carrier DL estimates (no multi-carrier
-  power sharing yet); antennas cap port power at their max-port setting.
+  power sharing yet); antennas cap port power at their max-port setting
+  (47 dBm in config by default — the calculated port power from the remote,
+  split and losses governs below it).
 - SS-RSRP vs RSSI: per-band predict returns composite carrier RSSI; the NR
   preset treats that as SS-RSRP except for an optional per-band
   `ss_rsrp_offset_db` (per-RE conversion). For ROM purposes the design
@@ -576,7 +582,9 @@ Limits:
   Predict's own KPI stays canvas-wide, so `outline` only affects autoplace.
 - One head-end per call. Use `feed_element_id` to hang a floor off an existing
   repeater/splitter port; otherwise each floor gets its own source and repeater.
-- Drawn walls make it much slower (ray tests per point and antenna).
+- Drawn walls make it much slower (ray tests per point and antenna). Physics
+  update 4 caches the per-wall-material crossing counts so repeated calls on
+  the same floor are fast (see "Ray tracing speed" below).
 - Cable lengths are Manhattan distance plus 3 m per run (grade E); each run stores its L-shaped route (see the extensions section). Port
   power below 0 dBm is reported, not fixed (no second head-end or sectors).
 - Measured on a 960 x 960 px plate at 10 px/m (9,216 m2, about 99,000 sq ft),
@@ -584,7 +592,42 @@ Limits:
   `verify_max_points=0` at step 1 (921,600 points). Plain predict on that
   floor takes about 29 s per band at step 1.
 
+## Ray tracing speed (wall-crossing counts, physics update 4)
+
+Which walls the straight antenna→point ray crosses depends only on geometry,
+never on the wall loss in dB, the threshold, the topology or the remote count.
+So `_contrib`, the autoplace coverage loop and `predict_floor` no longer call
+the per-point `ray_wall_crossings` loop; they read per-point crossing counts
+per wall material (a small integer array per material) and apply
+`sum(count[m] * loss_db[m])` on top. The counts are computed once per
+(antenna, grid) pair by `romtool/raycache.py` and cached:
+
+- Cache key: a hash of the wall geometry (coordinates + materials), a hash of
+  the grid points, and the antenna position. Any change of loss value,
+  threshold or topology on the same floor and grid re-uses the entry.
+- Module-level LRU cache with a memory cap, default 1 GiB, configurable with
+  `ROMTOOL_RAY_CACHE_MB` (MiB; 0 disables caching). `raycache.set_cache_limit_mb()`
+  sets it from code; `raycache.clear_ray_cache()` drops everything (counts and
+  the per-floor spatial cell index).
+- Computation: a uniform cell index over the walls (cell size from the floor
+  size and wall count), plus a numpy-chunked vectorized `seg_cross` fallback
+  and, when numba imports, a parallel JIT kernel over the cell index with an
+  Amanatides–Woo grid walk. Both paths reproduce `geometry.seg_cross`
+  exactly (same operations, same IEEE order, no fast-math): shared endpoints,
+  collinear overlaps, rays ending on a wall and zero-length segments are not
+  crossings, on either path.
+- Switches: `ROMTOOL_SLOW_RAYS=1` keeps the old per-point loop everywhere
+  (results are identical; used to pin behaviour and in
+  `tests/test_physics_update4.py`); `ROMTOOL_NO_NUMBA=1` forces the numpy
+  path.
+- Benchmark: `scripts/bench_rays.py <floor.json> [--synthetic N]
+  [--losses "2,4,8"] [--threshold -70] [--step 8]` runs the same autoplace
+  request through the old, numpy and numba engines and prints times,
+  speed-ups and whether the results are identical. The floor JSON is what
+  `python -m romtool.plan_walls ... --out floor.json` writes.
+
 ## Autoplace extensions: remotes, taps, branch losses, routes, clutter map
+
 
 Each feature is a request option on `POST /projects/{pid}/floors/{fid}/autoplace`
 and is off unless asked for, except route geometry, which is always written.
@@ -594,7 +637,8 @@ no published figure; C = company calibrated; G = guide; P = published). None of
 the new values is graded P or G.
 
 **Remote units** (`remotes: true`, a count, or `{count, max_count,
-max_dl_out_dbm, max_dl_out_dbm_per_band, dl_gain_db, fiber_cable_id}`).
+max_antennas_per_unit, max_dl_out_dbm, max_dl_out_dbm_per_band, dl_gain_db,
+fiber_cable_id}`).
 Instead of one repeater feeding the whole floor, the floor is split into zones.
 Each zone has a remote unit (new element type `remote`, config `remote`)
 placed at the load centre of its antennas (centroid, or the nearest antenna
@@ -767,7 +811,7 @@ downlink basis is the weakest solved antenna's EIRP minus the single-tier
 threshold with the request `rsrp_offset_db`; NFPA-tiered thresholds are not
 decomposed per tier here.
 
-**Distribution topology per remote.** Request key `topology`, three values.
+**Distribution topology per remote.** Request key `topology`, five values.
 `"auto"` (the default) is the existing behaviour, unchanged: antennas split
 evenly across the remotes, coax split evenly per remote, clustered equal
 splitter trees (plus the tap/coupler stage when asked). `"star"`: each remote
@@ -781,26 +825,42 @@ antenna first, so the tap ratios equalise power along the trunk: the first
 device takes the largest available tap loss and each later one takes the
 largest ratio still at or below the largest ratio minus the through losses
 already passed; loss to an antenna = 4-way splitter loss + tap coupling loss
-+ through losses of earlier taps + trunk length x cable loss per metre. Both
-build real elements (splitters, tappers/couplers, cable runs with L-shaped
-routes), so the BOM counts them and the cascade computes each antenna's
-power from the elements exactly as it does for the auto trees — verified per
-antenna in the tests. The result reports `topology`, the element counts
-(`tappers` / `couplers` included) and, per remote unit, `antennas` and
++ through losses of earlier taps + trunk length x cable loss per metre.
+`"trunk2"`: a 2-way splitter at the remote feeds two coax runs along the
+floor's long axis, one on each side of the remote; each antenna goes to the
+run on its side of the remote, and each run taps off at its antennas in
+order with the same equal-share tap rule as trunk4 (`_tap_chain`), trunk ends
+fed directly with no tap device. `"best"`: trunk2 and trunk4 are both built
+and solved, and the one whose worst antenna port is higher is kept (ties, to
+0.01 dB: fewer elements); the result reports the built topology as
+`topology` and the choice in `topology_choice` (`chosen`, `candidates` with
+each variant's worst antenna port and element count, and the rule). Both
+trunk variants build real elements (splitters, tappers/couplers, cable runs
+with L-shaped routes), so the BOM counts them and the cascade computes each
+antenna's power from the elements exactly as it does for the auto trees —
+verified per antenna in the tests. The result reports `topology`, the element
+counts (`tappers` / `couplers` included) and, per remote unit, `antennas` and
 `coax_m` (its coax footage). Limits: `taps` does not combine with an explicit
-`topology` (422); tap equalisation uses device losses only (the cascade adds
-cable loss), and the shipped part set has two ratios (12 dB tap, 10 dB
-coupler), so balance is coarse until more ratios are added to `parts`;
-star stage-to-stage jumpers between co-located splitters carry only the
-3 m-per-run slack.
+`topology` (422) — `"best"` included; tap equalisation uses device losses
+only (the cascade adds cable loss), and the shipped part set has two ratios
+(12 dB tap, 10 dB coupler), so balance is coarse until more ratios are added
+to `parts`; star stage-to-stage jumpers between co-located splitters carry
+only the 3 m-per-run slack; `"best"` builds and solves both trunk variants,
+so it takes about twice the chain-solve time of one topology.
 
 **Remote count.** Unchanged search, made operator-aware: with remotes on, the
 engine starts from the fewest remotes whose per-operator power, after the
 distribution loss, can cover the floor at the planned antenna count and adds
 remotes until the antenna-port budget closes (a fixed `remotes.count` skips
 the search). The result reports the count per floor, per unit antennas, coax
-and fiber, rated and per-operator output. Limit: the search is still gated on
-`min_antenna_port_dbm` per band plus the coverage target; no capacity model.
+and fiber, rated and per-operator output. `remotes.max_antennas_per_unit`
+(optional integer >= 1) caps the antennas one remote can carry: the search
+never starts below ceil(antennas / cap), a fixed count that cannot hold all
+antennas under the cap is refused with a clear message, and `remotes_out`
+carries `max_antennas_per_unit` with the per-unit antenna counts. Low-power
+coverage units such as the Nextivity QUATRA CU (16 dBm per band) want about
+5. Limit: the search is still gated on `min_antenna_port_dbm` per band plus
+the coverage target; no capacity model.
 
 **Omnis.** Every placed antenna is the request/`p["antenna_id"]` default omni;
 no directional antennas are added by any topology.
@@ -971,6 +1031,251 @@ the floor has walls.
 - Pure-Python decoding and tracing take several seconds on a full-size page.
 - Floors with a clutter map keep the old map after a new plan. Run the
   clutter-map endpoint again.
+
+## Walls from DXF and vector-PDF floor plans (plan_walls.py)
+
+ROM jobs carry floor plan PDFs or DXF files, not iBwave models. This module
+puts real walls on a floor, so physics loss mode (walls per metre x material
+loss on top of free space) runs on the actual drawing. Module:
+`romtool/plan_walls.py`. CLI:
+
+```
+cd romtool && uv run --with ezdxf --with pymupdf --with opencv-python-headless --with numpy python -m romtool.plan_walls plan.dxf --sq-ft 43000 [--page P] [--raster] [-o floor.json]
+```
+
+prints the segment count (imported -> walls after merge), the path used
+(vector or raster, with the raster confidence), what the building box kept,
+the scale (m per
+drawing unit and its source), the cleanup flags, the wall density and, when
+the trace succeeded, the outline-restricted density (wall m/m2 and
+crossings/m measured inside the traced outline only); with `--out`, writes
+the floor JSON. `--raster` forces the raster path for PDFs (default: vector
+line work first, raster fallback). `--material` picks the wall material id
+(default drywall), `--ppm` the floor scale (default 2 px/m), `--layer`
+restricts DXF layers (repeatable), `--no-perimeter` skips the
+perimeter-trace attempt. `--box x0,y0,x1,y1` (drawing units) or
+`--box-frac x0,y0,x1,y1` (fractions of the line work's bounding box, read
+them off the preview) give the building box; `--preview out.png` writes a
+PNG of the line work over a labelled 10 % grid (fractions 0.0-1.0 on both
+axes) with the box and the traced outline drawn, so the estimator can read
+box fractions off the image. `--isolate` turns the old heuristic sheet
+cleanup on, after the box crop (off by default, see below).
+
+`crop_to_box(segments, box)`: the default way to isolate the building. The
+estimator draws a box around the building on the plan page and hands it in
+as `--box x0,y0,x1,y1` in drawing units or `--box-frac x0,y0,x1,y1` as
+fractions (0 to 1) of the line work's bounding box on both axes; only the
+segments whose midpoint is inside it are kept, before anything is traced,
+scaled or merged. It keeps the sheet frame, title block and legend boxes
+out of the plan without guessing, because the estimator points at the
+building. The preview PNG (`--preview`) renders the line work over a
+labelled 10 % grid of the bounding box fractions with the box and the
+traced outline drawn, so the fractions can be read straight off the image.
+
+`isolate_building(segments)`: the old heuristic alternative, off by default
+(`--isolate` / `isolate=True` turns it on). It finds the building on a plan
+sheet itself: Carrier plans and architectural sheets carry a lot of
+non-building line work, and on the 2026-11-18 QA of 16 job plans the
+heuristic kept the title block instead of the building on 5 of 16 sheets,
+which is why the drawn building box above is the default now. When it runs
+(every threshold is a parameter with defaults
+in config `plan_walls`, grade D — provisional, from that QA, tune on more
+plans):
+
+1. Connected line-work clusters (a light bridge dilation over a raster of
+   the segments). A cluster is a sheet frame when its box hugs the raw
+   bounding box on at least 3 sides (`frame_edge_tol_frac`,
+   `frame_min_sides`), its own ink is hollow (`frame_hollow_band_frac`,
+   `frame_hollow_frac`: ink near the box edges, not the middle) and other
+   line work sits inside it — a lone closed rectangle (an outline-only
+   building) is never a frame. Inner border rectangles a short distance in
+   drop the same way. Dropped segments are reported as frame (both endpoints
+   within `frame_edge_tol_frac` of a bounding-box edge) or title block (the
+   strip attached to the border).
+2. Title block: per bounding-box edge, line-density slabs
+   (`tb_slabs`, `tb_blank_frac`, `tb_blank_lines`) look for a band of line
+   work separated from the rest by a near-empty band of at least
+   `tb_gap_frac` of the drawing. The band is a title-block strip when it
+   holds `tb_min_share`..`tb_max_share` of the line length, is mostly
+   axis-aligned segments (`tb_axis_share` over `tb_ang_tol_deg`), spans
+   `tb_span_frac` of the edge and has at least `tb_dense_frac` of its slabs
+   dense (a title block is patchy: long parallel verticals with sparse
+   divider rows between). A proposed strip whose segments touch line work
+   outside the proposals is cancelled (`tb_contact_frac`), iterated to a
+   fixpoint: a building's exterior wall always touches its interior work, a
+   frame ring and a title block do not. A touching cluster that the
+   proposals cover completely but that does not hug the raw bounding box on
+   `hug_min_sides` sides is kept whole (two edge strips must not be able to
+   jointly swallow a building that stands clear of the sheet edges; frame
+   and title-block remnants hug it).
+3. Building cluster: the remaining line work is rasterized, gaps closed by
+   `cluster_gap_frac` of the drawing and connected components labeled. The
+   component with the most wall length is the building; other components
+   within `sat_gap_frac` of it, holding at least `sat_min_share` of its wall
+   length and at least `sat_min_dim_frac` of its bounding box in both
+   directions (another wing) are kept; the rest (legend boxes, north arrow,
+   scale bar, key plans) drop as small clusters.
+
+The trace, the scale and the floor walls are then computed from the kept
+segments only. `scale_to_area` adds a flag (`flags`, with a readable
+warning) when the kept building cluster holds under `flag_keep_share` (50 %)
+of the line length, when the traced outline hugs the raw bounding box on at
+least `flag_frame_sides` sides AND spans at least `flag_outline_bbox_frac`
+of it (the outline still follows frame-like line work), or when the outline
+covers at least `flag_outline_bbox_frac` of the cleaned bounding box while
+the wall density inside it is under `flag_density_half` of the busiest
+quarter's density of the cleaned line work (mostly empty area inside the
+outline — a hull over margin line work). It also flags line work that hugs
+the raw bounding box on `hug_min_sides` sides while covering only
+`hug_max_area_frac` of it after the cleanup (title-block-only sheets). The
+flags ride into `floor["plan"]["flags"]`, the cleanup report into
+`floor["plan"]["isolate"]` and the box report into `floor["plan"]["box"]`.
+
+
+Steps (functions, in order):
+
+- `walls_from_dxf(path, layer_filter=None)`: LINE, LWPOLYLINE and POLYLINE
+  entities from ezdxf, 2-D only (z ignored). Layers whose names contain
+  "wall" or "partition" (case-insensitive, so WALL, A-WALL, PARTITION_CW)
+  are preferred when any line work sits on them; otherwise every line.
+  Returns segments in drawing units, the bounding box, the layers used.
+  DWG must be delivered as DXF — ezdxf does not read DWG.
+- `walls_from_pdf(path, page=1, min_len_pt=2.0, raster=None, raster_dpi=180)`:
+  vector line work from PyMuPDF `page.get_drawings()` in PDF points: straight
+  strokes and the four sides of drawn rectangles; curves dropped, strokes
+  shorter than 2 pt on the page dropped, and anything drawn inside a text
+  block dropped (dimension text, glyph strokes). Each result reports
+  `path_used`: "vector" is used when the page has that line work AND no
+  placed image covers at least 25 % of the page (a full-page picture under a
+  few stray vectors means the plan itself is a raster draw); otherwise the
+  raster fallback renders the page gray at `raster_dpi` (180, keeping
+  hairlines wider than 2 px) and traces it with `walls_from_raster`, with
+  the pixel segments converted back to points (the physical 0.3 m filter
+  still applies after scaling). `raster=False` keeps the old vector-only
+  behaviour (an empty result with a clear reason), `raster=True` forces the
+  raster path; the raster result (confidence, Otsu threshold, blob count)
+  rides along in `raster`, and low raster confidence lands in `warnings`.
+  The physical 0.3 m filter is applied after scaling, in `scale_to_area`,
+  when the real scale is known. OCR is deliberately out of scope.
+- `walls_from_raster(image, min_len_px=None, ...)`: traces a raster
+  floor-plan image (numpy array, grayscale or colour) into pixel segments
+  plus a confidence score. Steps: saturated pixels above `sat_cut` (default
+  70 on the 0-255 HSV scale) are blanked first, so carrier overlays —
+  antennas, cable routes, heat-map fills — drop out and only the neutral
+  line work stays; Otsu threshold (images over 16 MPx downscale first);
+  connected components with small area AND short bounding box are removed
+  as text/symbol blobs (a thin but elongated piece is a wall, whatever its
+  area); Zhang-Suen thinning to 1-px strokes; probabilistic Hough
+  (cv2.HoughLinesP, `minLineLength` default 4 % of the long side), keeping
+  near-horizontal and near-vertical segments plus long diagonals (2.5 x the
+  minimum length) and dropping short diagonals (hatching, arrows); Hough
+  runs in up to 6 seeded passes, erasing what it found between passes,
+  because extracting one segment wipes the accumulator evidence of its
+  collinear neighbours and a single pass can lose whole walls; collinear
+  fragments stitch back across a gap only where ink spans it (an opening
+  has no ink and stays split); then the same merge rules as the vector
+  path (collinear union, double-line faces under `double_line_px` — 1 % of
+  the long side, min 4 px — collapse to one midline wall). `confidence` =
+  the share of dark ink covered by the kept segments at their measured
+  stroke width (+-2 px); below `min_confidence` (0.5) the result flags
+  `low_confidence` and carries a warning instead of returning walls
+  silently.
+- `scale_to_area(segments, sq_ft, box=None, isolate=False)`: crops to the
+  building box first when `box` is given (`crop_to_box`, above; drawing
+  units or a {"frac": [...]} dict; the default way to isolate the
+  building), then — only with `isolate=True` — runs `isolate_building`
+  (above), then scales m per drawing unit so the building outline covers
+  `sq_ft` (1 sq ft = 0.09290304 m2). The result reports what the box kept
+  (`box`: the box in drawing units, segments in/kept, kept share of the
+  line length). The outline is the perimeter
+  perimeter.py traces over a raster of the kept line work when it succeeds
+  (so stray line work outside the building cannot inflate the scale);
+  otherwise the kept line work's bounding box. `scale_source` says which and
+  `warnings` carries the trace's failure reason. After scaling the segments
+  are cleaned: pieces under 0.3 m dropped (text, hatching, dimension ticks),
+  near-duplicates collapsed, collinear overlapping pieces merged, and walls
+  drawn as two parallel faces less than 0.4 m apart collapsed to one midline
+  wall. Walls separated by a door gap stay separate: only touching or
+  overlapping extents merge.
+- `merge_segments(segments, double_line_m=0.4, min_wall_m=0.3, ...)`:
+  the cleaner on its own, for tests and one-off imports; the angle (0.5
+  degrees) and offset (1 cm) grouping quanta are parameters, and the raster
+  path calls it with pixel-suited values.
+- `floor_from_plan(segments, sq_ft, ppm=2.0, material="drywall", box=None)`:
+  the
+  ROMtool floor dict: walls in floor px (`x1, y1, x2, y2, material`), a
+  measured clutter map (wall crossings per metre per square, the physics
+  field), `loss_mode: "physics"`, empty elements, the traced outline when
+  the perimeter trace succeeded, and a `plan` block with the scale
+  provenance, what the building box kept (`box`), the heuristic
+  sheet-cleanup report (`isolate`: kept share of the line
+  length, dropped segment counts by reason), the cleanup `flags` and, when
+  the trace produced an outline, `outline_density`: wall metres per square
+  metre and mean wall crossings per metre measured inside the traced
+  outline only (the same fixed ray fan as wall_density, clipped to the
+  outline, so margin area outside the building does not dilute the metric).
+  Ready for autoplace, predict and the cascade unchanged.
+- `wall_density(floor)`: wall metres per square metre of floor and the mean
+  wall crossings per metre along a fixed 180-ray fan from the floor centre
+  (deterministic), over the whole floor bounding box, for reporting.
+
+Limits:
+- The scale inherits the plan's geometry: a wrong `sq_ft` or line work
+  outside the building (title blocks, notes) skews it. Draw a building box
+  (`--box` / `--box-frac`, checked against `--preview`) to keep the
+  furniture out; the heuristic cleanup (`isolate_building`, off by
+  default) is the fallback when no box is convenient, and the perimeter
+  trace runs on the kept line work; when either fails, check `flags`,
+  `warnings` and the scale against the plan.
+- The cleanup is heuristic and threshold-based (grade D): a frame whose
+  ring the building touches is not removable as a ring (the outline then
+  still follows the outer line work — the
+  `outline_touches_raw_bbox` / `outline_mostly_empty` flags say so), and a
+  detached margin cluster that meets all three satellite tests (within
+  `sat_gap_frac` of the building, at least `sat_min_share` of its wall
+  length, at least `sat_min_dim_frac` of its box in both dimensions) is
+  kept as a second wing. A sheet whose only content outside the cleaned
+  line work sits inside the cleanup band can trip `outline_touches_raw_bbox`
+  on a perfectly clean building that fills its own bounding box — read the
+  flags against the plan, they are suspicion markers, not failures (a
+  title-block-only sheet is refused outright with a clear error when no
+  building line work at all survives the cleanup).
+- A building that stands clear of every sheet edge but is jointly covered
+  by two opposite edge strips is protected (kept whole) by the
+  touching-cluster rule; the corollary is that a real title block attached
+  to a detached legend row that together span two edges can also be kept.
+  Both outcomes are flagged, not silent.
+- A building with no interior wall touching its exterior line work (a bare
+  outline with nothing inside or attached) can look like a sheet frame to
+  the hollowness test; the "other line work inside" requirement protects a
+  lone such outline, but a bare rectangle drawn next to margin line work is
+  on the boundary of the heuristic — check the kept share.
+- The 0.4 m double-line rule merges any two close overlapping parallel
+  faces, wall or not (a face pair and a duct beside it become one wall).
+- Angle grouping is quantized (0.5 degrees, 1 cm offsets), so two collinear
+  pieces that are quantized apart stay separate: an unmerged pair costs a
+  double crossing, never a missing wall.
+- Hatching drawn as long parallel lines survives the filters; it counts as
+  wall crossings (the same limit as the clutter map). Short diagonal
+  hatching is dropped by the raster path, but it lowers the raster
+  confidence and the result then tells you to check the walls.
+- Raster traces are resolution-bound: wall detail thinner than
+  ~2 px at the render dpi (min 150-200 dpi for hairlines) or scans under
+  about 150 dpi lose thin partitions; `min_len_px` (default 4 % of the long
+  side) sets the shortest wall the trace will see.
+- Raster confidence counts only what the kept segments explain. A coloured
+  overlay that sits ON a wall blanks those wall pixels before thresholding,
+  so the wall can come back as pieces on either side (small gaps may
+  stitch back; wide ones stay split) — check low-confidence pages against
+  the drawing.
+- Scanned PDFs no longer import nothing: pages without usable vector line
+  work (or with the plan sitting in a large placed image) fall back to the
+  raster trace automatically and report `path_used: "raster"`. Pass
+  `raster=False` for the old vector-only behaviour. OCR is not attempted —
+  a page whose plan is text only imports nothing, with a reason.
+- Wall loss is taken from `physics_loss.wall_material` (drywall 4 dB at the
+  band frequency); a floor whose plan shows CMU or concrete needs the
+  material changed per floor.
 
 ## BOM export, parts catalog and assembly builders
 
