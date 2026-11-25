@@ -1,0 +1,530 @@
+{
+ "floors": 45,
+ "seg_db_per_floor": 0.776,
+ "connector_loss_db_each": 0.1,
+ "riser_1_2in_db_per_m": 0.144,
+ "riser_cable_id": "coax_1_2in",
+ "stack": [
+  {
+   "oem": "q4000c",
+   "design_N": 4,
+   "ports": 1,
+   "k_flat": 1,
+   "k_flat_cap": false,
+   "k_stack": 1,
+   "remotes_bldg": 45,
+   "groups": [
+    {
+     "prefix": "q4000c",
+     "port_dbm": 16.0,
+     "p_min": 15.69,
+     "k_stack_group": 1
+    }
+   ],
+   "binding_group": "q4000c",
+   "worst_margin_db_at_k_stack": 0.31,
+   "design_thr_dbm": -103.0,
+   "tappers": 0,
+   "riser_segments": 0,
+   "riser_cable_1_2in_m": 0.0,
+   "riser_connectors": 0,
+   "taps_detail": [],
+   "floor_bom": {
+    "antenna | Omni ceiling antenna (ea)": 4.0,
+    "cable | Coax, 1/2 in corrugated (ft)": 229.7,
+    "cable | Coax, 1/2 in corrugated (m)": 70.0,
+    "cable | Coax, 7/8 in corrugated (ft)": 9.8,
+    "cable | Coax, 7/8 in corrugated (m)": 3.0,
+    "connectors | N-type connectors (pairs per Coax, 1/2 in corrugated run) (ea)": 8.0,
+    "connectors | N-type connectors (pairs per Coax, 7/8 in corrugated run) (ea)": 2.0,
+    "splitter | Splitter, 4-way (ea)": 1.0
+   },
+   "notes": [],
+   "per_remote_fiber_bom": {
+    "cable | Fiber, single-mode (head end to remote) (ft)": 5454.0,
+    "cable | Fiber, single-mode (head end to remote) (m)": 1662.8,
+    "connectors | Fiber connectors (pairs per fiber run) (ea)": 90.0
+   }
+  },
+  {
+   "oem": "signalmax",
+   "design_N": 4,
+   "ports": 4,
+   "k_flat": 1,
+   "k_flat_cap": false,
+   "k_stack": 1,
+   "remotes_bldg": 12,
+   "groups": [
+    {
+     "prefix": "signalmax",
+     "port_dbm": 17.0,
+     "p_min": 15.75,
+     "k_stack_group": 1
+    }
+   ],
+   "binding_group": "signalmax",
+   "worst_margin_db_at_k_stack": 1.25,
+   "design_thr_dbm": -103.0,
+   "tappers": 0,
+   "riser_segments": 0,
+   "riser_cable_1_2in_m": 0.0,
+   "riser_connectors": 0,
+   "taps_detail": [],
+   "floor_bom": {
+    "antenna | Omni ceiling antenna (ea)": 4.0,
+    "cable | Coax, 1/2 in corrugated (ft)": 229.7,
+    "cable | Coax, 1/2 in corrugated (m)": 70.0,
+    "cable | Coax, 7/8 in corrugated (ft)": 9.8,
+    "cable | Coax, 7/8 in corrugated (m)": 3.0,
+    "connectors | N-type connectors (pairs per Coax, 1/2 in corrugated run) (ea)": 8.0,
+    "connectors | N-type connectors (pairs per Coax, 7/8 in corrugated run) (ea)": 2.0,
+    "splitter | Splitter, 4-way (ea)": 1.0
+   },
+   "notes": [],
+   "per_remote_fiber_bom": {
+    "cable | Fiber, single-mode (head end to remote) (ft)": 1454.4,
+    "cable | Fiber, single-mode (head end to remote) (m)": 443.4,
+    "connectors | Fiber connectors (pairs per fiber run) (ea)": 24.0
+   }
+  },
+  {
+   "oem": "surecall_5xmax",
+   "design_N": 4,
+   "ports": 1,
+   "k_flat": 1,
+   "k_flat_cap": false,
+   "k_stack": 1,
+   "remotes_bldg": 45,
+   "groups": [
+    {
+     "prefix": "5xmax",
+     "port_dbm": 16.0,
+     "p_min": 15.69,
+     "k_stack_group": 1
+    }
+   ],
+   "binding_group": "5xmax",
+   "worst_margin_db_at_k_stack": 0.31,
+   "design_thr_dbm": -103.0,
+   "tappers": 0,
+   "riser_segments": 0,
+   "riser_cable_1_2in_m": 0.0,
+   "riser_connectors": 0,
+   "taps_detail": [],
+   "floor_bom": {
+    "antenna | Omni ceiling antenna (ea)": 4.0,
+    "cable | Coax, 1/2 in corrugated (ft)": 229.7,
+    "cable | Coax, 1/2 in corrugated (m)": 70.0,
+    "cable | Coax, 7/8 in corrugated (ft)": 9.8,
+    "cable | Coax, 7/8 in corrugated (m)": 3.0,
+    "connectors | N-type connectors (pairs per Coax, 1/2 in corrugated run) (ea)": 8.0,
+    "connectors | N-type connectors (pairs per Coax, 7/8 in corrugated run) (ea)": 2.0,
+    "splitter | Splitter, 4-way (ea)": 1.0
+   },
+   "notes": [],
+   "per_remote_fiber_bom": {
+    "cable | Fiber, single-mode (head end to remote) (ft)": 5454.0,
+    "cable | Fiber, single-mode (head end to remote) (m)": 1662.8,
+    "connectors | Fiber connectors (pairs per fiber run) (ea)": 90.0
+   }
+  },
+  {
+   "oem": "adxv_mpr",
+   "design_N": 4,
+   "ports": 1,
+   "k_flat": 11,
+   "k_flat_cap": false,
+   "k_stack": 6,
+   "remotes_bldg": 8,
+   "groups": [
+    {
+     "prefix": "adxv_low33",
+     "port_dbm": 33.0,
+     "p_min": 7.22,
+     "k_stack_group": 14
+    },
+    {
+     "prefix": "adxv_high37",
+     "port_dbm": 37.0,
+     "p_min": 23.64,
+     "k_stack_group": 6
+    }
+   ],
+   "binding_group": "adxv_high37",
+   "worst_margin_db_at_k_stack": 0.24,
+   "design_thr_dbm": -95.0,
+   "tappers": 5,
+   "riser_segments": 5,
+   "riser_cable_1_2in_m": 20.0,
+   "riser_connectors": 10,
+   "taps_detail": [
+    {
+     "floor_from_remote": 0,
+     "ratio_db": 8.0,
+     "through_loss_db": 1.05
+    },
+    {
+     "floor_from_remote": 1,
+     "ratio_db": 7.0,
+     "through_loss_db": 1.27
+    },
+    {
+     "floor_from_remote": 2,
+     "ratio_db": 6.0,
+     "through_loss_db": 1.56
+    },
+    {
+     "floor_from_remote": 3,
+     "ratio_db": 4.8,
+     "through_loss_db": 2.05
+    },
+    {
+     "floor_from_remote": 4,
+     "ratio_db": 3.0,
+     "through_loss_db": 3.32
+    }
+   ],
+   "floor_bom": {
+    "antenna | Omni ceiling antenna (ea)": 4.0,
+    "cable | Coax, 1/2 in corrugated (ft)": 229.7,
+    "cable | Coax, 1/2 in corrugated (m)": 70.0,
+    "cable | Coax, 7/8 in corrugated (ft)": 9.8,
+    "cable | Coax, 7/8 in corrugated (m)": 3.0,
+    "connectors | N-type connectors (pairs per Coax, 1/2 in corrugated run) (ea)": 8.0,
+    "connectors | N-type connectors (pairs per Coax, 7/8 in corrugated run) (ea)": 2.0,
+    "splitter | Splitter, 4-way (ea)": 1.0
+   },
+   "notes": [],
+   "per_remote_fiber_bom": {
+    "cable | Fiber, single-mode (head end to remote) (ft)": 969.6,
+    "cable | Fiber, single-mode (head end to remote) (m)": 295.6,
+    "connectors | Fiber connectors (pairs per fiber run) (ea)": 16.0
+   }
+  },
+  {
+   "oem": "adxv_lpr",
+   "design_N": 4,
+   "ports": 1,
+   "k_flat": 2,
+   "k_flat_cap": false,
+   "k_stack": 2,
+   "remotes_bldg": 23,
+   "groups": [
+    {
+     "prefix": "adxv_lpr_lo",
+     "port_dbm": 17.0,
+     "p_min": -0.58,
+     "k_stack_group": 8
+    },
+    {
+     "prefix": "adxv_lpr_hi",
+     "port_dbm": 20.0,
+     "p_min": 15.78,
+     "k_stack_group": 2
+    }
+   ],
+   "binding_group": "adxv_lpr_hi",
+   "worst_margin_db_at_k_stack": 0.12,
+   "design_thr_dbm": -103.0,
+   "tappers": 1,
+   "riser_segments": 1,
+   "riser_cable_1_2in_m": 4.0,
+   "riser_connectors": 2,
+   "taps_detail": [
+    {
+     "floor_from_remote": 0,
+     "ratio_db": 3.0,
+     "through_loss_db": 3.32
+    }
+   ],
+   "floor_bom": {
+    "antenna | Omni ceiling antenna (ea)": 4.0,
+    "cable | Coax, 1/2 in corrugated (ft)": 229.7,
+    "cable | Coax, 1/2 in corrugated (m)": 70.0,
+    "cable | Coax, 7/8 in corrugated (ft)": 9.8,
+    "cable | Coax, 7/8 in corrugated (m)": 3.0,
+    "connectors | N-type connectors (pairs per Coax, 1/2 in corrugated run) (ea)": 8.0,
+    "connectors | N-type connectors (pairs per Coax, 7/8 in corrugated run) (ea)": 2.0,
+    "splitter | Splitter, 4-way (ea)": 1.0
+   },
+   "notes": [],
+   "per_remote_fiber_bom": {
+    "cable | Fiber, single-mode (head end to remote) (ft)": 2787.6,
+    "cable | Fiber, single-mode (head end to remote) (m)": 849.9,
+    "connectors | Fiber connectors (pairs per fiber run) (ea)": 46.0
+   }
+  },
+  {
+   "oem": "adxv_hpr",
+   "design_N": 4,
+   "ports": 1,
+   "k_flat": 27,
+   "k_flat_cap": false,
+   "k_stack": 11,
+   "remotes_bldg": 5,
+   "groups": [
+    {
+     "prefix": "adxv_hpr_lo",
+     "port_dbm": 43.0,
+     "p_min": 7.32,
+     "k_stack_group": 21
+    },
+    {
+     "prefix": "adxv_hpr_hi",
+     "port_dbm": 46.0,
+     "p_min": 23.68,
+     "k_stack_group": 11
+    }
+   ],
+   "binding_group": "adxv_hpr_hi",
+   "worst_margin_db_at_k_stack": 1.24,
+   "design_thr_dbm": -95.0,
+   "tappers": 10,
+   "riser_segments": 10,
+   "riser_cable_1_2in_m": 40.0,
+   "riser_connectors": 20,
+   "taps_detail": [
+    {
+     "floor_from_remote": 0,
+     "ratio_db": 10.0,
+     "through_loss_db": 0.76
+    },
+    {
+     "floor_from_remote": 1,
+     "ratio_db": 10.0,
+     "through_loss_db": 0.76
+    },
+    {
+     "floor_from_remote": 2,
+     "ratio_db": 10.0,
+     "through_loss_db": 0.76
+    },
+    {
+     "floor_from_remote": 3,
+     "ratio_db": 10.0,
+     "through_loss_db": 0.76
+    },
+    {
+     "floor_from_remote": 4,
+     "ratio_db": 8.0,
+     "through_loss_db": 1.05
+    },
+    {
+     "floor_from_remote": 5,
+     "ratio_db": 8.0,
+     "through_loss_db": 1.05
+    },
+    {
+     "floor_from_remote": 6,
+     "ratio_db": 7.0,
+     "through_loss_db": 1.27
+    },
+    {
+     "floor_from_remote": 7,
+     "ratio_db": 6.0,
+     "through_loss_db": 1.56
+    },
+    {
+     "floor_from_remote": 8,
+     "ratio_db": 4.8,
+     "through_loss_db": 2.05
+    },
+    {
+     "floor_from_remote": 9,
+     "ratio_db": 3.0,
+     "through_loss_db": 3.32
+    }
+   ],
+   "floor_bom": {
+    "antenna | Omni ceiling antenna (ea)": 4.0,
+    "cable | Coax, 1/2 in corrugated (ft)": 229.7,
+    "cable | Coax, 1/2 in corrugated (m)": 70.0,
+    "cable | Coax, 7/8 in corrugated (ft)": 9.8,
+    "cable | Coax, 7/8 in corrugated (m)": 3.0,
+    "connectors | N-type connectors (pairs per Coax, 1/2 in corrugated run) (ea)": 8.0,
+    "connectors | N-type connectors (pairs per Coax, 7/8 in corrugated run) (ea)": 2.0,
+    "splitter | Splitter, 4-way (ea)": 1.0
+   },
+   "notes": [],
+   "per_remote_fiber_bom": {
+    "cable | Fiber, single-mode (head end to remote) (ft)": 606.0,
+    "cable | Fiber, single-mode (head end to remote) (m)": 184.8,
+    "connectors | Fiber connectors (pairs per fiber run) (ea)": 10.0
+   }
+  },
+  {
+   "oem": "comba_mruc",
+   "design_N": 4,
+   "ports": 8,
+   "k_flat": 1,
+   "k_flat_cap": false,
+   "k_stack": 1,
+   "remotes_bldg": 6,
+   "groups": [
+    {
+     "prefix": "comba_mruc",
+     "port_dbm": 17.0,
+     "p_min": 15.75,
+     "k_stack_group": 1
+    }
+   ],
+   "binding_group": "comba_mruc",
+   "worst_margin_db_at_k_stack": 1.25,
+   "design_thr_dbm": -103.0,
+   "tappers": 0,
+   "riser_segments": 0,
+   "riser_cable_1_2in_m": 0.0,
+   "riser_connectors": 0,
+   "taps_detail": [],
+   "floor_bom": {
+    "antenna | Omni ceiling antenna (ea)": 4.0,
+    "cable | Coax, 1/2 in corrugated (ft)": 229.7,
+    "cable | Coax, 1/2 in corrugated (m)": 70.0,
+    "cable | Coax, 7/8 in corrugated (ft)": 9.8,
+    "cable | Coax, 7/8 in corrugated (m)": 3.0,
+    "connectors | N-type connectors (pairs per Coax, 1/2 in corrugated run) (ea)": 8.0,
+    "connectors | N-type connectors (pairs per Coax, 7/8 in corrugated run) (ea)": 2.0,
+    "splitter | Splitter, 4-way (ea)": 1.0
+   },
+   "notes": [],
+   "per_remote_fiber_bom": {
+    "cable | Fiber, single-mode (head end to remote) (ft)": 727.2,
+    "cable | Fiber, single-mode (head end to remote) (m)": 221.7,
+    "connectors | Fiber connectors (pairs per fiber run) (ea)": 12.0
+   }
+  },
+  {
+   "oem": "jma_t19awe",
+   "design_N": 4,
+   "ports": 1,
+   "k_flat": 27,
+   "k_flat_cap": false,
+   "k_stack": 11,
+   "remotes_bldg": 5,
+   "groups": [
+    {
+     "prefix": "jma_t19awe",
+     "port_dbm": 46.0,
+     "p_min": 23.68,
+     "k_stack_group": 11
+    }
+   ],
+   "binding_group": "jma_t19awe",
+   "worst_margin_db_at_k_stack": 1.24,
+   "design_thr_dbm": -95.0,
+   "tappers": 10,
+   "riser_segments": 10,
+   "riser_cable_1_2in_m": 40.0,
+   "riser_connectors": 20,
+   "taps_detail": [
+    {
+     "floor_from_remote": 0,
+     "ratio_db": 10.0,
+     "through_loss_db": 0.76
+    },
+    {
+     "floor_from_remote": 1,
+     "ratio_db": 10.0,
+     "through_loss_db": 0.76
+    },
+    {
+     "floor_from_remote": 2,
+     "ratio_db": 10.0,
+     "through_loss_db": 0.76
+    },
+    {
+     "floor_from_remote": 3,
+     "ratio_db": 10.0,
+     "through_loss_db": 0.76
+    },
+    {
+     "floor_from_remote": 4,
+     "ratio_db": 8.0,
+     "through_loss_db": 1.05
+    },
+    {
+     "floor_from_remote": 5,
+     "ratio_db": 8.0,
+     "through_loss_db": 1.05
+    },
+    {
+     "floor_from_remote": 6,
+     "ratio_db": 7.0,
+     "through_loss_db": 1.27
+    },
+    {
+     "floor_from_remote": 7,
+     "ratio_db": 6.0,
+     "through_loss_db": 1.56
+    },
+    {
+     "floor_from_remote": 8,
+     "ratio_db": 4.8,
+     "through_loss_db": 2.05
+    },
+    {
+     "floor_from_remote": 9,
+     "ratio_db": 3.0,
+     "through_loss_db": 3.32
+    }
+   ],
+   "floor_bom": {
+    "antenna | Omni ceiling antenna (ea)": 4.0,
+    "cable | Coax, 1/2 in corrugated (ft)": 229.7,
+    "cable | Coax, 1/2 in corrugated (m)": 70.0,
+    "cable | Coax, 7/8 in corrugated (ft)": 9.8,
+    "cable | Coax, 7/8 in corrugated (m)": 3.0,
+    "connectors | N-type connectors (pairs per Coax, 1/2 in corrugated run) (ea)": 8.0,
+    "connectors | N-type connectors (pairs per Coax, 7/8 in corrugated run) (ea)": 2.0,
+    "splitter | Splitter, 4-way (ea)": 1.0
+   },
+   "notes": [],
+   "per_remote_fiber_bom": {
+    "cable | Fiber, single-mode (head end to remote) (ft)": 606.0,
+    "cable | Fiber, single-mode (head end to remote) (m)": 184.8,
+    "connectors | Fiber connectors (pairs per fiber run) (ea)": 10.0
+   }
+  },
+  {
+   "oem": "sdrc_only",
+   "design_N": 4,
+   "ports": 1,
+   "k_flat": 1,
+   "k_flat_cap": false,
+   "k_stack": 1,
+   "remotes_bldg": 45,
+   "groups": [
+    {
+     "prefix": "sdrc_only",
+     "port_dbm": 17.0,
+     "p_min": 15.75,
+     "k_stack_group": 1
+    }
+   ],
+   "binding_group": "sdrc_only",
+   "worst_margin_db_at_k_stack": 1.25,
+   "design_thr_dbm": -103.0,
+   "tappers": 0,
+   "riser_segments": 0,
+   "riser_cable_1_2in_m": 0.0,
+   "riser_connectors": 0,
+   "taps_detail": [],
+   "floor_bom": {
+    "antenna | Omni ceiling antenna (ea)": 4.0,
+    "cable | Coax, 1/2 in corrugated (ft)": 229.7,
+    "cable | Coax, 1/2 in corrugated (m)": 70.0,
+    "cable | Coax, 7/8 in corrugated (ft)": 9.8,
+    "cable | Coax, 7/8 in corrugated (m)": 3.0,
+    "connectors | N-type connectors (pairs per Coax, 1/2 in corrugated run) (ea)": 8.0,
+    "connectors | N-type connectors (pairs per Coax, 7/8 in corrugated run) (ea)": 2.0,
+    "splitter | Splitter, 4-way (ea)": 1.0
+   },
+   "notes": [],
+   "per_remote_fiber_bom": {
+    "cable | Fiber, single-mode (head end to remote) (ft)": 5454.0,
+    "cable | Fiber, single-mode (head end to remote) (m)": 1662.8,
+    "connectors | Fiber connectors (pairs per fiber run) (ea)": 90.0
+   }
+  }
+ ]
+}

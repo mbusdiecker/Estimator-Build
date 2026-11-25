@@ -6,7 +6,9 @@ Step 1: P_min(N) = lowest per-floor remote DL still hitting the coverage target 
 min band coverage, resolution --res; coverage assumed monotone in DL). Step 2: one port feeds k
 floors if P_min_mw * 10**(loss/10) <= port_mw, loss = 10log10(k) + 0.5 (k>1) + riser coax for a
 middle-floor remote ((k//2) * floor_height_m, coax_1_2in @2.0 GHz, worst band). Step 3: re-run at
-the delivered DL to confirm, plus the next-floor DL. Config estimates (grade E), not measured.
+the delivered DL to confirm, plus the next-floor DL. Design N starts at the first N with coverage
+and area, and advances while the next N buys 5+ coverage points or one more floor per port, and
+stops once one design feeds all --floors (2026-11-25 refinement: credit the one-floor-per-port gain). Config estimates (grade E), not measured.
 Drywall loss_db = -1 always -> iBwave table via ibwloss.
 """
 import argparse, json, math, os, sys
@@ -22,6 +24,7 @@ def seed_even(self):
         x, y = self._nearest_point(x0 + (i + 0.5) * (x1 - x0) / N, yc); self.add(x, y)
     self.seed_n = N
 A._Planner.seed = seed_even
+A._Planner.prune = lambda self: None  # fixed-layout design: the even seed IS the design; prune would drop antennas below N at generous DL
 
 BANDS = ["B12_700", "B5_850", "B2_1900", "B66_2100"]
 ap = argparse.ArgumentParser()
@@ -102,7 +105,16 @@ for N in range(a.nmin, a.nmax + 1):
            "remotes_bldg": math.ceil(a.floors / fpr) if fpr else None, "ant_bldg": N * a.floors}
     rows.append(row); print(json.dumps(row), flush=True)
     prev_cov = cov_at
-d = next((r for r in rows if r["P_min"] is not None and r["area_ok"]), None)
+d = None
+for r in rows:
+    if r["P_min"] is None or not r["area_ok"]: continue
+    if d is None:
+        d = r  # first N with coverage and area is the base
+    elif (r["gain_vs_prev"] is not None and r["gain_vs_prev"] >= 5.0) or (r["k_fit"] >= d["k_fit"] + 1):
+        d = r  # the next N buys 5+ coverage points or one more floor per port
+        if d["floors_per_remote"] >= a.floors: break  # a design that feeds the whole building needs no more antennas
+    else:
+        break  # stop at the first unjustified step
 print("\nsummary: " + " ".join(f"{c:>9}" for c in ["N", "P_min", "head_dB", "head_mW", "area", "5pct", "k_fit", "cov_conf", "cov_next", "f/rem", "rem_bldg", "ant_bldg"]))
 for r in rows:
     print(" ".join(f"{v!s:>9}" for v in [r["N"], r["P_min"], r["headroom_db"], r["headroom_mw"], r["area_ok"], r["five_pct_ok"], r["k_fit"], r["cov_confirmed"], r["cov_next_floor"], r["floors_per_remote"], r["remotes_bldg"], r["ant_bldg"]]))
