@@ -215,6 +215,72 @@ def _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor,
     return out
 
 
+# The code table published with every public safety package (owner 2026-11-26:
+# "publish all code tables with the PS BOM package so the standards followed are
+# known"). Row: topic | IFC 2024 cite | NFPA 1225-2022 cite | requirement | how
+# the tool enforces it. Sources: codes.iccsafe.org (IFC 2024, read verbatim) and
+# the NFPA 1225-2022 chapter 18 PDF on disk (scripts/pmf/codes), cross-checked
+# against the Safer Buildings Coalition Quick Code Reference (August 2026).
+PS_CODE_TABLE = [
+    {"topic": "Equipment listing", "ifc": "510.4", "nfpa": "18.12.1.3",
+     "requirement": "ERCES components listed to UL 2524.",
+     "enforcement": "the PS packages carry UL 2524 listed parts only (data sheet listings on file)"},
+    {"topic": "Coverage", "ifc": "510.4.1", "nfpa": "18.8.3, 18.8.4",
+     "requirement": "95 percent of general areas and 99 percent of critical areas per floor.",
+     "enforcement": "design side; the acceptance test runs per the grid method (IFC 510.5.4 / NFPA 1225 18.5, 20.3.10.1)"},
+    {"topic": "Audio quality", "ifc": "510.4.1.1", "nfpa": "18.9",
+     "requirement": "DAQ 3.0 downlink and uplink (or the equivalent BER or SINR).",
+     "enforcement": "design side; carried into the link budget checks"},
+    {"topic": "Signal strength", "ifc": "510.4.1.1 (2015/2021 wording)", "nfpa": "none in 1225-2022",
+     "requirement": "the -95 dBm figure appears only in the IFC 2015 and 2021 editions; the 2024 IFC and NFPA 1225 use DAQ 3.0.",
+     "enforcement": "assumption noted in the ROM when a jurisdiction adopts the older wording"},
+    {"topic": "Standby power", "ifc": "510.4.2.3", "nfpa": "18.13.2",
+     "requirement": "dedicated 12 h at 100 percent, or a 2 h battery with generator power carrying the full load for 12 h.",
+     "enforcement": "the sized battery (the autonomy_hours setting: 12 h default, 24 h owner option)"},
+    {"topic": "Cabinets and batteries", "ifc": "510.4.2.4(1),(2)", "nfpa": "18.3.1",
+     "requirement": "NEMA 4 (or 4X) equipment cabinets; batteries in NEMA 3R or better.",
+     "enforcement": "the parts carry the enclosure ratings on their data sheets (NEMA 4 sheets on file)"},
+    {"topic": "Donor isolation", "ifc": "510.4.2.4(4)", "nfpa": "18.3.3.2, 18.10",
+     "requirement": "at least 20 dB above system gain between the donor antenna and all inside antennas under all operating conditions.",
+     "enforcement": "the packages note the isolation check routines; verified at commissioning"},
+    {"topic": "Oscillation", "ifc": "510.4.2.4(5)", "nfpa": "18.3.2",
+     "requirement": "built-in oscillation detection and control, supervisory signal, shutdown when uncorrectable.",
+     "enforcement": "the selected parts carry oscillation management (data sheet features)"},
+    {"topic": "Monitoring", "ifc": "510.4.2.5", "nfpa": "18.14, NFPA 72 ch. 10",
+     "requirement": "monitored by a listed fire alarm control unit with the 8 supervisory signals (AC loss, charger failure, signal source, RF device failure, 70 percent low battery, critical components, the alarm link, oscillation).",
+     "enforcement": "the annunciator and alarm wiring parts; the alarm configuration per UL 2524 second edition"},
+    {"topic": "Dedicated annunciator", "ifc": "510.4.2.5", "nfpa": "18.14.2.1",
+     "requirement": "a dedicated annunciator in the fire command center where one exists.",
+     "enforcement": "the annunciator part (PSR-ANN / CS40-ANNUNC class), included by the package"},
+    {"topic": "Approvals", "ifc": "510.5.2, 510.5.5, FCC 90.219", "nfpa": "18.2.1, 18.6.1, 18.7.2",
+     "requirement": "fire code official plus frequency license holder approval before installation and activation; FCC Class B registration where applicable; FirstNet Band 14 retransmission needs FirstNet Authority consent.",
+     "enforcement": "process items in the ROM notes"},
+    {"topic": "Noise and non-interference", "ifc": "510.4.2.9", "nfpa": "18.6, 18.9.3",
+     "requirement": "uplink noise coordinated with all affected license holders; no interference to the public safety system.",
+     "enforcement": "design side; the uplink check in the comparison runs"},
+    {"topic": "Cable and survivability", "ifc": "510.4 via NFPA 1225", "nfpa": "18.12.3.1, 18.12.3.3, 18.12.3.4",
+     "requirement": "plenum or riser cable per Article 820; backbone fire rating only in nonsprinklered, partially sprinklered or high-rise buildings.",
+     "enforcement": "the coax parts (plenum riser in the kits) and the sprinkler-status switch at the ROM inputs"},
+    {"topic": "Lightning protection", "ifc": "via NFPA 1225", "nfpa": "18.4 (NFPA 70 Article 820, UL 497C)",
+     "requirement": "listed antenna discharge units on the donor feed.",
+     "enforcement": "the arrestor parts (Polyphaser IS-50NX-C2 class per the ROM precedent)"},
+    {"topic": "Testing", "ifc": "510.5.4, 510.6.1", "nfpa": "18.5, 20.3.10.1",
+     "requirement": "initial and acceptance, then annual and 5-year inspections.",
+     "enforcement": "process items in the ROM notes"},
+    {"topic": "Personnel", "ifc": "510.5.3", "nfpa": "18.2, 3.3.115",
+     "requirement": "FCC GROL plus approved in-building training, or demonstrated skills to the fire code official.",
+     "enforcement": "process item in the ROM notes"},
+]
+
+
+def _emit_code_tables(pkg, note):
+    """Publish the standards-followed matrix with the PS BOM package (owner
+    2026-11-26). One note line per row, prefixed so it reads as a table."""
+    for row in PS_CODE_TABLE:
+        note("%s code table | %s | IFC %s | NFPA %s | %s | enforced: %s"
+             % (pkg["label"], row["topic"], row["ifc"], row["nfpa"], row["requirement"], row["enforcement"]))
+
+
 def _head_end_entries(pkg, rus, add, note, autonomy_hours=12, ps_mode=False):
     """Emit the confirmed head end kit (oem_specs.head_end): site_parts sized by
     their per rule and per_remote lines (owner wiring 2026-11-26).
@@ -295,6 +361,8 @@ def _head_end_entries(pkg, rus, add, note, autonomy_hours=12, ps_mode=False):
                     "applies only where the fire code official accepts it (510.1 exception 4)."
                     % pkg["label"])
         note(add_note)
+    if pkg.get("public_safety"):
+        _emit_code_tables(pkg, note)
 
 
 def expand_oem(items, pkg_key, system_type=None, packages=None, area_sqft=None,

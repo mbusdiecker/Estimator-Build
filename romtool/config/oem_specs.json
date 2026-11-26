@@ -1325,7 +1325,7 @@
       "qty": 3,
       "per": "project",
       "variant": "converged only",
-      "why": "converged build (owner 2026-11-26): the PS and commercial actives stay separate and each keeps its own donor, while the coax, splitters and antennas are shared with the commercial package; this combiner inserts the PS band group onto the shared plate (the ADRF-CBC-700-2600 class from the Melville commercial run, one per sector group)"
+      "why": "converged build (owner 2026-11-26): the PS and commercial actives stay separate and each keeps its own donor, while the coax, splitters and antennas are shared with the commercial package; this combiner inserts the PS band group onto the shared plate (the ADRF-CBC-700-2600 class from the Melville commercial run, one per sector group); the PS remotes ride the design's shared coax and tap plates (owner 2026-11-26)"
      }
     ],
     "per_remote": [
@@ -1338,7 +1338,8 @@
    },
    "notes": [
     "UL 2524 listing is required on the ERCES components (NFPA 1225 18.12.1.3); the price list family ADXV-R-3378P-U2 / ADXV-R-25VU-U2 and the NEMA 4 head end ADXV-H-NMS-AC-N4 are the listed precedents. The Melville inputs carried 12 h battery, wall mount donor, no EPO and no PSR-ANN-U2; the annunciator line here is the code default, and the AHJ input decides."
-   ]
+   ],
+   "public_safety": true
   },
   "westell_cs45_ps": {
    "label": "Westell ProtectLink CS45 PS BDA (700/800, Class A/B, fiber DAS ready)",
@@ -1459,7 +1460,7 @@
       "qty": 3,
       "per": "project",
       "variant": "converged only",
-      "why": "converged build (owner 2026-11-26): the PS and commercial actives stay separate and each keeps its own donor, while the coax, splitters and antennas are shared with the commercial package; this combiner inserts the PS band group onto the shared plate (the ADRF-CBC-700-2600 class from the Melville commercial run, one per sector group)"
+      "why": "converged build (owner 2026-11-26): the PS and commercial actives stay separate and each keeps its own donor, while the coax, splitters and antennas are shared with the commercial package; this combiner inserts the PS band group onto the shared plate (the ADRF-CBC-700-2600 class from the Melville commercial run, one per sector group); the PS remotes ride the design's shared coax and tap plates (owner 2026-11-26)"
      }
     ],
     "donor_parts": {
@@ -1473,7 +1474,8 @@
     "UL 2524 listings on the sheets: UL 2524 (ERCES), UL 508A industrial control panels (UL50E Type 4), UL 62368-1; the CS40 conduit glands make the enclosure NEMA 4. The FCC Class B registration requirement (47 CFR 90.219) is printed on the Comba and Westell data sheets.",
     "The remote annunciator (CS40-ANNUNC class) is optional on the sheets and required by the AHJ where an annunciation point is demanded (IFC 510.4.2.5, NFPA 1225 18.14.2).",
     "Coverage acceptance: 95 percent per floor on the 20-grid (40-grid alternative) test per IFC 510.5.4 verbatim text captured 2026-11-26."
-   ]
+   ],
+   "public_safety": true
   },
   "comba_ps_v3": {
    "label": "Comba ComFlex NG V3 PS BDA / fiber DAS (700/800, P25, Band 14 option)",
@@ -1611,7 +1613,7 @@
       "qty": 3,
       "per": "project",
       "variant": "converged only",
-      "why": "converged build (owner 2026-11-26): the PS and commercial actives stay separate and each keeps its own donor, while the coax, splitters and antennas are shared with the commercial package; this combiner inserts the PS band group onto the shared plate (the ADRF-CBC-700-2600 class from the Melville commercial run, one per sector group)"
+      "why": "converged build (owner 2026-11-26): the PS and commercial actives stay separate and each keeps its own donor, while the coax, splitters and antennas are shared with the commercial package; this combiner inserts the PS band group onto the shared plate (the ADRF-CBC-700-2600 class from the Melville commercial run, one per sector group); the PS remotes ride the design's shared coax and tap plates (owner 2026-11-26)"
      }
     ],
     "per_remote": [
@@ -1632,7 +1634,320 @@
     "UL 2524 listing with the October 2018 second revision alarm configuration; HCAI listing OSP-0796; UL50E Type 4 / NEMA 4 enclosure for the BDA and BBU.",
     "Band coverage: this package covers 700/800 and the Band 14 option. VHF and UHF ride the ADRF package (PSR-VU-9537 with the BPF-V-1 and BPF-U-1 filters, sheets on disk) or the UHF firmware option.",
     "The MU/FOU/RU line: 4 FOU and 32 remotes per Master per section 1.9; battery options 30, 60, 100 Ah LiFePO4 designed for the 12 h or 24 h standard runtime requirements."
-   ]
+   ],
+   "public_safety": true
+  },
+  "adrf_psr_vu": {
+   "label": "ADRF PSR-VU-9537 (VHF/UHF channelized digital repeater, UL 2524 second edition)",
+   "system_type": "bda",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "public_safety": true,
+   "source_label": "PSR-VU-9537-X v4 DS + PSR-VU-9537-U1 v1 DS (wall variant) + ADRF-BPF-V-1 and ADRF-BPF-U-1 DS (December 2024); UL 2524 second edition classified by MET as a comprehensive solution including the annunciator and the ADRF BBx battery backups",
+   "ratios": {},
+   "parts": {
+    "head_end": {
+     "manufacturer": "ADRF",
+     "model": "PSR-VU-9537-X",
+     "description": "VHF/UHF channelized digital repeater: VHF 136-174 MHz and UHF 380-512 MHz, up to 1 wideband and 8 non-contiguous narrow bands per band, P25 Phase 1/2 and analog, gain VHF 85 dB, UHF 85 dB (APCO25) / 95 dB (LMR450), composite output VHF 28 dBm / UHF 37 dBm downlink and VHF 24 / UHF 27 dBm uplink, NEMA 4 indoor or outdoor, oscillation detection with automatic shutdown, UL 2524 second edition (MET)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_bbu": {
+     "manufacturer": "ADRF",
+     "model": "BBx series (ADRF-BBx-N4, 12/24/48 V)",
+     "description": "Battery backup solution for public safety (the UL 2524 comprehensive listing covers the repeater, annunciator and BBx battery backups), sized by the tool",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "bpf_vhf": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-BPF-V-1",
+     "description": "VHF band pass filter, 138-174 MHz, insertion loss 2.0 dB max, 30 W, SMA",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "bpf_uhf": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-BPF-U-1",
+     "description": "UHF band pass filter, 380-512 MHz, insertion loss 1.0 dB max, 30 W, SMA",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "annunciator": {
+     "manufacturer": "ADRF",
+     "model": "PSR-ANN series",
+     "description": "PSR annunciator (included in the UL 2524 comprehensive listing)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "donor_antenna": {
+     "manufacturer": "ADRF",
+     "model": "VHF/UHF PS donor per the jurisdiction frequency plan",
+     "description": "Donor antenna per the PS frequency plan (VHF/UHF); sheets per the vendor at the ROM step",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "arrestor_ps": {
+     "manufacturer": "Polyphaser",
+     "model": "IS-50NX-C2 class",
+     "description": "Lightning protector rated for the VHF/UHF donor feed (IS-50NX-C2 covers 125-1000 MHz; VHF/UHF guard band per the filter sheets)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_bbu_120ah": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-BBx 120 Ah (24/48 V class)",
+     "description": "Battery backup module, 120 Ah class, UL 2524 comprehensive listing member",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_bbu_45ah": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-BBx 45 Ah (24/48 V class)",
+     "description": "Battery backup module, 45 Ah class",
+     "jobs": 0,
+     "unit": "ea"
+    }
+   },
+   "limits": {
+    "remotes_per_master_max": 1,
+    "gain_dl_db_vhf": 85,
+    "gain_dl_db_uhf": 85,
+    "gain_ul_db_uhf_lmr450": 95,
+    "dl_power_vhf_dbm": 28,
+    "dl_power_uhf_dbm": 37,
+    "ul_power_vhf_dbm": 24,
+    "ul_power_uhf_dbm": 27,
+    "nf_uhf_max": 3.5,
+    "ul_listing": "UL 2524 second edition (MET, comprehensive)",
+    "grade": "B",
+    "ref": "PSR-VU DS: NEMA 4, P25 Ph1/2, up to 9 bands per band group",
+    "battery": {
+     "ah_per_w_hour": 20.4,
+     "v": 24,
+     "load_w": {
+      "bda_mu": 214,
+      "per_remote": 0,
+      "per_remote_note": "the UHF-band max draw; the VHF-band max is 210 W (sheet)"
+     },
+     "options": [
+      {
+       "role": "battery_bbu_120ah",
+       "ah": 120,
+       "model_label": "BBx 120 Ah"
+      },
+      {
+       "role": "battery_bbu_45ah",
+       "ah": 45,
+       "model_label": "BBx 45 Ah"
+      }
+     ],
+     "hours_note": "Ah = load x hours / (24 V x 0.85); the BBx Ah options per the order guide (the BBx battery sheet carries the capacities; verify at the ROM step)"
+    }
+   },
+   "head_end": {
+    "label": "One VHF/UHF repeater per building sized to the coverage; the BPF filters guard the donor feed against the adjacent VHF and UHF interference (the filter sheets give the rejection figures); the BBx battery backup sized per NFPA 1225 18.13.2 with the 12 h code default and the 24 h owner option.",
+    "site_parts": [
+     {
+      "role": "head_end",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "one VHF/UHF repeater per building"
+     },
+     {
+      "role": "bpf_vhf",
+      "qty": 1,
+      "per": "project",
+      "why": "donor feed protection, per band in use"
+     },
+     {
+      "role": "bpf_uhf",
+      "qty": 1,
+      "per": "project",
+      "why": "donor feed protection, per band in use"
+     },
+     {
+      "role": "annunciator",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "the annunciator rides the UL 2524 comprehensive listing"
+     },
+     {
+      "role": "battery_bbu_120ah",
+      "per": "battery",
+      "why": "sized by the tool; 12 h code default per NFPA 1225 18.13.2, 24 h owner option; pick the BBx voltage at the ROM step"
+     },
+     {
+      "role": "donor_antenna",
+      "qty": 1,
+      "per": "project",
+      "why": "one donor antenna per the PS frequency plan"
+     },
+     {
+      "role": "arrestor_ps",
+      "qty": 1,
+      "per": "project",
+      "why": "one per donor antenna"
+     }
+    ],
+    "donor_parts": {
+     "donor_antenna": 1,
+     "arrestor_ps": 1
+    }
+   },
+   "notes": [
+    "The PSR-VU power draw (UHF 214 W max, VHF 210 W max) drives the battery sizing; the BBx series carries 12, 24 and 48 V options per its data sheet, so the ROM step picks the voltage. The per-band load when only one band is active is the published single-band figure."
+   ],
+   "limits_battery_placeholder": null
+  },
+  "adrf_firstnet_b14": {
+   "label": "ADRF FirstNet Band 14 add-on (BSF-14 + PSR-78-9533-U1-27 into ADXV-H-POI-7U)",
+   "system_type": "das",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "public_safety": true,
+   "source_label": "PSR-78-9533-U1-27 DS v1 (UL 2524 second edition, FirstNet compliant, up to 40 narrowband channels, 95 dB gain, NEMA 4) + ADRF-BSF-14 DS (the Band 14 passband filter) + the Fort Worth B14 add-on precedent (11/24: PSR-78-9533-U1-27 into ADXV-H-POI-7U, B14 carried by the PS HPR modules)",
+   "ratios": {},
+   "parts": {
+    "head_end": {
+     "manufacturer": "ADRF",
+     "model": "PSR-78-9533-U1-27",
+     "description": "Channelized 0.5 W digital repeater for public safety 700/800 MHz, UL 2524 listed second edition as a comprehensive solution with an annunciator and ADRF-BBx-U battery backups, FirstNet compliant, up to 40 narrowband channels, up to 95 dB gain, NEMA 4 enclosure, FCC Part 90 Class A and Class B designations",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "bpf_b14": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-BSF-14",
+     "description": "Band selective filter for Band 14: 769 to 775 MHz, 799 to 816 MHz, 851 to 866 MHz passbands, 30 dB rejection at 788 to 798 and 758 to 768 MHz, insertion loss 1.5 dB max, IP67, 50 W",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "poi_insert": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-7U",
+     "description": "Head end POI-7U insertion point: the Band 14 signal rides into the ADX V PS head end (the Fort Worth precedent)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_bbu": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-BBx-U series",
+     "description": "Battery backup per the UL 2524 comprehensive listing (BBx-U at 12/24/48 V), sized by the tool",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "donor_antenna": {
+     "manufacturer": "ADRF",
+     "model": "AD-PA-617-960-D",
+     "description": "Low-band high isolation donor (617-960 MHz)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "arrestor_ps": {
+     "manufacturer": "Polyphaser",
+     "model": "IS-50NX-C2",
+     "description": "125-1000 MHz lightning arrestor",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_bbu_120ah": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-BBx-U 120 Ah class",
+     "description": "Battery backup module, 120 Ah class (BBx-U 12/24/48 V)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_bbu_45ah": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-BBx-U 45 Ah class",
+     "description": "Battery backup module, 45 Ah class",
+     "jobs": 0,
+     "unit": "ea"
+    }
+   },
+   "limits": {
+    "channels_max": 40,
+    "gain_db_max": 95,
+    "ul_listing": "UL 2524 second edition",
+    "firstnet": "FirstNet compliant; the FirstNet Authority consent decision rides with the B14 add-on",
+    "grade": "B",
+    "ref": "PSR-78-9533-U1-27 DS + BSF-14 DS",
+    "battery": {
+     "ah_per_w_hour": 20.4,
+     "v": 24,
+     "load_w": {
+      "bda_mu": 163,
+      "per_remote": 0,
+      "per_remote_note": "the PSR-78-9533-U1-27 power consumption is under 163 W max (sheet); the remote draw rides the PS design"
+     },
+     "options": [
+      {
+       "role": "battery_bbu_120ah",
+       "ah": 120,
+       "model_label": "BBx-U 120 Ah"
+      },
+      {
+       "role": "battery_bbu_45ah",
+       "ah": 45,
+       "model_label": "BBx-U 45 Ah"
+      }
+     ],
+     "hours_note": "Ah = load x hours / (24 V x 0.85)"
+    }
+   },
+   "head_end": {
+    "label": "One 0.5 W PS 700/800 repeater per building (the -27 variant carries the 700 MHz Lower A/B and 800 band plan into the ADX V PS head end through the POI-7U); the BSF-14 filter protects the B14 band plan against the adjacent cellular; the battery rides the UL 2524 comprehensive listing.",
+    "site_parts": [
+     {
+      "role": "head_end",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "one PS repeater per building"
+     },
+     {
+      "role": "bpf_b14",
+      "qty": 1,
+      "per": "project",
+      "why": "the Band 14 passband protection per the add-on pattern"
+     },
+     {
+      "role": "poi_insert",
+      "qty": 1,
+      "per": "project",
+      "why": "the POI-7U insertion per the Fort Worth add-on"
+     },
+     {
+      "role": "battery_bbu_120ah",
+      "per": "battery",
+      "why": "sized by the tool; 12 h code default per NFPA 1225 18.13.2, 24 h owner option"
+     },
+     {
+      "role": "donor_antenna",
+      "qty": 1,
+      "per": "project",
+      "why": "one PS donor (shared with the ERCES coverage plan where convergent)"
+     },
+     {
+      "role": "arrestor_ps",
+      "qty": 1,
+      "per": "project",
+      "why": "one per donor antenna"
+     }
+    ],
+    "donor_parts": {
+     "donor_antenna": 1,
+     "arrestor_ps": 1
+    }
+   },
+   "notes": [
+    "The FirstNet Authority B14 consent form (47 CFR 90.219 context) is a job step separate from the AT&T commercial consent, per the Fort Worth add-on work.",
+    "The B14 band plan rides the ADX V PS HPR modules (the HPR-437F class) in the Fort Worth add-on; the per-remote coverage scales with the PS design the same way the ERCES remotes do."
+   ],
+   "limits_battery_placeholder": null
   }
  }
 }

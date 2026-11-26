@@ -83,6 +83,25 @@ survivability) enforced by the tool rather than remembered.
   research transcript. Re-read the primary text per jurisdiction before a ROM
   relies on it (standing rule: never assume code requirements).
 
+## Phase status (2026-11-26, owner answers applied)
+
+- Battery: built into the engine, code-based (Ah = load x hours / the vendor sizing constant from the
+  sheets: Westell 12 V x 0.85 at 123 W, Comba 48.1 per its own formula at 51.2 V, ADRF 24 V x 0.85 at
+  the FiRe 121 W); 12 h default per NFPA 1225 18.13.2 and IFC 510.4.2.3 verbatim text, 24 h is the
+  owner option. Vendor bundles verified against the draws (Westell 1x/2x 145 Ah, Comba 60/100 Ah, ADRF
+  2x/3x 120 Ah). Per-remote draws not published (Comba V3 remote, ADXV-R-3378P-U2): 45 W noted each.
+- Converged option: built (owner: separate donor and actives, shared coax, splitters and antennas; the
+  PS remotes ride the design's shared coax and tap plates). The PS packages emit the shared-plate
+  combiner (ADRF-CBC-700-2600 class, x3 per sector group) only in the PS pass (ps_mode).
+- Packages live: adrf_fire_erces, westell_cs45_ps, comba_ps_v3, adrf_psr_vu (PSR-VU-9537-X/-U1 +
+  BPF-V-1 + BPF-U-1 + BBx battery), adrf_firstnet_b14 (BSF-14 + PSR-78-9533-U1-27 into ADXV-H-POI-7U,
+  the Fort Worth pattern). Code table publishing (owner): every PS package emits the
+  standards-followed matrix (16 rows: topic, IFC cite, NFPA cite, requirement, enforcement) into the
+  BOM notes; the same table is PS_CODE_TABLE in romtool/oem.py. Suite: 457 passed, 17 skipped.
+- Codes on disk: codes/NFPA-1225-2022-Chapter-18.pdf + nfpa1225_ch18_key_sections.md,
+  ifc510_2024_sections.md (verbatim from codes.iccsafe.org), codes_sbc_quick_reference.md.
+- Committed: da60076 and this build; the headend and physics-ul trees committed in the same pass.
+
 ## Build plan (this phase)
 
 1. oem_specs.json: public safety packages (first: adrf_fire_erces, the
