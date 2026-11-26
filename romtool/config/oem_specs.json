@@ -24,8 +24,16 @@
     }
    },
    "kit": {
-    "master_unit_includes": {"remote_unit": 1, "donor_antenna": 1, "service_antenna": 4, "coax_ft": 500, "fiber_ft": 250},
-    "remote_unit_includes": {"fiber_ft": 250}
+    "master_unit_includes": {
+     "remote_unit": 1,
+     "donor_antenna": 1,
+     "service_antenna": 4,
+     "coax_ft": 500,
+     "fiber_ft": 250
+    },
+    "remote_unit_includes": {
+     "fiber_ft": 250
+    }
    },
    "limits": {
     "remote_units_per_master_max": 4,
@@ -33,8 +41,22 @@
     "antennas_per_port_max": 4,
     "antennas_per_remote_unit_max": 16,
     "fiber_reach_m": 4000,
-    "dl_max_dbm_per_band": {"B12": 15.15, "B13": 15.15, "B5": 15.71, "B25": 14.29, "B4": 14.13},
-    "bands": ["B12", "B13", "B17", "B5", "B2", "B25", "B4"],
+    "dl_max_dbm_per_band": {
+     "B12": 15.15,
+     "B13": 15.15,
+     "B5": 15.71,
+     "B25": 14.29,
+     "B4": 14.13
+    },
+    "bands": [
+     "B12",
+     "B13",
+     "B17",
+     "B5",
+     "B2",
+     "B25",
+     "B4"
+    ],
     "fcc": "Part 20",
     "grade": "B",
     "ref": "SureCall SignalMax Fiber DAS data sheet (2025)"
@@ -50,6 +72,1567 @@
     "grade": "D",
     "ref": "SureCall data sheet claim, not used for sizing"
    }
+  },
+  "nextivity_q4000c": {
+   "label": "Nextivity QUATRA 4000c (Part 20 active DAS)",
+   "system_type": "das",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "source_label": "QUATRA 4000c data sheet + the 11-18 iBwave comparison BOM (Q44-1M34CNU / Q40-1234FNU / Q41-RECU)",
+   "ratios": {},
+   "parts": {
+    "head_end": {
+     "manufacturer": "Nextivity",
+     "model": "Q44-1M34CNU",
+     "description": "Active DAS host (CNU), 6 CUs, 4x N-type donor ports, order left to right: Private, Verizon, T-Mobile, AT&T",
+     "jobs": 0
+    },
+    "fiber_hub": {
+     "manufacturer": "Nextivity",
+     "model": "Q40-1234FNU",
+     "description": "Fiber Hub, 6 CUs per hub",
+     "jobs": 0
+    },
+    "remote_unit": {
+     "manufacturer": "Nextivity",
+     "model": "Q41-RECU (QUATRA 4000c)",
+     "description": "Coverage Unit, 4 interior antennas per floor, Cat5e run to 328 ft with PoE",
+     "jobs": 0
+    },
+    "donor_antenna": {
+     "manufacturer": "SureCall",
+     "model": "SC-530W",
+     "description": "Wideband donor yagi, 7 to 9 dBi by band (owner donor basis 2026-11-25)",
+     "jobs": 0
+    },
+    "cable_cat5e_ft": {
+     "manufacturer": "Generic",
+     "model": "CAT-5",
+     "description": "Category 5 cable, Cat5e run per CU, 328 ft max (PoE on the same run)",
+     "jobs": 0,
+     "unit": "ft"
+    },
+    "arrestor_westell_cs60_024_002": {
+     "manufacturer": "Westell",
+     "model": "CS60-024-002",
+     "description": "RF coaxial surge arrestor, N female to N female, one per donor port",
+     "jobs": 0,
+     "unit": "ea"
+    }
+   },
+   "limits": {
+    "remote_units_per_master_max": 6,
+    "ports_per_remote_unit": 4,
+    "antennas_per_port_max": 4,
+    "system_remotes_max": 12,
+    "fiber_reach_m": 100,
+    "fcc": "Part 20",
+    "grade": "B",
+    "ref": "QUATRA 4000c data sheet: 6 CUs per CNU + 6 per Q40-1234FNU Fiber Hub, Cat5e 328 ft"
+   },
+   "head_end": {
+    "label": "One CNU always; one Fiber Hub per 6 CUs beyond the CNU's six; 12 CUs system max (owner 2026-11-25).",
+    "site_parts": [
+     {
+      "role": "head_end",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "one active DAS host per building"
+     },
+     {
+      "role": "fiber_hub",
+      "per": "beyond_master_max",
+      "why": "six CUs per Fiber Hub beyond the CNU's six"
+     }
+    ],
+    "per_remote": [
+     {
+      "role": "remote_unit",
+      "qty": 1,
+      "why": "one CU per covered floor, 4 antennas each"
+     },
+     {
+      "role": "cable_cat5e_ft",
+      "qty": 328,
+      "unit": "ft",
+      "why": "Cat5e run, 328 ft max per CU (PoE on the same run)"
+     }
+    ],
+    "donor_parts": {
+     "donor_antenna": 3,
+     "arrestor_westell_cs60_024_002": 3,
+     "arrestor_why": "three donor antennas, one per public-carrier port (owner port order 11-25)"
+    }
+   }
+  },
+  "surecall_5xmax": {
+   "label": "SureCall 5X Max (Part 20 consumer booster)",
+   "system_type": "bda",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "source_label": "5X Max product page + splitter quantity per the owner call (2026-11-25); look per the 11-18 BOMs",
+   "ratios": {},
+   "parts": {
+    "master_unit": {
+     "manufacturer": "SureCall",
+     "model": "5X Max Inside Host",
+     "description": "Indoor host, 2 high-power interior ports",
+     "jobs": 0
+    },
+    "bda_repeater": {
+     "manufacturer": "SureCall",
+     "model": "5x Max Outside",
+     "description": "Outdoor ERT amplifier",
+     "jobs": 0
+    },
+    "donor_antenna": {
+     "manufacturer": "SureCall",
+     "model": "SC-530W",
+     "description": "Wideband donor yagi (the design carries SC-230W x3, 10 dBi)",
+     "jobs": 0
+    },
+    "splitter_2way_westell_cs04_070_429": {
+     "manufacturer": "Westell",
+     "model": "CS04-070-429 (SPD2/450-2.7K/N)",
+     "description": "2-way high power splitter N, -153 dBc PIM",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "splitter_3way_westell_cs04_071_429": {
+     "manufacturer": "Westell",
+     "model": "CS04-071-429 (SPD3/698-2.7K/N)",
+     "description": "3-way high power splitter N, -153 dBc PIM",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "antenna_interior": {
+     "manufacturer": "SureCall",
+     "model": "SC-528W Ultra Thin Antenna",
+     "description": "Ultra wide band indoor antenna (the design's interior antenna)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "arrestor_westell_cs60_024_002": {
+     "manufacturer": "Westell",
+     "model": "CS60-024-002",
+     "description": "RF coaxial surge arrestor, N female to N female, one per donor port",
+     "jobs": 0,
+     "unit": "ea"
+    }
+   },
+   "limits": {
+    "remote_units_per_master_max": 1,
+    "fcc": "Part 20",
+    "grade": "B",
+    "ref": "5X Max product page: one system per building, 2 interior ports, up to 12 interior antennas, 20k sq ft base to 75k expanded"
+   },
+   "head_end": {
+    "label": "One system per building: outdoor unit + indoor host + up to 12 interior antennas on the two ports through the required splitter tree (8 splitters: 6x two-way + 2x three-way, 6 antennas per port); donor side three yagis per the design look.",
+    "site_parts": [
+     {
+      "role": "master_unit",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "indoor host"
+     },
+     {
+      "role": "bda_repeater",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "outdoor ERT unit"
+     },
+     {
+      "role": "splitter_2way_westell_cs04_070_429",
+      "qty": 6,
+      "per": "when_remotes",
+      "why": "balanced tree, 6 antennas per port (owner 11-25: list what is required)"
+     },
+     {
+      "role": "splitter_3way_westell_cs04_071_429",
+      "qty": 2,
+      "per": "when_remotes",
+      "why": "balanced tree, one per interior port"
+     }
+    ],
+    "per_remote": [
+     {
+      "role": "antenna_interior",
+      "qty": 12,
+      "why": "up to 12 interior antennas in the expanded kit"
+     }
+    ],
+    "donor_parts": {
+     "donor_antenna": 3,
+     "arrestor_westell_cs60_024_002": 3,
+     "arrestor_why": "one per donor port"
+    }
+   }
+  },
+  "adrf_adxv_mid": {
+   "label": "ADRF ADX V mid power",
+   "system_type": "das",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "source_label": "ADXV Series data sheet Ver 1.0 + ADRF Fort Worth / Yan Feng ROM BOM precedent",
+   "ratios": {},
+   "parts": {
+    "head_end": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-NMS-AC",
+     "description": "Head End NMS package (chassis + NMS + PSU AC), 12 standard modules",
+     "jobs": 0
+    },
+    "poi_p": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-P",
+     "description": "PCS point of interface, one per carrier",
+     "jobs": 0
+    },
+    "poi_a": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-A",
+     "description": "AWS point of interface, one per carrier",
+     "jobs": 0
+    },
+    "poi_7l": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-7L",
+     "description": "700 MHz Lower point of interface (required with the 850, owner 2026-11-26)",
+     "jobs": 0
+    },
+    "poi_c": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-C",
+     "description": "Cellular 850 point of interface (required, owner 2026-11-26; confirm the exact P/N with ADRF)",
+     "jobs": 0
+    },
+    "combiner_dl": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-CHC-88-DL-X",
+     "description": "8x8 DL channel combiner (600 MHz to C-Band; the non-X variant covers 600 MHz to BRS)",
+     "jobs": 0
+    },
+    "combiner_ul": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-CHC-88-UL-X",
+     "description": "8x8 UL channel combiner",
+     "jobs": 0
+    },
+    "odu_4": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-ODU-4-X",
+     "description": "4-port optic donor unit, one strand per remote, 5 dBo or less",
+     "jobs": 0
+    },
+    "remote_chassis_group": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-R-CHA",
+     "description": "Per-remote site kit per the ROM precedent: chassis + PSU + ORU fiber unit + band modules (ADXV-R-33X/37X RAM) + ADXV-R-CHC-U",
+     "jobs": 0
+    },
+    "donor_antenna_pair": {
+     "manufacturer": "ADRF",
+     "model": "AD-PA-617-960-D + AD-PA-1900-2600-DIN-X",
+     "description": "AD-PA donor pair, sheet-verified 2026-11-25",
+     "jobs": 0
+    },
+    "arrestor_westell_cs60_024_002": {
+     "manufacturer": "Westell",
+     "model": "CS60-024-002",
+     "description": "RF coaxial surge arrestor, N female to N female",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "protector_polyphaser_tsx_nff": {
+     "manufacturer": "Polyphaser",
+     "model": "TSX-NFF",
+     "description": "698-2700 MHz lightning DC blocked protector with P/N BFN bracket",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "fiber_termination_kit": {
+     "manufacturer": "OCC",
+     "model": "RTS2U-6APB + 616SCAPC + P8SCAPC06-3M + D8SCAPC-SCAPC-3M",
+     "description": "Fiber termination kit: 2U RTS cabinet + 6-port SC/APC plates + pigtails + patch leads",
+     "jobs": 0,
+     "unit": "ea"
+    }
+   },
+   "limits": {
+    "chassis_slots_per_remote_chassis": 6,
+    "optical_remotes_per_odu": 4,
+    "grade": "B",
+    "ref": "ADXV Series data sheet: R-CHA 7 standard slots, HPR-CHA 6 modules, ODU-4 = 4 remotes per unit at 5 dBo or less"
+   },
+   "head_end": {
+    "label": "Head end: NMS + POIs per band (P x3, A x3, 7L x1, C x1 = 12 of 12 NMS slots) + the 8x8 DL/UL combiner pair + ODU-4-X at ceil(remotes/4). Remote side per the ROM precedent; the fan kit ADXV-R-FAN-DC is required above 4 RAMs per chassis (mid).",
+    "site_parts": [
+     {
+      "role": "poi_p",
+      "qty": 3,
+      "per": "project",
+      "why": "one per carrier, per the Fort Worth ROM pattern"
+     },
+     {
+      "role": "poi_a",
+      "qty": 3,
+      "per": "project",
+      "why": "one per carrier"
+     },
+     {
+      "role": "poi_7l",
+      "qty": 1,
+      "per": "project",
+      "why": "700 low band (owner 2026-11-26)"
+     },
+     {
+      "role": "poi_c",
+      "qty": 1,
+      "per": "project",
+      "why": "850 (owner 2026-11-26; confirm the exact P/N)"
+     },
+     {
+      "role": "combiner_dl",
+      "qty": 1,
+      "per": "project",
+      "why": "8x8 DL combiner"
+     },
+     {
+      "role": "combiner_ul",
+      "qty": 1,
+      "per": "project",
+      "why": "8x8 UL combiner"
+     },
+     {
+      "role": "odu_4",
+      "per": "remotes_per_4",
+      "why": "one strand per remote at 5 dBo or less"
+     },
+     {
+      "role": "donor_antenna_pair",
+      "qty": 1,
+      "per": "project",
+      "why": "AD-PA pair (2 antennas)"
+     },
+     {
+      "role": "arrestor_westell_cs60_024_002",
+      "qty": 2,
+      "per": "project",
+      "why": "one per donor antenna"
+     },
+     {
+      "role": "protector_polyphaser_tsx_nff",
+      "qty": 2,
+      "per": "project",
+      "why": "one per donor antenna with P/N BFN"
+     },
+     {
+      "role": "fiber_termination_kit",
+      "qty": 1,
+      "per": "project",
+      "why": "OCC RTS cabinet + SC/APC plates + pigtails + patch (ROM precedent)"
+     }
+    ],
+    "per_remote": [
+     {
+      "role": "remote_chassis_group",
+      "qty": 1,
+      "why": "site kit per the ROM precedent: chassis + PSU + ORU + modules + R-CHC-U"
+     }
+    ]
+   }
+  },
+  "adrf_adxv_high": {
+   "label": "ADRF ADX V high power",
+   "system_type": "das",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "source_label": "ADXV Series data sheet Ver 1.0 + ADRF Fort Worth / Yan Feng ROM BOM precedent",
+   "ratios": {},
+   "parts": {
+    "head_end": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-NMS-AC",
+     "description": "Head End NMS package (chassis + NMS + PSU AC), 12 standard modules",
+     "jobs": 0
+    },
+    "poi_p": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-P",
+     "description": "PCS point of interface, one per carrier",
+     "jobs": 0
+    },
+    "poi_a": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-A",
+     "description": "AWS point of interface, one per carrier",
+     "jobs": 0
+    },
+    "poi_7l": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-7L",
+     "description": "700 MHz Lower point of interface (required with the 850, owner 2026-11-26)",
+     "jobs": 0
+    },
+    "poi_c": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-C",
+     "description": "Cellular 850 point of interface (required, owner 2026-11-26; confirm the exact P/N with ADRF)",
+     "jobs": 0
+    },
+    "combiner_dl": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-CHC-88-DL-X",
+     "description": "8x8 DL channel combiner (600 MHz to C-Band; the non-X variant covers 600 MHz to BRS)",
+     "jobs": 0
+    },
+    "combiner_ul": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-CHC-88-UL-X",
+     "description": "8x8 UL channel combiner",
+     "jobs": 0
+    },
+    "odu_4": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-ODU-4-X",
+     "description": "4-port optic donor unit, one strand per remote, 5 dBo or less",
+     "jobs": 0
+    },
+    "remote_chassis_group": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-HPR-CHA",
+     "description": "Per-remote site kit per the ROM precedent: chassis + PSU + ORU fiber unit + band modules (ADXV-HPR-437F/46A/46P) + ADXV-R-CHC-U",
+     "jobs": 0
+    },
+    "donor_antenna_pair": {
+     "manufacturer": "ADRF",
+     "model": "AD-PA-617-960-D + AD-PA-1900-2600-DIN-X",
+     "description": "AD-PA donor pair, sheet-verified 2026-11-25",
+     "jobs": 0
+    },
+    "arrestor_westell_cs60_024_002": {
+     "manufacturer": "Westell",
+     "model": "CS60-024-002",
+     "description": "RF coaxial surge arrestor, N female to N female",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "protector_polyphaser_tsx_nff": {
+     "manufacturer": "Polyphaser",
+     "model": "TSX-NFF",
+     "description": "698-2700 MHz lightning DC blocked protector with P/N BFN bracket",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "fiber_termination_kit": {
+     "manufacturer": "OCC",
+     "model": "RTS2U-6APB + 616SCAPC + P8SCAPC06-3M + D8SCAPC-SCAPC-3M",
+     "description": "Fiber termination kit: 2U RTS cabinet + 6-port SC/APC plates + pigtails + patch leads",
+     "jobs": 0,
+     "unit": "ea"
+    }
+   },
+   "limits": {
+    "chassis_slots_per_remote_chassis": 6,
+    "optical_remotes_per_odu": 4,
+    "grade": "B",
+    "ref": "ADXV Series data sheet: R-CHA 7 standard slots, HPR-CHA 6 modules, ODU-4 = 4 remotes per unit at 5 dBo or less"
+   },
+   "head_end": {
+    "label": "Head end: NMS + POIs per band (P x3, A x3, 7L x1, C x1 = 12 of 12 NMS slots) + the 8x8 DL/UL combiner pair + ODU-4-X at ceil(remotes/4). Remote side per the ROM precedent; the fan kit ADXV-R-FAN-DC is required above 4 RAMs per chassis (mid).",
+    "site_parts": [
+     {
+      "role": "poi_p",
+      "qty": 3,
+      "per": "project",
+      "why": "one per carrier, per the Fort Worth ROM pattern"
+     },
+     {
+      "role": "poi_a",
+      "qty": 3,
+      "per": "project",
+      "why": "one per carrier"
+     },
+     {
+      "role": "poi_7l",
+      "qty": 1,
+      "per": "project",
+      "why": "700 low band (owner 2026-11-26)"
+     },
+     {
+      "role": "poi_c",
+      "qty": 1,
+      "per": "project",
+      "why": "850 (owner 2026-11-26; confirm the exact P/N)"
+     },
+     {
+      "role": "combiner_dl",
+      "qty": 1,
+      "per": "project",
+      "why": "8x8 DL combiner"
+     },
+     {
+      "role": "combiner_ul",
+      "qty": 1,
+      "per": "project",
+      "why": "8x8 UL combiner"
+     },
+     {
+      "role": "odu_4",
+      "per": "remotes_per_4",
+      "why": "one strand per remote at 5 dBo or less"
+     },
+     {
+      "role": "donor_antenna_pair",
+      "qty": 1,
+      "per": "project",
+      "why": "AD-PA pair (2 antennas)"
+     },
+     {
+      "role": "arrestor_westell_cs60_024_002",
+      "qty": 2,
+      "per": "project",
+      "why": "one per donor antenna"
+     },
+     {
+      "role": "protector_polyphaser_tsx_nff",
+      "qty": 2,
+      "per": "project",
+      "why": "one per donor antenna with P/N BFN"
+     },
+     {
+      "role": "fiber_termination_kit",
+      "qty": 1,
+      "per": "project",
+      "why": "OCC RTS cabinet + SC/APC plates + pigtails + patch (ROM precedent)"
+     }
+    ],
+    "per_remote": [
+     {
+      "role": "remote_chassis_group",
+      "qty": 1,
+      "why": "site kit per the ROM precedent: chassis + PSU + ORU + modules + R-CHC-U"
+     }
+    ]
+   }
+  },
+  "adrf_adxv_lpr": {
+   "label": "ADRF ADX V LPR (fiber to the edge)",
+   "system_type": "das",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "source_label": "ADXV Series data sheet + the 11-19 iBwave design (ODU-4-X for 2 sites at 4 ports) + the ROM tool's remote count",
+   "ratios": {},
+   "parts": {
+    "head_end": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-NMS-AC",
+     "description": "Head End NMS package, 12 standard modules",
+     "jobs": 0
+    },
+    "odu_4": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-ODU-4-X",
+     "description": "4-port optic donor unit, one strand per LPR primary, 5 dBo or less (the 11-19 design carries 1 per 2 sites); ADXV-L-HUB-4-AC is the alternate hub with DC power to 8 primaries",
+     "jobs": 0
+    },
+    "poi_p": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-P",
+     "description": "PCS point of interface (non-DFE mode only; DFE mode removes)",
+     "jobs": 0
+    },
+    "poi_a": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-A",
+     "description": "AWS point of interface (non-DFE mode only)",
+     "jobs": 0
+    },
+    "poi_7l": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-7L",
+     "description": "700 MHz Lower point of interface (owner 2026-11-26; non-DFE only)",
+     "jobs": 0
+    },
+    "poi_c": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-H-POI-C",
+     "description": "Cellular 850 point of interface (owner 2026-11-26; non-DFE only)",
+     "jobs": 0
+    },
+    "donor_antenna_pair": {
+     "manufacturer": "ADRF",
+     "model": "AD-PA-617-960-D + AD-PA-1900-2600-DIN-X",
+     "description": "AD-PA donor pair",
+     "jobs": 0
+    },
+    "arrestor_westell_cs60_024_002": {
+     "manufacturer": "Westell",
+     "model": "CS60-024-002",
+     "description": "RF coaxial surge arrestor, N female to N female",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "protector_polyphaser_tsx_nff": {
+     "manufacturer": "Polyphaser",
+     "model": "TSX-NFF",
+     "description": "698-2700 MHz lightning DC blocked protector with P/N BFN bracket",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "fiber_termination_kit": {
+     "manufacturer": "OCC",
+     "model": "RTS2U-6APB + 616SCAPC + P8SCAPC06-3M + D8SCAPC-SCAPC-3M",
+     "description": "Fiber termination kit: 2U RTS cabinet + 6-port SC/APC plates + pigtails + patch leads",
+     "jobs": 0,
+     "unit": "ea"
+    }
+   },
+   "limits": {
+    "optical_remotes_per_odu": 4,
+    "grade": "B",
+    "ref": "ADX V sheet: ODU-4 = 4 remote optics, single strand per primary"
+   },
+   "head_end": {
+    "label": "Head end sized to the ROM tool's primary count: ODU-4-X at ceil(primaries/4), POIs only in non-DFE mode; the primary and secondary pairs are the ROM tool's remote design (one ADXV-L-20PAWBT-P + one ADXV-L-1767S8C-S per site).",
+    "site_parts": [
+     {
+      "role": "odu_4",
+      "per": "remotes_per_4",
+      "why": "one strand per primary"
+     },
+     {
+      "role": "poi_p",
+      "qty": 3,
+      "per": "project",
+      "variant": "non-DFE only",
+      "why": "one per carrier"
+     },
+     {
+      "role": "poi_a",
+      "qty": 3,
+      "per": "project",
+      "variant": "non-DFE only",
+      "why": "one per carrier"
+     },
+     {
+      "role": "poi_7l",
+      "qty": 1,
+      "per": "project",
+      "variant": "non-DFE only",
+      "why": "700 (owner 2026-11-26)"
+     },
+     {
+      "role": "poi_c",
+      "qty": 1,
+      "per": "project",
+      "variant": "non-DFE only",
+      "why": "850 (owner 2026-11-26)"
+     },
+     {
+      "role": "donor_antenna_pair",
+      "qty": 1,
+      "per": "project",
+      "why": "AD-PA pair"
+     },
+     {
+      "role": "arrestor_westell_cs60_024_002",
+      "qty": 2,
+      "per": "project",
+      "why": "one per donor antenna"
+     },
+     {
+      "role": "protector_polyphaser_tsx_nff",
+      "qty": 2,
+      "per": "project",
+      "why": "one per donor antenna with P/N BFN"
+     },
+     {
+      "role": "fiber_termination_kit",
+      "qty": 1,
+      "per": "project",
+      "why": "OCC fiber termination per the ROM precedent"
+     }
+    ]
+   }
+  },
+  "comba_comflex": {
+   "label": "Comba ComFlex NG (Part 20 off-air + fiber remotes)",
+   "system_type": "das",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "source_label": "MU-Chassis-AC DS + Consumer OG 0-0-5 + the 11-18 iBwave design (MU-Chassis-AC, MU-FOU, MU-DEMOD, MU-BDA20-2B-HH x3, MRU-7851719c-DC)",
+   "ratios": {},
+   "parts": {
+    "head_end": {
+     "manufacturer": "Comba",
+     "model": "(Comflex NG) MU-Chassis-AC",
+     "description": "Master Unit chassis, 10 slots (8 RF + 2 FOU), power and modem included",
+     "jobs": 0
+    },
+    "mu_demod": {
+     "manufacturer": "Comba",
+     "model": "(Comflex NG) MU-DEMOD",
+     "description": "Demodulation module (the 11-18 design carries 1)",
+     "jobs": 0
+    },
+    "bda_card": {
+     "manufacturer": "Comba",
+     "model": "(Comflex NG) MU-BDA20-2B-HH",
+     "description": "Part 20 off-air BDA card, two high-band channels, one per carrier",
+     "jobs": 0
+    },
+    "fiber_hub": {
+     "manufacturer": "Comba",
+     "model": "(Comflex NG) MU-FOU",
+     "description": "Fiber Optic Unit, 4 remotes or hubs per card, 2 FOU slots per chassis",
+     "jobs": 0
+    },
+    "remote_unit": {
+     "manufacturer": "Comba",
+     "model": "(Comflex NG) MRU-7851719c-DC",
+     "description": "ComFlex NG Series Medium-power remote unit",
+     "jobs": 0
+    },
+    "donor_antenna": {
+     "manufacturer": "SureCall",
+     "model": "SC-530W",
+     "description": "Wideband donor yagi (the design carries SC-230W x3)",
+     "jobs": 0
+    }
+   },
+   "limits": {
+    "remote_units_per_master_max": 16,
+    "remotes_per_fiber_hub": 4,
+    "grade": "B",
+    "ref": "Consumer OG 0-0-5: up to 16 RF inputs, 16 HUBs per MU with FOU expansion, 256 ARU"
+   },
+   "head_end": {
+    "label": "Head end: MU-Chassis-AC + MU-DEMOD + one 2-band high off-air BDA card per carrier; FOU per 4 remotes. Low-band LH cards only if the carrier plan carries 700 or 850 off-air (the 11-18 design carries HH x3 only).",
+    "site_parts": [
+     {
+      "role": "mu_demod",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "one per master unit (design look)"
+     },
+     {
+      "role": "bda_card",
+      "qty": 3,
+      "per": "project",
+      "why": "one per carrier (owner: ComFlex kit OK, 2026-11-25)"
+     },
+     {
+      "role": "donor_antenna",
+      "qty": 3,
+      "per": "project",
+      "why": "one per public carrier port"
+     },
+     {
+      "role": "arrestor_westell_cs60_024_002",
+      "qty": 3,
+      "per": "project",
+      "why": "one per donor port"
+     },
+     {
+      "role": "fiber_hub",
+      "per": "remotes_per_4",
+      "why": "4 remotes or hubs per FOU"
+     }
+    ],
+    "per_remote": [
+     {
+      "role": "remote_unit",
+      "qty": 1,
+      "why": "one MRUc per modeled remote"
+     }
+    ]
+   }
+  },
+  "jma_teko_5xmaxhost": {
+   "label": "JMA TEKO (5X Max donor host, T19AWE remotes)",
+   "system_type": "das",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "source_label": "TEKO Platform Part A doc + the 11-20 iBwave BOM (TTRU4W-S-M, TSPV-NBB, TPSU/AC x2, TPANEL-14TE, TAPOI-PCS-F-4, TAPOI-AWSE-F-4, SUB-TRX-PSU5N, TESA-UW2-L, T-HC3-4, T19AWE19AWEWWAT); sub-rack P/N owner-provided",
+   "ratios": {},
+   "parts": {
+    "master_unit": {
+     "manufacturer": "JMA",
+     "model": "SUB-TRX-PSU5N",
+     "description": "Master Unit sub-rack, houses the TSPV and TTRU4W modules (owner P/N)",
+     "jobs": 0
+    },
+    "supervision": {
+     "manufacturer": "JMA",
+     "model": "TSPV-NBB",
+     "description": "Supervision module Evo, C-Band, HP",
+     "jobs": 0
+    },
+    "power_supply": {
+     "manufacturer": "JMA",
+     "model": "TPSU/AC",
+     "description": "Master Unit power supply module (the design carries 2)",
+     "jobs": 0
+    },
+    "subrack_panel": {
+     "manufacturer": "JMA",
+     "model": "TPANEL-14TE",
+     "description": "Blank panel for the Master Unit sub-rack",
+     "jobs": 0
+    },
+    "transport_card": {
+     "manufacturer": "JMA",
+     "model": "TTRU4W-S-M",
+     "description": "4-way MU optical transmitter/receiver for the transport (380-2700 MHz), WDM single strand per link",
+     "jobs": 0
+    },
+    "poi_pcs": {
+     "manufacturer": "JMA",
+     "model": "TAPOI-PCS-F-4",
+     "description": "Active POI for PCS (per band; the design carries it)",
+     "jobs": 0
+    },
+    "poi_aws": {
+     "manufacturer": "JMA",
+     "model": "TAPOI-AWSE-F-4",
+     "description": "Active POI for AWS (marked discontinued in the design BOM; confirm the current P/N)",
+     "jobs": 0
+    },
+    "esaplexer": {
+     "manufacturer": "JMA",
+     "model": "TESA-UW2-L",
+     "description": "Esaplexer SDRU SMR700 extended, AMPS+SMR",
+     "jobs": 0
+    },
+    "hybrid": {
+     "manufacturer": "JMA",
+     "model": "T-HC3-4",
+     "description": "3x3 hybrid coupler 698-2700 MHz, server side",
+     "jobs": 0
+    },
+    "remote_unit": {
+     "manufacturer": "JMA",
+     "model": "T19AWE19AWEWWAT",
+     "description": "T19AWE RU, 2-band PCS1900/AWS3 MIMO, 40 W, AC powered",
+     "jobs": 0
+    },
+    "donor_antenna": {
+     "manufacturer": "SureCall",
+     "model": "SC-530W",
+     "description": "Wideband donor yagi for the 5X Max host (the design carries SC-230W x3)",
+     "jobs": 0
+    }
+   },
+   "limits": {
+    "optical_remotes_per_transport_card": 4,
+    "link_budget_dbo_max": 10,
+    "grade": "B",
+    "ref": "TEKO docs: the TTRU4W-4 is the 4-way MU optical card; WDM single strand per remote; one T19AWE per link"
+   },
+   "head_end": {
+    "label": "Head end: sub-rack + supervision + 2 power supplies + blank panel + POIs per band (design pattern; TLPPOI is the low-input alternate, exactly one POI path installs) + TTRU4W-S-M at ceil(remotes/4) + the SMR700 esaplexer + the server-side hybrid coupler. Remote: one T19AWE per ROM tool link.",
+    "site_parts": [
+     {
+      "role": "supervision",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "one per TEKO master"
+     },
+     {
+      "role": "power_supply",
+      "qty": 2,
+      "per": "when_remotes",
+      "why": "the design carries 2 per sub-rack"
+     },
+     {
+      "role": "subrack_panel",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "one per sub-rack"
+     },
+     {
+      "role": "poi_pcs",
+      "qty": 1,
+      "per": "project",
+      "why": "active POI per band (design pattern)"
+     },
+     {
+      "role": "poi_aws",
+      "qty": 1,
+      "per": "project",
+      "why": "active POI per band (design pattern; discontinued P/N, confirm)"
+     },
+     {
+      "role": "transport_card",
+      "per": "remotes_per_4",
+      "why": "the 4-way MU optical card"
+     },
+     {
+      "role": "esaplexer",
+      "qty": 1,
+      "per": "project",
+      "why": "SMR700 esaplexer (design look)"
+     },
+     {
+      "role": "hybrid",
+      "qty": 1,
+      "per": "project",
+      "why": "server-side hybrid coupler (design look)"
+     },
+     {
+      "role": "donor_antenna",
+      "qty": 3,
+      "per": "project",
+      "why": "one per public carrier port"
+     },
+     {
+      "role": "arrestor_westell_cs60_024_002",
+      "qty": 1,
+      "per": "project",
+      "why": "the design JMA group carries 1"
+     }
+    ],
+    "per_remote": [
+     {
+      "role": "remote_unit",
+      "qty": 1,
+      "why": "one T19AWE per ROM tool link"
+     }
+    ]
+   }
+  },
+  "adrf_sdrc_front_end": {
+   "label": "ADRF SDRC modular front end (mid power, one system per building)",
+   "system_type": "bda",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "source_label": "SDRC DS v0.2 + the 11-19 iBwave mid power design floor 8 (CHA-5 + CHA-1 + PSU-5, 17-A x3 + 17-P x3, CHC-V donor x3 + server x3) + the Fort Worth ROM precedent",
+   "ratios": {},
+   "parts": {
+    "remote_chassis": {
+     "manufacturer": "ADRF",
+     "model": "SDRC-CHA-5",
+     "description": "19 in rack/wall mount chassis, up to 5 SDRC modules",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "remote_chassis_small": {
+     "manufacturer": "ADRF",
+     "model": "SDRC-CHA-1",
+     "description": "19 in wall mount chassis, 1 module (holds the 6th module)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "power_supply": {
+     "manufacturer": "ADRF",
+     "model": "SDRC-PSU-5",
+     "description": "Power supply unit, supports up to 5 SDRC modules",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "module_a": {
+     "manufacturer": "ADRF",
+     "model": "SDRC-17-A",
+     "description": "AWS modular repeater, one per carrier (BDA/DFE mode per band; 71 dB max gain, 17 dBm DL)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "module_p": {
+     "manufacturer": "ADRF",
+     "model": "SDRC-17-P",
+     "description": "PCS modular repeater, one per carrier (58 dB max gain)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "combiner_donor": {
+     "manufacturer": "ADRF",
+     "model": "SDR-CHC-V (Donor)",
+     "description": "SDR channel combiner for 700 MHz, Cell, PCS and AWS, donor side, one per carrier (the CHC-V carries the Cellular 850 port, owner 2026-11-26)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "combiner_server": {
+     "manufacturer": "ADRF",
+     "model": "SDR-CHC-V (Server)",
+     "description": "Same combiner, server side, one per carrier",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "hybrid": {
+     "manufacturer": "JMA",
+     "model": "T-HC3-4",
+     "description": "3x3 hybrid coupler 698-2700 MHz on the server side (the design carries 1)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "donor_antenna_pair": {
+     "manufacturer": "ADRF",
+     "model": "AD-PA-617-960-D + AD-PA-1900-2600-DIN-X",
+     "description": "AD-PA donor pair (the design carries SC-230W x3 at the roof)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "arrestor_westell_cs60_024_002": {
+     "manufacturer": "Westell",
+     "model": "CS60-024-002",
+     "description": "RF coaxial surge arrestor, one per donor antenna",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "protector_polyphaser_tsx_nff": {
+     "manufacturer": "Polyphaser",
+     "model": "TSX-NFF",
+     "description": "698-2700 MHz lightning DC blocked protector with P/N BFN bracket",
+     "jobs": 0,
+     "unit": "ea"
+    }
+   },
+   "limits": {
+    "carriers_per_front_end": 3,
+    "grade": "B",
+    "ref": "SDRC DS v0.2: CHA-5 (5 modules) + PSU-5 (5 modules); per-carrier A + P modules in BDA/DFE modes"
+   },
+   "head_end": {
+    "label": "One front end sized for the carrier ask: per-carrier A and P modules with the donor and server channel combiners; the low carriers 700 and 850 ride the CHC-V ports. Server side: the 3x3 hybrid coupler; the per-floor plate distribution (SC-528W antennas and the Westell CS04 splitters) is the design side.",
+    "site_parts": [
+     {
+      "role": "remote_chassis",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "5-slot chassis"
+     },
+     {
+      "role": "remote_chassis_small",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "holds the 6th module (the design pattern for 6 modules)"
+     },
+     {
+      "role": "power_supply",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "one per chassis"
+     },
+     {
+      "role": "module_a",
+      "qty": 3,
+      "per": "project",
+      "why": "one per carrier (3 carriers)"
+     },
+     {
+      "role": "module_p",
+      "qty": 3,
+      "per": "project",
+      "why": "one per carrier"
+     },
+     {
+      "role": "combiner_donor",
+      "qty": 3,
+      "per": "project",
+      "why": "donor side, one per carrier"
+     },
+     {
+      "role": "combiner_server",
+      "qty": 3,
+      "per": "project",
+      "why": "server side, one per carrier"
+     },
+     {
+      "role": "hybrid",
+      "qty": 1,
+      "per": "project",
+      "why": "server-side hybrid (design look)"
+     },
+     {
+      "role": "donor_antenna_pair",
+      "qty": 1,
+      "per": "project",
+      "why": "AD-PA pair (2 antennas)"
+     },
+     {
+      "role": "arrestor_westell_cs60_024_002",
+      "qty": 2,
+      "per": "project",
+      "why": "one per donor antenna"
+     },
+     {
+      "role": "protector_polyphaser_tsx_nff",
+      "qty": 2,
+      "per": "project",
+      "why": "one per donor antenna with P/N BFN"
+     }
+    ]
+   }
+  },
+  "adrf_fire_erces": {
+   "label": "ADRF FiRe ERCES (public safety 700/800, UL 2524)",
+   "system_type": "bda",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "source_label": "PSR-78-9533/9537 DS + FiRe-78 per the Melville MyADRF ROMBOM run (2026-10-20, UL 2524, P25 Phase 2, up to 8 remotes) + NFPA 1225 ch. 18 requirements",
+   "ratios": {},
+   "parts": {
+    "head_end": {
+     "manufacturer": "ADRF",
+     "model": "FiRe-78-8-U1",
+     "description": "Digital dual-band 700/800 PS fiber repeater, channelized, up to 8 remotes, UL 2524, P25 Phase 2",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "remote_unit": {
+     "manufacturer": "ADRF",
+     "model": "ADXV-R-3378P-U2",
+     "description": "2 W 700/800 IP66 PS remote module, UL 2524 (PS package family)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "annunciator": {
+     "manufacturer": "ADRF",
+     "model": "PSR-ANN-U2",
+     "description": "PSR-ANN series annunciator for the fire command center (NFPA 1225 18.14)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "passive_lpfm": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-2WS-20W-N-LPIM class",
+     "description": "Low-PIM N passives (dividers, couplers, CHC-U/V-LPIM)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "coax_plenum_ft": {
+     "manufacturer": "RFS",
+     "model": "ICA12-50JPLLR",
+     "description": "1/2 in plenum riser low-loss coax (survivability per NFPA 1225 18.12.3)",
+     "jobs": 0,
+     "unit": "ft"
+    },
+    "donor_antenna": {
+     "manufacturer": "ADRF",
+     "model": "AD-PA-617-960-D",
+     "description": "Low-band high isolation donor (617-960 MHz)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "arrestor_ps": {
+     "manufacturer": "Polyphaser",
+     "model": "IS-50NX-C2",
+     "description": "125-1000 MHz lightning arrestor (the Melville donor side)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_bbu_120ah": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-BBU-W-120-2S",
+     "description": "Wall battery backup unit 24 V, 120 Ah (2S)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_bbu_45ah": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-BBU-W-045-2S",
+     "description": "Wall battery backup unit 24 V, 45 Ah (2S)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "convergence_combiner": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-CBC-700-2600-4310",
+     "description": "Crossband coupler (low 698 to 940 MHz, high 1710 to 2700 MHz), inserts the PS band group onto the shared plate",
+     "jobs": 0,
+     "unit": "ea"
+    }
+   },
+   "limits": {
+    "remotes_per_repeater_max": 8,
+    "ul_listing": "UL 2524",
+    "grade": "B",
+    "ref": "FiRe-78-8-U1: up to 8 remotes; UL 2524 listed; P25 Phase 2",
+    "battery": {
+     "ah_per_w_hour": 20.4,
+     "v": 24,
+     "load_w": {
+      "bda_mu": 121,
+      "per_remote": 45,
+      "per_remote_note": "the ADXV-R-3378P-U2 draw is not on the swept sheets (open); 45 W assumed"
+     },
+     "options": [
+      {
+       "role": "battery_bbu_120ah",
+       "ah": 120,
+       "model_label": "ADRF-BBU-W-120-2S"
+      },
+      {
+       "role": "battery_bbu_45ah",
+       "ah": 45,
+       "model_label": "ADRF-BBU-W-045-2S"
+      }
+     ],
+     "hours_note": "sized Ah = load x hours / (24 V x 0.85), matching the Melville run's BBU selection"
+    }
+   },
+   "head_end": {
+    "label": "One FiRe ERCES repeater per building (PS 700/800), sized to the ROM tool remote count; 12 h battery autonomy and the fire command center annunciator are code requirements, not options.",
+    "site_parts": [
+     {
+      "role": "head_end",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "one FiRe-78 ERCES repeater per building (up to 8 remotes), UL 2524"
+     },
+     {
+      "role": "annunciator",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "NFPA 1225 18.14 annunciator in the fire command center"
+     },
+     {
+      "role": "battery_bbu_120ah",
+      "per": "battery",
+      "why": "sized by the tool against the equipment load; 12 h code default per NFPA 1225 18.13.2, 24 h owner option"
+     },
+     {
+      "role": "donor_antenna",
+      "qty": 1,
+      "per": "project",
+      "why": "one PS donor (AD-PA-617-960-D)"
+     },
+     {
+      "role": "arrestor_ps",
+      "qty": 1,
+      "per": "project",
+      "why": "per donor antenna (IS-50NX-C2, 125-1000 MHz)"
+     },
+     {
+      "role": "coax_plenum_ft",
+      "qty": 1650,
+      "per": "when_remotes",
+      "unit": "ft",
+      "why": "plenum/riser coax from the design scale; survivability per 18.12.3 keys to the sprinkler status"
+     },
+     {
+      "role": "convergence_combiner",
+      "qty": 3,
+      "per": "project",
+      "variant": "converged only",
+      "why": "converged build (owner 2026-11-26): the PS and commercial actives stay separate and each keeps its own donor, while the coax, splitters and antennas are shared with the commercial package; this combiner inserts the PS band group onto the shared plate (the ADRF-CBC-700-2600 class from the Melville commercial run, one per sector group)"
+     }
+    ],
+    "per_remote": [
+     {
+      "role": "remote_unit",
+      "qty": 1,
+      "why": "one UL 2524 PS remote module per modeled remote"
+     }
+    ]
+   },
+   "notes": [
+    "UL 2524 listing is required on the ERCES components (NFPA 1225 18.12.1.3); the price list family ADXV-R-3378P-U2 / ADXV-R-25VU-U2 and the NEMA 4 head end ADXV-H-NMS-AC-N4 are the listed precedents. The Melville inputs carried 12 h battery, wall mount donor, no EPO and no PSR-ANN-U2; the annunciator line here is the code default, and the AHJ input decides."
+   ]
+  },
+  "westell_cs45_ps": {
+   "label": "Westell ProtectLink CS45 PS BDA (700/800, Class A/B, fiber DAS ready)",
+   "system_type": "bda",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "source_label": "Westell IBW-CS40-Series-PS-BDA-DS (071023) + IBW-CS45-Series-PS-DS + the PS Order Guide; UL 2524, UL 508A (UL50E Type 4), UL 62368-1; NFPA-compliant ERCES per the data sheets",
+   "ratios": {},
+   "parts": {
+    "master_unit": {
+     "manufacturer": "Westell",
+     "model": "CS45-734-834-A0",
+     "description": "ProtectLink PS BDA, 700/800 MHz dual-band, 2.5 W per band, 90 dB DL / 80 dB UL gain, Class A (12.5-75 kHz, 96 channels in blocks of 8) or Class B (150 kHz-10 MHz), FirstNet filter profile, oscillation management with isolation test, NFPA/UL 2524 alarms",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_cabinet": {
+     "manufacturer": "Westell",
+     "model": "CS19-BBU-005",
+     "description": "Wall-mountable battery cabinet",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_12h": {
+     "manufacturer": "Westell",
+     "model": "CS19-BAT145AH-SLA",
+     "description": "145 Ah SLA 12 V battery (one per 12 h at the 123 W dual-band draw; two for 24 h)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_24h": {
+     "manufacturer": "Westell",
+     "model": "CS19-BAT145AH-SLA",
+     "description": "145 Ah SLA 12 V battery, 2 required for 24 h",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "remote_annunciator": {
+     "manufacturer": "Westell",
+     "model": "CS40-ANNUNC",
+     "description": "Remote annunciator panel (optional; built-in annunciator comms)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "donor_antenna": {
+     "manufacturer": "ADRF",
+     "model": "AD-PA-617-960-D",
+     "description": "Low-band high isolation donor antenna (PS donor basis; the Donor antenna per the ROM look)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "arrestor_ps": {
+     "manufacturer": "Polyphaser",
+     "model": "IS-50NX-C2",
+     "description": "125-1000 MHz lightning arrestor per the ROM donor precedent",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "convergence_combiner": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-CBC-700-2600-4310",
+     "description": "Crossband coupler (low 698 to 940 MHz, high 1710 to 2700 MHz), inserts the PS band group onto the shared plate",
+     "jobs": 0,
+     "unit": "ea"
+    }
+   },
+   "limits": {
+    "remotes_per_master_max": 1,
+    "gain_dl_db": 90,
+    "gain_ul_db": 80,
+    "dl_power_per_band_w": 2.5,
+    "ul_listing": "UL 2524",
+    "class": "A (12.5-75 kHz filters) or B (150 kHz-10 MHz)",
+    "firstnet": "dedicated FirstNet filter profile",
+    "grade": "B",
+    "ref": "CS45 DS: 700/800 dual-band, 2.5 W per band, 90/80 dB, built-in annunciator, battery backup circuitry, oscillation management with built-in isolation test",
+    "battery": {
+     "ah_per_w_hour": 10.2,
+     "v": 12,
+     "load_w": {
+      "bda_mu": 123,
+      "per_remote": 0,
+      "per_remote_note": "the CS45 standalone BDA; the fiber-DAS remote draw is not on the data sheet (open)"
+     },
+     "options": [
+      {
+       "role": "battery_12h",
+       "ah": 145,
+       "model_label": "CS19-BAT145AH-SLA"
+      }
+     ],
+     "hours_note": "12 h = one 145 Ah battery per the data sheet; 24 h = two"
+    }
+   },
+   "head_end": {
+    "label": "One PS BDA per building sized to the ROM tool coverage: Class A or B per the license holder's requirements, the 12 h battery kit per NFPA 1225 18.13.2 (the K1 bundle), the remote annunciator where the AHJ requires it, and the donor side. The CS40 platform is the alternate (adjustable 0.5 to 2.5 W, Class A 32 filters per band, kits K1 K2 with the CS19-BBC-003 cabinet and 100 Ah x2 for 12 h or 160 Ah x2 for 24 h).",
+    "site_parts": [
+     {
+      "role": "master_unit",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "one PS BDA per building"
+     },
+     {
+      "role": "battery_cabinet",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "wall battery cabinet (the K1 bundle contents)"
+     },
+     {
+      "role": "battery_12h",
+      "per": "battery",
+      "why": "sized by the tool against the equipment load; the 12 h option is the code default, 24 h is the owner option"
+     },
+     {
+      "role": "convergence_combiner",
+      "qty": 3,
+      "per": "project",
+      "variant": "converged only",
+      "why": "converged build (owner 2026-11-26): the PS and commercial actives stay separate and each keeps its own donor, while the coax, splitters and antennas are shared with the commercial package; this combiner inserts the PS band group onto the shared plate (the ADRF-CBC-700-2600 class from the Melville commercial run, one per sector group)"
+     }
+    ],
+    "donor_parts": {
+     "donor_antenna": 3,
+     "arrestor_ps": 3,
+     "arrestor_why": "three PS donor antennas, one per carrier port, protected per antenna"
+    },
+    "donor_parts_note": "donor side handled by donor_parts (one PS donor antenna per carrier port + one arrestor per antenna per the ROM donor precedent)"
+   },
+   "notes": [
+    "UL 2524 listings on the sheets: UL 2524 (ERCES), UL 508A industrial control panels (UL50E Type 4), UL 62368-1; the CS40 conduit glands make the enclosure NEMA 4. The FCC Class B registration requirement (47 CFR 90.219) is printed on the Comba and Westell data sheets.",
+    "The remote annunciator (CS40-ANNUNC class) is optional on the sheets and required by the AHJ where an annunciation point is demanded (IFC 510.4.2.5, NFPA 1225 18.14.2).",
+    "Coverage acceptance: 95 percent per floor on the 20-grid (40-grid alternative) test per IFC 510.5.4 verbatim text captured 2026-11-26."
+   ]
+  },
+  "comba_ps_v3": {
+   "label": "Comba ComFlex NG V3 PS BDA / fiber DAS (700/800, P25, Band 14 option)",
+   "system_type": "das",
+   "jobs": 0,
+   "grade": "B",
+   "source": "spec",
+   "source_label": "User Manual RxxxV3-NG-700800-Public-Safety-BDA-Fiber-DAS QE 1.0.2 (2024) + the Public-Safety-BBU-V2 30/60/100 Ah QIG + UL 2524 2nd Rev Oct 2018 alarm configuration",
+   "ratios": {},
+   "parts": {
+    "head_end": {
+     "manufacturer": "Comba",
+     "model": "RxxxV3-PS-BDA/MU",
+     "description": "V3 PS BDA or Master Unit: dual-band 700/800 public safety (US/Canada) with the LTE Band 14 option, single band up to 64 channels per band or 96 shared on dual band, Class A or B, DL power 27 dBm or 33 dBm per band, max system gain 90/90 dB, up to 4 FOUs and 32 remote units per Master, UL 2524 alarm configuration, UL50E Type 4 / NEMA 4 enclosure, HCAI listed",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "fiber_hub": {
+     "manufacturer": "Comba",
+     "model": "V2 FOU",
+     "description": "Fiber optic expansion unit (V2 FOU), 4 FOU and 32 remote units per Master",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "remote_unit": {
+     "manufacturer": "Comba",
+     "model": "V3 PS RU/MU remote class",
+     "description": "V3 PS remote unit (fiber), supports P25 P1/P2 and digital and conventional analog simultaneously",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "donor_antenna": {
+     "manufacturer": "ADRF",
+     "model": "AD-PA-617-960-D",
+     "description": "Low-band high isolation donor antenna (PS donor basis)",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "arrestor_ps": {
+     "manufacturer": "Polyphaser",
+     "model": "IS-50NX-C2",
+     "description": "125-1000 MHz lightning arrestor per the ROM donor precedent",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_bbu_100ah": {
+     "manufacturer": "Comba",
+     "model": "Public-Safety-BBU-V2 (100 Ah LiFePO4)",
+     "description": "PS battery backup unit, 100 Ah LiFePO4 at 51.2 V nominal",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_bbu_60ah": {
+     "manufacturer": "Comba",
+     "model": "Public-Safety-BBU-V2 (60 Ah LiFePO4)",
+     "description": "PS battery backup unit, 60 Ah LiFePO4 at 51.2 V nominal",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "battery_bbu_30ah": {
+     "manufacturer": "Comba",
+     "model": "Public-Safety-BBU-V2 (30 Ah LiFePO4)",
+     "description": "PS battery backup unit, 30 Ah LiFePO4 at 51.2 V nominal",
+     "jobs": 0,
+     "unit": "ea"
+    },
+    "convergence_combiner": {
+     "manufacturer": "ADRF",
+     "model": "ADRF-CBC-700-2600-4310",
+     "description": "Crossband coupler (low 698 to 940 MHz, high 1710 to 2700 MHz), inserts the PS band group onto the shared plate",
+     "jobs": 0,
+     "unit": "ea"
+    }
+   },
+   "limits": {
+    "remotes_per_master_max": 32,
+    "fiber_units_per_master": 4,
+    "remotes_per_fiber_hub": null,
+    "composite_ul_output_dbm": 27,
+    "dl_power_per_band_options_dbm": [
+     27,
+     33
+    ],
+    "gain_dl_db": 90,
+    "gain_ul_db": 90,
+    "ul_listing": "UL 2524 (2nd revision Oct 2018 alarm set)",
+    "firstnet": "LTE Band 14 option (US only) with cavity filtering against neighbor bands",
+    "fcc_class_b_registration": "47 CFR 90.219, printed as a requirement on the data sheet",
+    "grade": "B",
+    "ref": "V3 user manual sections 1.1 to 1.15",
+    "battery": {
+     "ah_per_w_hour": 48.1,
+     "v": 51.2,
+     "load_w": {
+      "bda_mu": 100,
+      "per_remote": 45,
+      "per_remote_note": "the V3 PS remote unit draw is not published in the manual sections read; 45 W assumed (open)"
+     },
+     "options": [
+      {
+       "role": "battery_bbu_100ah",
+       "ah": 100,
+       "model_label": "BBU V2 100 Ah LiFePO4"
+      },
+      {
+       "role": "battery_bbu_60ah",
+       "ah": 60,
+       "model_label": "BBU V2 60 Ah LiFePO4"
+      },
+      {
+       "role": "battery_bbu_30ah",
+       "ah": 30,
+       "model_label": "BBU V2 30 Ah LiFePO4"
+      }
+     ],
+     "hours_note": "Backup Hours = 48.1 x Ah / Load (the manual's own formula at 51.2 V nominal)"
+    }
+   },
+   "head_end": {
+    "label": "One PS BDA (standalone) or Master Unit with FOU and remote units per the fiber DAS layout, sized to the ROM tool remote count; the LiFePO4 BBU sized for the 12 h code requirement; the donor side per the ROM look.",
+    "site_parts": [
+     {
+      "role": "head_end",
+      "qty": 1,
+      "per": "when_remotes",
+      "why": "one PS BDA or Master Unit per building"
+     },
+     {
+      "role": "battery_bbu_100ah",
+      "per": "battery",
+      "why": "sized by the tool against the equipment load using the manual's own 48.1 x Ah / Load formula; 12 h code default, 24 h owner option"
+     },
+     {
+      "role": "convergence_combiner",
+      "qty": 3,
+      "per": "project",
+      "variant": "converged only",
+      "why": "converged build (owner 2026-11-26): the PS and commercial actives stay separate and each keeps its own donor, while the coax, splitters and antennas are shared with the commercial package; this combiner inserts the PS band group onto the shared plate (the ADRF-CBC-700-2600 class from the Melville commercial run, one per sector group)"
+     }
+    ],
+    "per_remote": [
+     {
+      "role": "remote_unit",
+      "qty": 1,
+      "why": "one PS remote unit per ROM tool remote"
+     }
+    ],
+    "donor_parts": {
+     "donor_antenna": 3,
+     "arrestor_ps": 3
+    },
+    "donor_parts_note": "donor side handled by donor_parts (one PS donor antenna per carrier port + one arrestor per antenna per the ROM donor precedent)"
+   },
+   "notes": [
+    "Band and power options per the V3 manual: single band or dual band 700/800, DL 27 or 33 dBm per band, the composite uplink cap 27 dBm shared across bands (about 24 dBm per band when both carry), and the LTE Band 14 option with cavity filtering to protect against FirstNet neighbor-band interference.",
+    "UL 2524 listing with the October 2018 second revision alarm configuration; HCAI listing OSP-0796; UL50E Type 4 / NEMA 4 enclosure for the BDA and BBU.",
+    "Band coverage: this package covers 700/800 and the Band 14 option. VHF and UHF ride the ADRF package (PSR-VU-9537 with the BPF-V-1 and BPF-U-1 filters, sheets on disk) or the UHF firmware option.",
+    "The MU/FOU/RU line: 4 FOU and 32 remotes per Master per section 1.9; battery options 30, 60, 100 Ah LiFePO4 designed for the 12 h or 24 h standard runtime requirements."
+   ]
   }
  }
 }

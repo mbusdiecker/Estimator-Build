@@ -1,0 +1,931 @@
+{
+ "basis": "head end kit configurations per OEM, reconciled against the iBwave comparison BOMs (11-18/19), the Fort Worth ADRF ROM BOM and the ADRF Yan Feng ROM BOM; config and counts only (grade E); unit prices intentionally blank",
+ "floors_in_building": 45,
+ "sector_note": "ADX V and JMA rows are head end only with parts listed PER SECTOR behind sector_count; the remote side is in remote_basis per the ROM tool; Part 20 consumer rows are whole-system kits at their stated maximum",
+ "sector_count": 1,
+ "kits": {
+  "q4000c": {
+   "architecture": "Active DAS, one maxed system: 1 active DAS host (CNU) + 1 Fiber Hub host up to 12 Coverage Units (6 per host, 6 per Fiber Hub), one CU per covered floor with 4 interior antennas; donor side on the host's 4x N-type ports (left to right: Private, Verizon, T-Mobile, AT&T)",
+   "items": [
+    {
+     "part": "Q41-RECU",
+     "label": "Coverage Unit, one per covered floor (4 interior antennas per floor); design P/N from the ROM BOM",
+     "qty": 12,
+     "role": "remote",
+     "unit_price": null,
+     "source": "QUATRA 4000c design BOM; system max 12 CUs (6 per CNU + 6 per FNU)"
+    },
+    {
+     "part": "Interior antenna",
+     "label": "SC-528W Ultra Thin in the design (4 of the design's antennas per floor floor BOM)",
+     "qty": 48,
+     "role": "interior antenna",
+     "unit_price": null,
+     "source": "the design reports carry SC-528W x26 across their floors"
+    },
+    {
+     "part": "Q44-1M34CNU",
+     "label": "Active DAS host (CNU), 6 CUs, 4x N-type donor ports; design P/N from the ROM BOM",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "Q40-1234FNU",
+     "label": "Fiber Hub, 6 CUs per hub",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "Cat5e run",
+     "label": "Per CU, 328 ft (100 m) max; the design runs 331.31 ft total",
+     "qty": 12,
+     "role": "cable",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "Donor antenna (SC-530W)",
+     "label": "One per public-carrier port: VZW, TMO, ATT (kit basis per the owner donor rule; the iBwave the design reports carry SC-230W x3, 10 dBi yagis, at the roof)",
+     "qty": 3,
+     "role": "donor antenna",
+     "unit_price": null,
+     "source": "donor basis 11-25 (SC-530W 7/8/9/9 dBi)"
+    },
+    {
+     "part": "Westell CS60-024-002",
+     "label": "RF coaxial surge arrestor, N female to N female, one per public donor port",
+     "qty": 3,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo): per donor port on every design"
+    }
+   ],
+   "constraints": [
+    "Part 20 single-sector class: one system set per building",
+    "Port order left to right on the host: Private, Verizon, T-Mobile, AT&T (owner 11-25); the private port is unused by the 3-carrier design, available for a private or BDA feed",
+    "System max is 12 CUs (6 per host + 6 per Fiber Hub); with 45 floors this system covers 12 of 45 floors - add system sets at the ROM level to go deeper",
+    "Reference only (the head end look): the 11-18 iBwave design carries 8 CUs, 26 SC-528W antennas and 331.31 ft CAT-5 on its floor layout; this kit carries the ROM tool's count (12 CUs), per the owner's scoping"
+   ],
+   "open_items": [],
+   "sources": [],
+   "sector_count": 1,
+   "covered_floors": 12
+  },
+  "signalmax": {
+   "architecture": "Fiber DAS, one maxed system: 1 Master Unit + up to 4 remote units (one remote per covered floor, 4 interior antennas per remote); one outside donor antenna per MU",
+   "items": [
+    {
+     "part": "SignalMax Fiber_MU",
+     "label": "Master Unit, 1 N female outside port + 4 SC/APC fiber ports (4 RUs per MU); design P/N from the ROM BOM",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "SignalMax Fiber_RU",
+     "label": "Remote Unit, 4 ports x up to 4 antennas (the 11-18 the design reports carry 2 RUs for its floor BOM; this kit maxes at 4)",
+     "qty": 4,
+     "role": "remote",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "Interior antenna",
+     "label": "One per RU port (SC-528W Ultra Thin in the design)",
+     "qty": 16,
+     "role": "interior antenna",
+     "unit_price": null,
+     "source": "the design reports carry SC-528W"
+    },
+    {
+     "part": "Distribution splitter set (Westell CS04)",
+     "label": "The head end look per the 11-18 design BOM: 4-way CS04-072-429 x5, 2-way CS04-070-429 x3, 3-way CS04-041-429 x1; the ROM tool computes its own tree when the design runs",
+     "qty": 9,
+     "role": "interior distribution",
+     "unit_price": null,
+     "source": "reference layout from the iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "Donor antenna (SC-530W)",
+     "label": "Three donor antennas combined into the wideband MU port, one per carrier direction (kit basis per the owner donor rule; the design reports carry SC-230W x3 at the roof)",
+     "qty": 3,
+     "role": "donor antenna",
+     "unit_price": null,
+     "source": "donor basis 11-25"
+    },
+    {
+     "part": "Westell CS60-024-002",
+     "label": "RF coaxial surge arrestor, N female to N female, one per public donor port",
+     "qty": 3,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo): per donor port on every design"
+    }
+   ],
+   "constraints": [
+    "Part 20 single-sector class: one system set per building",
+    "System max is 1 MU with 4 RUs; with 45 floors this system covers 4 of 45 floors - add system sets at the ROM level to go deeper",
+    "SC/APC single-mode fiber MU to RU (the design reports carry Corning 006E81-33131-24 riser, 6 fiber)"
+   ],
+   "open_items": [],
+   "sources": [],
+   "sector_count": 1,
+   "covered_floors": 4
+  },
+  "surecall_5xmax": {
+   "architecture": "Consumer ERT booster, one system per building: outdoor ERT unit + indoor host (2 interior ports, up to 12 internal antennas) + one donor antenna",
+   "items": [
+    {
+     "part": "5x Max Outside",
+     "label": "Outdoor amplifier with Extended Range Technology (the design reports carry 1 at the roof)",
+     "qty": 1,
+     "role": "remote-donor",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo): 5x Max Outside"
+    },
+    {
+     "part": "5X Max Inside Host",
+     "label": "Indoor host, 2 high-power interior ports (design places it on the host floor)",
+     "qty": 1,
+     "role": "remote",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "Interior antenna",
+     "label": "Up to 12 internal antennas in the expanded rated kit (base kit ships 4)",
+     "qty": 12,
+     "role": "interior antenna",
+     "unit_price": null,
+     "source": "5X Max product page"
+    },
+    {
+     "part": "Westell CS04-070-429 (SPD2/450-2.7K/N)",
+     "label": "Required by the 6-antennas-per-port balanced tree (owner 11-25: list what is required); the 11-18 the design reports' splitter tree for 20 antennas instead used 4-way x5 + 3-way x1 + 2-way x1 + a Microlab DN-44FE tapper",
+     "qty": 6,
+     "role": "interior distribution",
+     "unit_price": null,
+     "source": "owner 11-25 splitter call"
+    },
+    {
+     "part": "Westell CS04-071-429 (SPD3/698-2.7K/N)",
+     "label": "Same tree, one per interior port",
+     "qty": 2,
+     "role": "interior distribution",
+     "unit_price": null,
+     "source": "owner 11-25 splitter call"
+    },
+    {
+     "part": "Donor antenna (SC-530W)",
+     "label": "Three donor antennas per the design, combined ahead of the host input (kit basis per the owner donor rule; the design reports carry SC-230W x3)",
+     "qty": 3,
+     "role": "donor antenna",
+     "unit_price": null,
+     "source": "donor basis 11-25"
+    },
+    {
+     "part": "Westell CS60-024-002",
+     "label": "RF coaxial surge arrestor, N female to N female, one per public donor port",
+     "qty": 3,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo): per donor port on every design"
+    }
+   ],
+   "constraints": [
+    "Part 20 single-sector class: one system set per building",
+    "Rated 20,000 sq ft base (4 antennas) to 75,000 sq ft expanded (12 antennas); the 12-antenna tree takes 8 splitters (6 two-way + 2 three-way), 6 antennas per interior port",
+    "One system covers the building footprint the survey confirms; the comparison design's floor-set multiplication is not part of the kit"
+   ],
+   "open_items": [],
+   "sources": [],
+   "sector_count": 1,
+   "covered_floors": 45
+  },
+  "adxv_mpr": {
+   "architecture": "Head-end DAS, head end ONLY per sector, sized to the ROM tool RU count (8 MPR remote units): POIs per band per carrier, the 8x8 DL/UL channel combiner pair, optic donor units at one strand per RU; the remote side is the ROM tool's design (remote_basis)",
+   "items": [
+    {
+     "part": "ADXV-H-NMS-AC",
+     "label": "Head End NMS package, chassis + NMS + PSU (AC), up to 12 POI/POIL/ODU/CHC standard modules",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "ADXV Series datasheet"
+    },
+    {
+     "part": "ADXV-H-POI-P",
+     "label": "PCS point of interface, one per carrier",
+     "qty": 3,
+     "role": "head end",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: POI-P x3"
+    },
+    {
+     "part": "ADXV-H-POI-A",
+     "label": "AWS point of interface, one per carrier",
+     "qty": 3,
+     "role": "head end",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: POI-A x3"
+    },
+    {
+     "part": "ADXV-H-POI-7L",
+     "label": "700 MHz Lower point of interface (owner 11-26: the 700 POI is required with the 850)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: POI-7L x1; owner 11-26"
+    },
+    {
+     "part": "ADXV-H-POI-C",
+     "label": "Cellular 850 point of interface (owner 11-26: the 850 POI is required); P/N class per the 7L/P/A pattern",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "owner 11-26"
+    },
+    {
+     "part": "ADXV-H-CHC-88-DL-X",
+     "label": "8x8 DL channel combiner (600 MHz to C-Band; the non-X variant covers 600 MHz to BRS)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "ADXV Series datasheet; both reference BOMs carry the -X for the Sugar House design"
+    },
+    {
+     "part": "ADXV-H-CHC-88-UL-X",
+     "label": "8x8 UL channel combiner (600 MHz to C-Band)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "ADXV Series datasheet"
+    },
+    {
+     "part": "ADXV-H-ODU-4-X",
+     "label": "4-port optic donor unit, one strand per remote unit, <=5 dBo; sized to the ROM tool RU count",
+     "qty": 2,
+     "role": "head end",
+     "unit_price": null,
+     "source": "ADXV Series datasheet; reference BOMs size 1 ODU-4(-X) per up to 4 RUs"
+    },
+    {
+     "part": "Donor antenna pair (AD-PA)",
+     "label": "AD-PA-617-960-D (low band, 15.5/16.8 dBi) + AD-PA-1900-2600-DIN-X (19.1 dBi, 1710-2170); the Fort Worth ROM donor family is the same AD-PA class (AD-PA-1695-4200-D x3 + AD-PA-617-960-D x1)",
+     "qty": 1,
+     "role": "donor antenna",
+     "unit_price": null,
+     "source": "donor basis 11-25 (AD-PA pair, sheet-verified)"
+    },
+    {
+     "part": "Westell CS60-024-002",
+     "label": "RF coaxial surge arrestor, N female to N female, one per public donor port",
+     "qty": 2,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo): per donor port on every design"
+    },
+    {
+     "part": "Polyphaser TSX-NFF",
+     "label": "698-2700 MHz lightning DC blocked protector, one per donor antenna",
+     "qty": 2,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: TSX-NFF same qty as donor antennas"
+    },
+    {
+     "part": "Polyphaser BFN",
+     "label": "TSX-NFF mount bracket, same quantity as the protector",
+     "qty": 2,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "ROM precedent: TSX-NFF needs P/N BFN at the same qty"
+    },
+    {
+     "part": "Fiber termination kit (OCC)",
+     "label": "2U RTS cabinet + 6-port SC/APC adapter floor BOMs + pigtails + patch leads; sized to the ODU fiber ports",
+     "qty": 1,
+     "role": "fiber",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: OCC 616SCAPC / RTS2U-6APB / P8SCAPC06-3M / D8SCAPC-SCAPC-3M"
+    },
+    {
+     "part": "Jumper kit (ADRF)",
+     "label": "Head-end interconnect jumpers: J-SF141-1H-4MR-NMR 1.5 ft + internal SMB jumpers",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo): J-SF141-1H-4MR-NMR x6 and J-SMB-SMB x14 (internal, [DO NOT ORDER] label)"
+    }
+   ],
+   "constraints": [
+    "NMS slots: 3 POI-P + 3 POI-A + 1 POI-7L + 1 POI-C + 2 ODU-4-X + 2 CHC-88-X = 12 of the 12 standard modules; per-carrier low-band POIs beyond these would need an ADXV-H-RACK (2 ODU/CHC slots each, up to 8 racks)",
+    "Head end sizing rule: optic donor units = ceil(RUs / 4); 8 RUs -> 2 ODU-4-X",
+    "The ADRF chain is not Part 20 sector-capped: parts are listed per sector and scale by the sector_count parameter (1 here)"
+   ],
+   "open_items": [
+    "Exact ADX V POI-7L and POI-C (Cellular 850) part numbers: the reference BOMs carry POI-7L only; the kit names the 850 card POI-C per the 7L/P/A suffix pattern - confirm both P/Ns with ADRF"
+   ],
+   "sources": [],
+   "sector_count": 1,
+   "remote_basis": {
+    "source": "ROM tool remote design (stack_results.json)",
+    "remote_units": 8,
+    "note": "per the ADRF ROM precedent (Fort Worth, Yan Feng), each remote site is one remote chassis (ADXV-R-CHA, 7 slots) + remote chassis power supply + an optical remote unit (ORU) + the band modules (ADXV-R-33X/37X RAM class for the mid family) + one ADXV-R-CHC-U universal channel combiner; the fan kit ADXV-R-FAN-DC is required above 4 RAMs per chassis; the ROM tool owns the site count"
+   },
+   "covered_floors": 8
+  },
+  "adxv_hpr": {
+   "architecture": "Head-end DAS, head end ONLY per sector, sized to the ROM tool RU count (5 HPR remote units): POIs per band per carrier, the 8x8 DL/UL channel combiner pair, optic donor units at one strand per RU; the remote side is the ROM tool's design (remote_basis)",
+   "items": [
+    {
+     "part": "ADXV-H-NMS-AC",
+     "label": "Head End NMS package, chassis + NMS + PSU (AC), up to 12 POI/POIL/ODU/CHC standard modules",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "ADXV Series datasheet"
+    },
+    {
+     "part": "ADXV-H-POI-P",
+     "label": "PCS point of interface, one per carrier",
+     "qty": 3,
+     "role": "head end",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: POI-P x3"
+    },
+    {
+     "part": "ADXV-H-POI-A",
+     "label": "AWS point of interface, one per carrier",
+     "qty": 3,
+     "role": "head end",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: POI-A x3"
+    },
+    {
+     "part": "ADXV-H-POI-7L",
+     "label": "700 MHz Lower point of interface (owner 11-26: the 700 POI is required with the 850)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: POI-7L x1; owner 11-26"
+    },
+    {
+     "part": "ADXV-H-POI-C",
+     "label": "Cellular 850 point of interface (owner 11-26: the 850 POI is required); P/N class per the 7L/P/A pattern",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "owner 11-26"
+    },
+    {
+     "part": "ADXV-H-CHC-88-DL-X",
+     "label": "8x8 DL channel combiner (600 MHz to C-Band; the non-X variant covers 600 MHz to BRS)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "ADXV Series datasheet; both reference BOMs carry the -X for the Sugar House design"
+    },
+    {
+     "part": "ADXV-H-CHC-88-UL-X",
+     "label": "8x8 UL channel combiner (600 MHz to C-Band)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "ADXV Series datasheet"
+    },
+    {
+     "part": "ADXV-H-ODU-4-X",
+     "label": "4-port optic donor unit, one strand per remote unit, <=5 dBo; sized to the ROM tool RU count",
+     "qty": 2,
+     "role": "head end",
+     "unit_price": null,
+     "source": "ADXV Series datasheet; reference BOMs size 1 ODU-4(-X) per up to 4 RUs"
+    },
+    {
+     "part": "Donor antenna pair (AD-PA)",
+     "label": "AD-PA-617-960-D (low band, 15.5/16.8 dBi) + AD-PA-1900-2600-DIN-X (19.1 dBi, 1710-2170); the Fort Worth ROM donor family is the same AD-PA class (AD-PA-1695-4200-D x3 + AD-PA-617-960-D x1)",
+     "qty": 1,
+     "role": "donor antenna",
+     "unit_price": null,
+     "source": "donor basis 11-25 (AD-PA pair, sheet-verified)"
+    },
+    {
+     "part": "Westell CS60-024-002",
+     "label": "RF coaxial surge arrestor, N female to N female, one per public donor port",
+     "qty": 2,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo): per donor port on every design"
+    },
+    {
+     "part": "Polyphaser TSX-NFF",
+     "label": "698-2700 MHz lightning DC blocked protector, one per donor antenna",
+     "qty": 2,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: TSX-NFF same qty as donor antennas"
+    },
+    {
+     "part": "Polyphaser BFN",
+     "label": "TSX-NFF mount bracket, same quantity as the protector",
+     "qty": 2,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "ROM precedent: TSX-NFF needs P/N BFN at the same qty"
+    },
+    {
+     "part": "Fiber termination kit (OCC)",
+     "label": "2U RTS cabinet + 6-port SC/APC adapter floor BOMs + pigtails + patch leads; sized to the ODU fiber ports",
+     "qty": 1,
+     "role": "fiber",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: OCC 616SCAPC / RTS2U-6APB / P8SCAPC06-3M / D8SCAPC-SCAPC-3M"
+    },
+    {
+     "part": "Jumper kit (ADRF)",
+     "label": "Head-end interconnect jumpers: J-SF141-1H-4MR-NMR 1.5 ft + internal SMB jumpers",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo): J-SF141-1H-4MR-NMR x6 and J-SMB-SMB x14 (internal, [DO NOT ORDER] label)"
+    }
+   ],
+   "constraints": [
+    "NMS slots: 3 POI-P + 3 POI-A + 1 POI-7L + 1 POI-C + 2 ODU-4-X + 2 CHC-88-X = 12 of the 12 standard modules; per-carrier low-band POIs beyond these would need an ADXV-H-RACK (2 ODU/CHC slots each, up to 8 racks)",
+    "Head end sizing rule: optic donor units = ceil(RUs / 4); 5 RUs -> 2 ODU-4-X",
+    "The ADRF chain is not Part 20 sector-capped: parts are listed per sector and scale by the sector_count parameter (1 here)"
+   ],
+   "open_items": [
+    "Exact ADX V POI-7L and POI-C (Cellular 850) part numbers: the reference BOMs carry POI-7L only; the kit names the 850 card POI-C per the 7L/P/A suffix pattern - confirm both P/Ns with ADRF"
+   ],
+   "sources": [],
+   "sector_count": 1,
+   "remote_basis": {
+    "source": "ROM tool remote design (stack_results.json)",
+    "remote_units": 5,
+    "note": "per the ADRF ROM precedent, each high-power remote site is one ADXV-HPR-CHA + HPR-PSU-AC + HPR-ORU(-X) optical remote unit + the band module set (HPR-437F/46A/46P class, one per band family per carrier) + one ADXV-R-CHC-U universal channel combiner; the ROM tool owns the site count"
+   },
+   "covered_floors": 5
+  },
+  "adxv_lpr": {
+   "architecture": "Fiber-to-the-edge DAS, head end ONLY per sector, sized to the ROM tool primary count (23 LPR sites): optic donor units at 4 primaries per card, the SDRC front end, POIs per carrier in non-DFE mode; the primary/secondary pairs are the ROM tool's design (remote_basis)",
+   "items": [
+    {
+     "part": "ADXV-H-NMS-AC",
+     "label": "Head End NMS package, chassis + NMS + PSU (AC), up to 12 standard modules",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "ADXV Series datasheet"
+    },
+    {
+     "part": "ADXV-H-ODU-4-X",
+     "label": "4-port optic donor unit, one strand per primary, <=5 dBo; sized to the ROM tool count (the 11-19 the design reports carry 1 ODU-4-X for 2 LPR sites); the ADXV-L-HUB-4-AC is the alternate head end hub (4 primaries + DC power to 8)",
+     "qty": 6,
+     "role": "head end",
+     "unit_price": null,
+     "source": "ADXV Series datasheet + iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "ADXV-H-POI-P",
+     "label": "PCS point of interface, one per carrier (non-DFE mode only; DFE mode removes these)",
+     "qty": 3,
+     "role": "head end",
+     "unit_price": null,
+     "source": "ADXV Series datasheet",
+     "variant": "non-DFE only"
+    },
+    {
+     "part": "ADXV-H-POI-A",
+     "label": "AWS point of interface, one per carrier (non-DFE mode only)",
+     "qty": 3,
+     "role": "head end",
+     "unit_price": null,
+     "source": "ADXV Series datasheet",
+     "variant": "non-DFE only"
+    },
+    {
+     "part": "ADXV-H-POI-7L",
+     "label": "700 MHz Lower point of interface (owner 11-26: required with the 850; non-DFE mode only)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: POI-7L x1; owner 11-26",
+     "variant": "non-DFE only"
+    },
+    {
+     "part": "ADXV-H-POI-C",
+     "label": "Cellular 850 point of interface (owner 11-26: required; P/N per the 7L/P/A pattern; non-DFE mode only)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "owner 11-26",
+     "variant": "non-DFE only"
+    },
+    {
+     "part": "SDRC front end",
+     "label": "SDRC-CHA-5 + SDRC-CHA-1 chassis, SDRC-PSU-5, per-carrier modules SDRC-17-A x3 + SDRC-17-P x3 (BDA/DFE modes per band), SDR-CHC-V donor x3 + server x3 - one kit, full detail in the SDRC front end block of the JSON",
+     "qty": 1,
+     "role": "donor front end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo) floor 8: CHA-5 x1 + CHA-1 x1 + PSU-5 x1 + 17-A x3 + 17-P x3 + CHC-V donor x3 + server x3"
+    },
+    {
+     "part": "Donor antenna pair (AD-PA)",
+     "label": "AD-PA-617-960-D + AD-PA-1900-2600-DIN-X",
+     "qty": 1,
+     "role": "donor antenna",
+     "unit_price": null,
+     "source": "donor basis 11-25"
+    },
+    {
+     "part": "Westell CS60-024-002",
+     "label": "RF coaxial surge arrestor, N female to N female, one per public donor port",
+     "qty": 2,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo): per donor port on every design"
+    },
+    {
+     "part": "Polyphaser TSX-NFF",
+     "label": "698-2700 MHz lightning DC blocked protector, one per donor antenna",
+     "qty": 2,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: TSX-NFF same qty as donor antennas"
+    },
+    {
+     "part": "Polyphaser BFN",
+     "label": "TSX-NFF mount bracket, same quantity as the protector",
+     "qty": 2,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "ROM precedent: TSX-NFF needs P/N BFN at the same qty"
+    },
+    {
+     "part": "Fiber termination kit (OCC)",
+     "label": "2U RTS cabinet + 6-port SC/APC floor BOMs + pigtails + patch leads, sized to the ODU ports",
+     "qty": 1,
+     "role": "fiber",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM fiber equipment"
+    },
+    {
+     "part": "Jumper kit (ADRF)",
+     "label": "Head-end interconnect jumpers (4.3-10 and internal SMB)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    }
+   ],
+   "constraints": [
+    "Head end sizing rule: optic donor units = ceil(primaries / 4); 23 primaries -> 6 ODU-4-X",
+    "LPR fiber: <=5 dBo optical budget per the sheet; the ADXV-L-OPT-CPL-S coupler can feed two primaries on one strand if the fiber run wants it"
+   ],
+   "open_items": [],
+   "sources": [],
+   "sector_count": 1,
+   "remote_basis": {
+    "source": "ROM tool remote design (stack_results.json)",
+    "primaries": 23,
+    "note": "each site is one ADXV-L-20PAWBT-P Mid Band SISO Primary (PCS/AWS/WCS/BRS, 20 dBm/band) paired 1:1 with its ADXV-L-1767S8C-S Low Band SISO Secondary (600/700/SMR800+Cellular, 17 dBm/band); the pair cross-connects over the SMA ports both modules carry; the C-Band MIMO pair (ADXV-L-23N77HM-P + ADXV-L-23N77LM-S) repeats the pattern; the ROM tool owns the count, this kit only sizes the head end to it"
+   },
+   "covered_floors": 45
+  },
+  "comba_mruc": {
+   "architecture": "Modular analog fiber DAS (whole system per owner OK): MU-Chassis-AC with the BDA cards for the Part 20 off-air path and FOU cards toward the MRUc remotes (8 RF modules + 2 FOU slots per chassis; 4 remotes or hubs per FOU)",
+   "items": [
+    {
+     "part": "MU-Chassis-AC",
+     "label": "Master Unit chassis, 10 slots (8 RF modules + 2 FOU), power and modem included",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "MU-Chassis-AC DS"
+    },
+    {
+     "part": "MU-DEMOD",
+     "label": "Demodulation module (the 11-18 the design reports carry 1)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "MU-BDA20-2B-HH",
+     "label": "Part 20 off-air BDA card, two high-band channels, one per carrier (the 11-18 the design reports carry 3)",
+     "qty": 3,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "MU-FOU",
+     "label": "Fiber Optic Unit, 4 remotes or hubs per card; 2 FOU slots per chassis; sized to the ROM tool remote count",
+     "qty": 2,
+     "role": "head end",
+     "unit_price": null,
+     "source": "MU-FOU DS"
+    },
+    {
+     "part": "ComFlex NG MRUc",
+     "label": "Medium-power remote (the design reports' P/N MRU-7851719c-DC); the 11-18 the design reports carry 1 for its floor BOM",
+     "qty": 6,
+     "role": "remote",
+     "unit_price": null,
+     "source": "ROM tool count"
+    },
+    {
+     "part": "Interior antenna",
+     "label": "Per covered floor per the design (SC-528W Ultra Thin in the design reports)",
+     "qty": 24,
+     "role": "interior antenna",
+     "unit_price": null,
+     "source": "design floor BOM"
+    },
+    {
+     "part": "Donor antenna (SC-530W)",
+     "label": "One per off-air BDA channel group (kit basis per the owner donor rule; the design reports carry SC-230W x3)",
+     "qty": 3,
+     "role": "donor antenna",
+     "unit_price": null,
+     "source": "donor basis 11-25 (SC-530W per owner)"
+    },
+    {
+     "part": "Westell CS60-024-002",
+     "label": "RF coaxial surge arrestor, N female to N female, one per public donor port",
+     "qty": 3,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo): per donor port on every design"
+    }
+   ],
+   "constraints": [
+    "MU hosts up to 8 BDA cards / 16 off-air channels; up to 32 RF inputs per sector with 8 low-power POI cards (carrier-fed path)",
+    "MRUc ceiling per MU with FOU expansion: 16 HUBs per MU with FOU expansion (Consumer OG 0-0-5: up to 16 RF inputs, 16 HUBs per MU, 256 ARU); the chassis baseline carries 8 optical ports, FOU-EXP adds 8",
+    "Part 20 single-sector class: one system set per building; with 45 floors this system covers 6 of 45 floors",
+    "Reference only (the head end look): the 11-18 iBwave design carries 3 MU-BDA20-2B-HH + 1 MU-DEMOD + 1 MRU-7851719c-DC + 1 MU-FOU on its floor layout; this kit carries the ROM tool's counts"
+   ],
+   "open_items": [],
+   "sources": [],
+   "sector_count": 1,
+   "covered_floors": 6
+  },
+  "jma_t19awe": {
+   "architecture": "5X Max donor host feeding a JMA TEKO transport, head end ONLY per sector, sized to the ROM tool remote count (5 T19AWE links): sub-rack with supervision and power, the 4-way MU optical transport cards, POIs per band, SMR700 esaplexer and the server-side hybrid coupler; the T19AWE remotes are the ROM tool's design (remote_basis)",
+   "items": [
+    {
+     "part": "5x Max Outside",
+     "label": "Donor-side outdoor amplifier for the off-air source",
+     "qty": 1,
+     "role": "remote-donor",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "5X Max Inside Host",
+     "label": "Donor host feeding the JMA POIs and the TTRU4W transport",
+     "qty": 1,
+     "role": "remote",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "Donor antenna (SC-530W)",
+     "label": "One per public-carrier port of the donor host (kit basis per the owner donor rule; the design reports carry SC-230W x3)",
+     "qty": 3,
+     "role": "donor antenna",
+     "unit_price": null,
+     "source": "donor basis 11-25"
+    },
+    {
+     "part": "Westell CS60-024-002",
+     "label": "RF coaxial surge arrestor on the donor feed (the design JMA group carries 1)",
+     "qty": 1,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "TLPPOI",
+     "label": "Low-power POI at the TEKO input when the host output lands at or below its range (alternate; pick per the measured input power)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "TEKO Master Unit Components doc; owner 11-25 both options",
+     "variant": "low input power"
+    },
+    {
+     "part": "TAPOI-PCS-F-4",
+     "label": "Active POI for PCS (the design reports carry it for the PCS band of the host feed)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)",
+     "variant": "per band"
+    },
+    {
+     "part": "TAPOI-AWSE-F-4",
+     "label": "Active POI for AWS (the design P/N is marked discontinued; confirm the current P/N)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)",
+     "variant": "per band"
+    },
+    {
+     "part": "JMA SUB-TRX-PSU5N",
+     "label": "Master Unit sub-rack, houses the TSPV and TTRU4W modules (owner-provided P/N)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "owner 11-25"
+    },
+    {
+     "part": "JMA TSPV-NBB",
+     "label": "Supervision module Evo, C-Band, HP (the design reports carry TSPV-NBB)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "JMA TPSU/AC",
+     "label": "Master Unit power supply module (the design reports carry 2)",
+     "qty": 2,
+     "role": "power",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "JMA TPANEL-14TE",
+     "label": "Blank panel for the Master Unit sub-rack",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "TTRU4W-S-M",
+     "label": "4-way MU optical transmitter/receiver module for the transport (380-2700 MHz), one card per up to 4 remote links, WDM single strand; sized to the ROM tool remote count",
+     "qty": 2,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "JMA TESA-UW2-L",
+     "label": "Esaplexer SDRU SMR700 extended, AMPS+SMR (the design reports carry 1)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "JMA T-HC3-4",
+     "label": "3x3 hybrid coupler 698-2700 MHz, 4.3-10 (the design reports carry it on the server side)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    }
+   ],
+   "constraints": [
+    "POI selection: one POI path installs per sector, picked by the measured input power at the TEKO input from the host; the 11-18 design used TAPOI per band (PCS and AWS)",
+    "The TTRU4W-S-M itself is the Master Unit optical card (4-way optical Tx/Rx, WDM single strand per link); the OTRX family in the TEKO doc (A.2.4.1) is the same card class, so the kit lists the transport card, not a separate OTRX line",
+    "T19AWE optical: WDM over single strand, <=10 dBo link budget, AGC holds RF gain constant across the span; the T19AWE optical uplink output of 6 dBm is the 1550 nm light level (fiber link spec, not an RF UL cap)",
+    "Uplink: the +10 dBm POI output is the owner's assumption pending written T19AWE figures"
+   ],
+   "open_items": [
+    "TAPOI-AWSE-F-4 is marked Discontinued in the design BOM: confirm the current AWS POI part number with JMA"
+   ],
+   "sources": [],
+   "sector_count": 1,
+   "remote_basis": {
+    "source": "ROM tool remote design (stack_results.json)",
+    "remotes": 5,
+    "note": "each remote link is a JMA T19AWE (the the design reports' P/N T19AWE19AWEWWAT: RU 2-band PCS1900/AWS3 MIMO, 40 W, AC powered); the ROM tool owns the link count, this kit sizes the head end to it"
+   },
+   "covered_floors": 5
+  },
+  "sdrc_only": {
+   "architecture": "Front-end-only mid-power DAS, one system per building sized for the carrier ask: the SDRC front end (per-carrier modules in BDA/DFE mode with donor and server channel combiners), the server-side hybrid coupler, and the donor side; server distribution follows the design",
+   "items": [
+    {
+     "part": "SDRC-CHA-5",
+     "label": "19 in rack/wall mount chassis, up to 5 SDRC modules (the design reports carry 1)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "SDRC-CHA-1",
+     "label": "19 in wall mount chassis, 1 module (holds the 6th module in the design)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "SDRC-PSU-5",
+     "label": "Power supply unit, supports up to 5 SDRC modules (the design reports carry 1)",
+     "qty": 1,
+     "role": "power",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "SDRC-17-A",
+     "label": "AWS modular repeater, one per carrier (BDA/DFE mode per band; the design reports carry 3; 71 dB max gain, 17 dBm DL)",
+     "qty": 3,
+     "role": "remote",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "SDRC-17-P",
+     "label": "PCS modular repeater, one per carrier (the design reports carry 3; 58 dB max gain)",
+     "qty": 3,
+     "role": "remote",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "SDR-CHC-V (Donor)",
+     "label": "SDR channel combiner for 700 MHz, Cell, PCS and AWS, donor side, one per carrier (the design reports carry 3)",
+     "qty": 3,
+     "role": "donor front end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "SDR-CHC-V (Server)",
+     "label": "Same combiner, server side, one per carrier (the design reports carry 3)",
+     "qty": 3,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "JMA T-HC3-4",
+     "label": "3x3 hybrid coupler 698-2700 MHz on the server side (the design reports carry 1)",
+     "qty": 1,
+     "role": "head end",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo)"
+    },
+    {
+     "part": "Donor antenna pair (AD-PA)",
+     "label": "AD-PA-617-960-D + AD-PA-1900-2600-DIN-X (the design reports carry SC-230W x3 at the roof)",
+     "qty": 1,
+     "role": "donor antenna",
+     "unit_price": null,
+     "source": "donor basis 11-25"
+    },
+    {
+     "part": "Westell CS60-024-002",
+     "label": "RF coaxial surge arrestor, N female to N female, one per public donor port",
+     "qty": 2,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "iBwave comparison BOM 11-18/19 (P. DelPizzo): per donor port on every design"
+    },
+    {
+     "part": "Polyphaser TSX-NFF",
+     "label": "698-2700 MHz lightning DC blocked protector, one per donor antenna",
+     "qty": 2,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "Fort Worth ADRF ROM: TSX-NFF same qty as donor antennas"
+    },
+    {
+     "part": "Polyphaser BFN",
+     "label": "TSX-NFF mount bracket, same quantity as the protector",
+     "qty": 2,
+     "role": "donor protection",
+     "unit_price": null,
+     "source": "ROM precedent: TSX-NFF needs P/N BFN at the same qty"
+    }
+   ],
+   "constraints": [
+    "One system per building sized for the carrier ask: one repeater per carrier or a shared front end; as many CHCs as the channels need",
+    "Donor side is per module: each SDRC-17 module carries its own 4.3-10 donor and server ports (sheet); a shared donor feed through dividers is the integration choice, not a kit part",
+    "Server-side antenna count by build: shared BDAs 1 total, non-shared BDAs 1 per carrier, so 3 for the per-carrier kit (owner 11-25); the per-floor floor BOM distribution (SC-528W antennas and the Westell CS04 splitters) is the design side",
+    "Low-carrier routing (owner 11-26): the SDR-CHC-V quad carries the Cellular 850 port, so 700 and 850 ride the channel combiners alongside PCS and AWS; neither reference the design reports carry a separate 7F/C SDRC module or POIs in this front end"
+   ],
+   "open_items": [
+    "Exact POI part numbers if the carrier plan wants POIs ahead of the front end (POI-7L and POI-C): confirm with ADRF"
+   ],
+   "sources": [],
+   "sector_count": 1
+  }
+ }
+}

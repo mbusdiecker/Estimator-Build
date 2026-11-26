@@ -101,7 +101,8 @@ def _line(pkg_key, pkg, role, qty, floor, has_floor, why):
     part = pkg["parts"][role]
     basis = ("grade %s, %s" % (pkg.get("grade", "B"), pkg.get("source_label", "OEM data sheet"))
              if _is_spec(pkg) else "grade C, ANS quote history")
-    it = {"category": "oem", "item": part["description"], "qty": int(qty), "unit": "ea",
+    it = {"category": "oem", "item": part["description"], "qty": int(qty),
+          "unit": part.get("unit", "ea"),
           "role": "oem.%s.%s" % (pkg_key, role), "oem_role": role,
           "note": "%s %s: %s (%s)." % (pkg["label"], role.replace("_", " "), why, basis)}
     if has_floor:
@@ -128,7 +129,8 @@ def _service_antennas(items):
     return n
 
 
-def _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor):
+def _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor,
+                 autonomy_hours=12, ps_mode=False):
     """Size a spec package (for example SureCall FiberMax) from its limits.
 
     Remotes = the larger of the modeled remotes and the antennas divided by the
@@ -158,7 +160,7 @@ def _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor):
         out.append(it)
 
     modeled = _service_antennas(items)
-    per_ru = int(lim["antennas_per_remote_unit_max"])
+    per_ru = int(lim.get("antennas_per_remote_unit_max", 0))
     if dens and area_sqft:
         ant = math.ceil(float(area_sqft) / float(dens["sq_ft_per_antenna"]) - 1e-9)
         basis = ("%d antennas from %s sq ft at %s sq ft per antenna (grade %s: %s)"
@@ -173,15 +175,27 @@ def _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor):
         if dens:
             note("%s: no covered area given, so the OEM design density (%s sq ft per antenna) was not applied."
                  % (pkg["label"], format(dens["sq_ft_per_antenna"], ",")))
-    need = math.ceil(ant / per_ru - 1e-9) if ant else 0
+    need = math.ceil(ant / per_ru - 1e-9) if (ant and per_ru) else 0
     if need > remotes:
-        note("%s: %s need %d remote units at %d antennas each (data sheet limit: %d ports x %d antennas); "
-             "the layout modeled %d." % (pkg["label"], basis, need, per_ru, lim["ports_per_remote_unit"],
-                                          lim["antennas_per_port_max"], remotes))
+        note("%s: %s need %d remote units at %d antennas each (data sheet limit: %s ports x %s antennas); "
+             "the layout modeled %d." % (pkg["label"], basis, need, per_ru, lim.get("ports_per_remote_unit", "?"),
+                                          lim.get("antennas_per_port_max", "?"), remotes))
     rus = max(remotes, need)
     if not rus and not sources:
         return out
-    per_mu = int(lim["remote_units_per_master_max"])
+    per_mu = int(lim.get("remote_units_per_master_max", 1))
+    if pkg.get("head_end"):
+        # The confirmed head end kit owns the master split and the site parts:
+        # quantities come from the kit's own per rules, not the generic model.
+        note("%s limits (grade %s, %s): %s %s"
+             % (pkg["label"], lim.get("grade", "B"), lim.get("ref", "OEM data sheet"),
+                lim.get("ref", ""), str(lim.get("fcc", "") or "")))
+        _head_end_entries(pkg, rus, add, note, autonomy_hours=autonomy_hours, ps_mode=ps_mode)
+        kept = [it for it in out if it.get("role") != "oem.source"] if rus else out
+        if len(kept) != len(out):
+            note("%s: the kit carries its own donor side (donor antennas + protection), so the generic off-air "
+                 "source line is dropped." % pkg["label"])
+        return kept
     mus = max(math.ceil(rus / per_mu - 1e-9), sources, 1)
     kit_ru = int(kit.get("remote_unit", 0)) * mus
     rus = max(rus, kit_ru)
@@ -197,10 +211,94 @@ def _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor):
                 int(kit.get("service_antenna", 0)) * mus))
     note("%s limits (grade %s, %s): %d remotes per master, %d antennas per remote, fiber reach %d m, %s."
          % (pkg["label"], lim["grade"], lim["ref"], per_mu, per_ru, lim["fiber_reach_m"], lim.get("fcc", "")))
+    _head_end_entries(pkg, rus, add, note, autonomy_hours=autonomy_hours, ps_mode=ps_mode)
     return out
 
 
-def expand_oem(items, pkg_key, system_type=None, packages=None, area_sqft=None):
+def _head_end_entries(pkg, rus, add, note, autonomy_hours=12, ps_mode=False):
+    """Emit the confirmed head end kit (oem_specs.head_end): site_parts sized by
+    their per rule and per_remote lines (owner wiring 2026-11-26).
+
+    per rules: 'project' (fixed qty, once remotes exist), 'when_remotes' (qty
+    when any remote exists), 'beyond_master_max' (ceil((rus - per master max) /
+    per master max)), 'remotes_per_<N>' (ceil(rus / N)), and 'battery' (sized
+    from limits.battery at autonomy_hours: 12 h is the code default, NFPA 1225
+    18.13.2 / IFC 510.4.2.3; 24 h is the owner option). per_remote entries are
+    qty times the modeled remote count. Entries marked variant 'converged only'
+    emit only in the public safety pass (ps_mode). Quantities are the confirmed
+    kit values; no prices."""
+    he = pkg.get("head_end") or {}
+    for it in (he.get("site_parts") or []):
+        role, per, why = it["role"], it.get("per", "project"), it.get("why", "")
+        if not rus:
+            continue
+        if it.get("variant") == "converged only" and not ps_mode:
+            continue
+        if per == "project" or per == "when_remotes":
+            qty = int(it.get("qty", 0))
+        elif per == "beyond_master_max":
+            pm = int((pkg.get("limits") or {}).get("remote_units_per_master_max", 1))
+            qty = int(math.ceil(max(rus - pm, 0) / pm - 1e-9))
+        elif per.startswith("remotes_per_"):
+            n = int(per.split("_")[-1])
+            qty = int(math.ceil(rus / n - 1e-9)) if n else 0
+        elif per == "battery":
+            bat = (pkg.get("limits") or {}).get("battery") or {}
+            load = bat.get("load_w") or {}
+            total_w = float(load.get("bda_mu", 0)) + float(load.get("per_remote", 0)) * rus
+            ratio = float(bat.get("ah_per_w_hour", 0))
+            options = sorted(bat.get("options", []), key=lambda o: o.get("ah", 0))
+            if not ratio or not options:
+                note("%s: the battery option list or the Ah sizing ratio is missing; the battery line is left out."
+                     % pkg["label"])
+                continue
+            needed = total_w * autonomy_hours / ratio if total_w else 0
+            pick = next((o for o in options if o.get("ah", 0) >= needed), None)
+            if pick is None:
+                big = options[-1]
+                qty = int(math.ceil(needed / big.get("ah", 1) - 1e-9))
+                pick = big
+            else:
+                qty = 1
+            why = ("%d h autonomy at %.0f W (head end %s plus %s per remote x%d): needs %.0f Ah "
+                   "(Ah = load x hours / %.1f); %s"
+                   % (autonomy_hours, total_w, load.get("bda_mu"), load.get("per_remote"), rus,
+                      needed, ratio, "x%d of the %g Ah %s option"
+                      % (qty, pick.get("ah"), pick.get("model_label", "battery")) if qty > 1
+                      else "one %g Ah %s covers it" % (pick.get("ah"), pick.get("model_label", "battery"))))
+            add(pick["role"], qty, SITE, "12 h code minimum per NFPA 1225 18.13.2 / IFC 510.4.2.3: " + why)
+            continue
+        else:
+            note("%s: unknown head end sizing rule %r; the line is skipped." % (pkg["label"], per))
+            continue
+        v = (" [%s]" % it["variant"]) if it.get("variant") else ""
+        add(role, qty, SITE if it.get("_floor", True) is not False else "", "%s%s" % (why, v))
+    for it in (he.get("per_remote") or []):
+        if not rus:
+            continue
+        add(it["role"], int(it.get("qty", 0)) * rus, SITE if it.get("_floor", True) is not False else "",
+            "per remote x%d: %s" % (rus, it.get("why", "")))
+    for role, qty in (he.get("donor_parts") or {}).items():
+        if role == "arrestor_why" or not rus:
+            continue
+        note("%s donor side: %s" % (pkg["label"], he["donor_parts"].get("arrestor_why", "")))
+        add(role, int(qty), SITE, "%s" % he["donor_parts"].get("arrestor_why", "donor side per the design look"))
+    if rus:
+        add_note = ("%s code basis (IFC 2024 / NFPA 1225 2022, re-read 2026-11-26): DAQ 3.0 at 95 percent general and "
+                    "99 percent critical coverage (510.4.1.1 / 18.8, 18.9); UL 2524 listed components (510.4 / "
+                    "18.12.1.3); standby power 12 h at 100 percent or a 2 h battery with generator power carrying the "
+                    "full load for 12 h (510.4.2.3 / 18.13.2); NEMA 4 cabinets and NEMA 3R batteries (510.4.2.4 / "
+                    "18.3.1); donor isolation 20 dB above system gain (510.4.2.4(4) / 18.3.3.2, 18.10); oscillation "
+                    "detection (18.3.2); fire alarm monitoring with the annunciator where a fire command center exists "
+                    "(510.4.2.5 / 18.14). Assumptions: the -95 dBm figure appears only in the IFC 2015 and 2021 "
+                    "wording, not in IFC 2024 or NFPA 1225; the one-story buildings under 12,000 sq ft exception "
+                    "applies only where the fire code official accepts it (510.1 exception 4)."
+                    % pkg["label"])
+        note(add_note)
+
+
+def expand_oem(items, pkg_key, system_type=None, packages=None, area_sqft=None,
+               autonomy_hours=12, ps_mode=False):
     """Replace the generic OEM lines with the package's parts.
 
     Returns (items, overlay, notes). overlay maps each new role to a catalog
@@ -240,7 +338,8 @@ def expand_oem(items, pkg_key, system_type=None, packages=None, area_sqft=None):
             "%g per remote, median of %d jobs" % (r["value"], r["jobs"]))
 
     if _is_spec(pkg) and pkg.get("limits"):
-        kept = _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor)
+        kept = _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor,
+                            autonomy_hours=autonomy_hours, ps_mode=ps_mode)
         return kept + out, overlay, notes
 
     remotes = sources = repeaters = 0

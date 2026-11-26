@@ -222,12 +222,66 @@ What follows for the comparison: the rebuild's "one high power remote reaches al
 
 ## Next steps (phase 2)
 
-Owner queue, 2026-11-25, in order:
-
-1. Head end kit config. Per OEM, the top-of-building equipment list with the ceilings already documented: QUATRA up to 12 CUs (6 NU plus 6 fiber hub), SignalMax up to 4 RUs per MU, ComFlex up to 16 MRUc per MU, ADX V HUB-4 grouping for the LPRs, and the JMA MU and POI. Output: a kit configuration and BOM per surviving architecture, so the comparison curves become real ROMs.
-2. Public safety ROM. ERCES designs built from code requirements by AHJ. Pull the actual code chain (IFC through NFPA 1225 and whatever the AHJ layer adds) rather than assume it. The Fort Worth FirstNet PSR-78 work is the first candidate to generalize.
+Owner queue, 2026-11-25, in order. Phase 2a (head end kit config) started in this iteration: scripts/pmf/head_end_check.py builds all 9 kit configurations, counts and config only, prices blank, emits sugarhouse-26-01038/head_end_results.json. Open items were checked against the spec sheets (2026-11-25). The ADRF module chassis is now grounded: ADXV-R-CHA takes 7 standard-size remote modules (CHA-3 and CHA-4 variants; the sheet requires a fan above 4 RAMs per chassis, part ADXV-R-FAN-DC), and ADXV-HPR-CHA takes 6 HPR modules (HPR-RACK and HPR-PMK expand beyond it). The ComFlex MRUc ceiling is grounded at 16 HUBs per MU with FOU expansion (Consumer OG 0-0-5). The SDRC donor side is per module: each SDRC-17 module carries its own 4.3-10 donor and server ports. Owner answers closed the rest (2026-11-25): the TEKO Master Unit sub-rack is SUB-TRX-PSU5N (owner P/N), the QUATRA NU donor ports run left to right Private, Verizon, T-Mobile, AT&T, so the kit mounts one SC-530W per public-carrier port (3, private port reserved), and the SDRC server side is 1 antenna total for shared BDAs and 1 per carrier (3) for non-shared BDAs. The 5X Max 12-antenna tree needs 8 splitters (6 two-way + 2 three-way, 6 antennas per interior port), now listed as kit parts, and the LPR kit is head end only, sized to the ROM tool's remote count: the remote side is the ROM tool's design, and the kit lists 6 hubs (4 primaries per hub, ceil(23/4)), the NMS, the POIs and the front end. The remote_basis field carries the ROM tool remote count (23 LPR sites) and the module-pair reference (one ADXV-L-20PAWBT-P primary plus its ADXV-L-1767S8C-S secondary per site, cross-connected over the SMA ports; secondary count equals primary count). The ADX V kits also carry the combining and fiber cards the sheet names: one ADXV-H-CHC-88-DL and one ADXV-H-CHC-88-UL 8x8 combiner per sector (600 MHz to BRS, the -X variant covers to C-band) and ADXV-H-ODU-4 optic donor units at ceil(RUs/4) = 2, leaving the 12-slot NMS at 7 of its slots; the JMA kit carries one JMA MU-OTRX fiber card per remote link (5). No open items remain in head_end_results.json.  2. Public safety ROM. ERCES designs built from code requirements by AHJ. Pull the actual code chain (IFC through NFPA 1225 and whatever the AHJ layer adds) rather than assume it. The Fort Worth FirstNet PSR-78 work is the first candidate to generalize.
 3. Configurable ROMs, the end state: the pmf design, the head end kit and the BOM wired into the estimator's budget flow, so a job hand-off produces a ROM without manual sheets. The survey placeholders carried in this module (30 m donor line, antenna heights, UE power class, tower path) are the inputs a ROM replaces with survey data.
 
 FCC framing: the consumer composite uplink cap of 1 W (30 dBm) under 47 CFR 20.21(e)(8)(i)(D) and the 1 W composite EIRP ceiling including the donor antenna are both satisfied within the rules by the published values in every chain here (the ComFlex NG's binding figures are its own: the MRUc's -15 dBm mid-stage cap and the MU BDA card's +19 dBm output); the uplink noise and gain rules of 20.21(e)(9) and the tower path loss need the survey; industrial units run under 20.21(c) licensee consent.
 
 Open items from this check: the written T19AWE uplink figures from JMA (the +10 dBm POI output is carried as the owner's assumption), and the survey inputs: tower path loss, the real donor run length, antenna heights, and the UE transmit power class. Every other figure was verified against vendor sheets on 2026-11-25. Outputs are in sugarhouse-26-01038/ul_results.json.
+
+## Head end composition reference (2026-11-25)
+
+The head end kits were shaped to what a real head end looks like, against three sources shared by the owner. The counts stay the ROM tool's and the facts stay from the spec sheets; the BOM part names and hardware classes fill in the look: the iBwave
+equipment list reports in the Sugar House job folder (11/18-11/19, designer P. DelPizzo: Nextivity,
+SureCall SignalMax, 5X Max Only, 5X Max-JMA, ADXV LP Only, SDRC Only, Comba), the ADRF Fort Worth City
+Hall ROM BOM, and the ADRF Yan Feng ROM BOM. What the BOMs put in the kits (the look): real part names (Q44-1M34CNU
+host, Q41-RECU CUs, Q40-1234FNU Fiber Hub, SignalMax Fiber_MU/Fiber_RU, MRU-7851719c-DC, TSPV-NBB,
+TPSU/AC x2, TPANEL-14TE, TESA-UW2-L, T-HC3-4, SUB-TRX-PSU5N, T19AWE19AWEWWAT); the ADX V head end cards
+(ADXV-H-CHC-88-DL-X and UL-X 8x8 combiner pair per sector, ADXV-H-ODU-4-X optic donor units at ceil(RUs/4),
+one strand per RU at 5 dBo or less, replacing the HUB-4 in the LPR kit); POIs per band per carrier
+(POI-P x3, POI-A x3, POI-7L x1 per the Fort Worth pattern; the DFE-mode designs carry none); the SDRC
+front end composition from the designs (SDRC-CHA-5 + CHA-1 + PSU-5, SDRC-17-A x3 + SDRC-17-P x3 in
+BDA/DFE modes, SDR-CHC-V donor x3 and server x3); the JMA transport card (TTRU4W-S-M is itself the 4-way
+MU optical card at one card per up to 4 links, so the separate MU-OTRX line is gone and 5 links take 2
+cards); the ComFlex additions (MU-DEMOD x1, MU-BDA20-2B-HH x3 one per carrier); the classes every BOM
+carries (Westell CS60-024-002 arrestors per donor port, Polyphaser TSX-NFF plus BFN brackets on the
+AD-PA donor pairs per the Fort Worth precedent, the OCC fiber termination kit where the head end
+terminates fiber, ADRF jumper kits, the Westell CS04 splitter family on the antenna distribution). The
+ADRF mid/high kits are head end only now: the remote site kit (R-CHA or HPR-CHA, PSU, ORU fiber unit,
+band modules, ADXV-R-CHC-U) moved into remote_basis with the ROM tool owning the count. For context: the
+11-18 design reports show fewer units on their layouts than the comparison tool's whole-building runs
+(8 CUs vs 12, 2 SignalMax RUs vs 4, 1 MRU and 1 FOU vs 6 and 2, 1 T19AWE vs 5 links); those references stay
+flagged in the kit constraints and the kits carry the ROM tool counts. Owner closes (2026-11-26): the 850 POI is required with the 700 POI, and the SDR-CHC-V quad carries the
+Cellular 850 port for the front end routing, so the kits now carry POI-7L x1 and POI-C x1 (slots at 12 of 12
+exactly, no expansion rack) and the SDRC front end routes 700 and 850 through the CHC-V quads with no
+separate 7F/C module. Remaining kit opens: the exact POI-7L/POI-C part numbers with ADRF, and the
+TAPOI-AWSE-F-4 replacement (marked discontinued in the design). The floor-BOM versus tool-count
+deltas stay flagged in the kit constraints: the kits carry the ROM tool counts, and the design reports are
+the same tool's output for its own (subset) floor BOMs, so no reconciliation action is pending. Day 2 requests
+(public safety ROM, estimator wiring, pricing) are on hold at the owner's direction. The committed-state
+open (both repos' 11/25 work) remains awaiting the owner's go.
+
+## Estimator wiring complete (2026-11-26)
+
+The confirmed head end kits are built into the ROM tool. The wiring point is romtool/oem.py: the tool's
+own expansion engine (expand_oem, called from project_items in grades.py with the run's settings) now
+sizes the confirmed kits itself. Changes: (1) config/oem_specs.json carries eight new spec packages, one
+per confirmed kit row - nextivity_q4000c, surecall_5xmax, adrf_adxv_mid, adrf_adxv_high,
+adrf_adxv_lpr, comba_comflex, jma_teko_5xmaxhost, adrf_sdrc_front_end - each with the sheet-verified parts,
+kit quantities, limits and a head_end block with sizing rules; SignalMax was already in as
+surecall_fibermax. (2) _expand_spec gained the head_end sizing rules: project (fixed qty), when_remotes
+(one site set when the tool has remotes), beyond_master_max (the QUATRA Fiber Hub per 6 CUs beyond the
+CNU's six), remotes_per_N (ceil(rus/N): the ODU-4-X per 4 remotes, the TTRU4W-S-M 4-way card per 4
+links), and per_remote entries multiplied by the tool's modeled remote count; the kit's own donor side
+drops the generic off-air source line. (3) Tolerances: _expand_spec no longer requires the antenna
+density limit keys (they are optional), and _line honors a per-part unit. (4) Verified two ways: a
+run-through per package sizes the kits from the tool's inputs (QUATRA 12 CUs -> CNU 1 + Fiber Hub 1 + 12
+CUs + 3,936 ft Cat5e + 3 donors + 3 arrestors; ADX V mid 8 RUs -> 8 POIs + combiner pair + 2 ODU-4-X +
+AD-PA pair + 2 arrestors + 2 TSX-NFF/BFN + fiber kit + 8 remote site kits; JMA 5 links -> sub-rack set +
+2 transport cards + POIs + 5 T19AWEs; SDRC front end per the floor 8 design), and the tool's own test
+suite passes: 457 passed, 17 skipped, 0 failures (with pytest, httpx, starlette, pytest-asyncio, openpyxl,
+pillow, numpy, defusedxml, cryptography added for the run; the API tests need the httpx stack). The
+head_end_check.py comparison builder stays as the comparison artifact; the estimator source of truth is
+now the tool's own expansion. Open items travel with the kits in oem_specs.json (POI-7L/POI-C exact P/Ns,
+TAPOI-AWSE-F-4 replacement). Day 2: the public safety ROM phase and the pricing phase (fresh ask) remain
+held.
