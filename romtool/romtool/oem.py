@@ -129,8 +129,7 @@ def _service_antennas(items):
     return n
 
 
-def _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor,
-                 autonomy_hours=12, ps_mode=False):
+def _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor):
     """Size a spec package (for example SureCall FiberMax) from its limits.
 
     Remotes = the larger of the modeled remotes and the antennas divided by the
@@ -190,7 +189,7 @@ def _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor,
         note("%s limits (grade %s, %s): %s %s"
              % (pkg["label"], lim.get("grade", "B"), lim.get("ref", "OEM data sheet"),
                 lim.get("ref", ""), str(lim.get("fcc", "") or "")))
-        _head_end_entries(pkg, rus, add, note, autonomy_hours=autonomy_hours, ps_mode=ps_mode)
+        _head_end_entries(pkg, rus, add, note)
         kept = [it for it in out if it.get("role") != "oem.source"] if rus else out
         if len(kept) != len(out):
             note("%s: the kit carries its own donor side (donor antennas + protection), so the generic off-air "
@@ -211,94 +210,23 @@ def _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor,
                 int(kit.get("service_antenna", 0)) * mus))
     note("%s limits (grade %s, %s): %d remotes per master, %d antennas per remote, fiber reach %d m, %s."
          % (pkg["label"], lim["grade"], lim["ref"], per_mu, per_ru, lim["fiber_reach_m"], lim.get("fcc", "")))
-    _head_end_entries(pkg, rus, add, note, autonomy_hours=autonomy_hours, ps_mode=ps_mode)
+    _head_end_entries(pkg, rus, add, note)
     return out
 
 
-# The code table published with every public safety package (owner 2026-11-26:
-# "publish all code tables with the PS BOM package so the standards followed are
-# known"). Row: topic | IFC 2024 cite | NFPA 1225-2022 cite | requirement | how
-# the tool enforces it. Sources: codes.iccsafe.org (IFC 2024, read verbatim) and
-# the NFPA 1225-2022 chapter 18 PDF on disk (scripts/pmf/codes), cross-checked
-# against the Safer Buildings Coalition Quick Code Reference (August 2026).
-PS_CODE_TABLE = [
-    {"topic": "Equipment listing", "ifc": "510.4", "nfpa": "18.12.1.3",
-     "requirement": "ERCES components listed to UL 2524.",
-     "enforcement": "the PS packages carry UL 2524 listed parts only (data sheet listings on file)"},
-    {"topic": "Coverage", "ifc": "510.4.1", "nfpa": "18.8.3, 18.8.4",
-     "requirement": "95 percent of general areas and 99 percent of critical areas per floor.",
-     "enforcement": "design side; the acceptance test runs per the grid method (IFC 510.5.4 / NFPA 1225 18.5, 20.3.10.1)"},
-    {"topic": "Audio quality", "ifc": "510.4.1.1", "nfpa": "18.9",
-     "requirement": "DAQ 3.0 downlink and uplink (or the equivalent BER or SINR).",
-     "enforcement": "design side; carried into the link budget checks"},
-    {"topic": "Signal strength", "ifc": "510.4.1.1 (2015/2021 wording)", "nfpa": "none in 1225-2022",
-     "requirement": "the -95 dBm figure appears only in the IFC 2015 and 2021 editions; the 2024 IFC and NFPA 1225 use DAQ 3.0.",
-     "enforcement": "assumption noted in the ROM when a jurisdiction adopts the older wording"},
-    {"topic": "Standby power", "ifc": "510.4.2.3", "nfpa": "18.13.2",
-     "requirement": "dedicated 12 h at 100 percent, or a 2 h battery with generator power carrying the full load for 12 h.",
-     "enforcement": "the sized battery (the autonomy_hours setting: 12 h default, 24 h owner option)"},
-    {"topic": "Cabinets and batteries", "ifc": "510.4.2.4(1),(2)", "nfpa": "18.3.1",
-     "requirement": "NEMA 4 (or 4X) equipment cabinets; batteries in NEMA 3R or better.",
-     "enforcement": "the parts carry the enclosure ratings on their data sheets (NEMA 4 sheets on file)"},
-    {"topic": "Donor isolation", "ifc": "510.4.2.4(4)", "nfpa": "18.3.3.2, 18.10",
-     "requirement": "at least 20 dB above system gain between the donor antenna and all inside antennas under all operating conditions.",
-     "enforcement": "the packages note the isolation check routines; verified at commissioning"},
-    {"topic": "Oscillation", "ifc": "510.4.2.4(5)", "nfpa": "18.3.2",
-     "requirement": "built-in oscillation detection and control, supervisory signal, shutdown when uncorrectable.",
-     "enforcement": "the selected parts carry oscillation management (data sheet features)"},
-    {"topic": "Monitoring", "ifc": "510.4.2.5", "nfpa": "18.14, NFPA 72 ch. 10",
-     "requirement": "monitored by a listed fire alarm control unit with the 8 supervisory signals (AC loss, charger failure, signal source, RF device failure, 70 percent low battery, critical components, the alarm link, oscillation).",
-     "enforcement": "the annunciator and alarm wiring parts; the alarm configuration per UL 2524 second edition"},
-    {"topic": "Dedicated annunciator", "ifc": "510.4.2.5", "nfpa": "18.14.2.1",
-     "requirement": "a dedicated annunciator in the fire command center where one exists.",
-     "enforcement": "the annunciator part (PSR-ANN / CS40-ANNUNC class), included by the package"},
-    {"topic": "Approvals", "ifc": "510.5.2, 510.5.5, FCC 90.219", "nfpa": "18.2.1, 18.6.1, 18.7.2",
-     "requirement": "fire code official plus frequency license holder approval before installation and activation; FCC Class B registration where applicable; FirstNet Band 14 retransmission needs FirstNet Authority consent.",
-     "enforcement": "process items in the ROM notes"},
-    {"topic": "Noise and non-interference", "ifc": "510.4.2.9", "nfpa": "18.6, 18.9.3",
-     "requirement": "uplink noise coordinated with all affected license holders; no interference to the public safety system.",
-     "enforcement": "design side; the uplink check in the comparison runs"},
-    {"topic": "Cable and survivability", "ifc": "510.4 via NFPA 1225", "nfpa": "18.12.3.1, 18.12.3.3, 18.12.3.4",
-     "requirement": "plenum or riser cable per Article 820; backbone fire rating only in nonsprinklered, partially sprinklered or high-rise buildings.",
-     "enforcement": "the coax parts (plenum riser in the kits) and the sprinkler-status switch at the ROM inputs"},
-    {"topic": "Lightning protection", "ifc": "via NFPA 1225", "nfpa": "18.4 (NFPA 70 Article 820, UL 497C)",
-     "requirement": "listed antenna discharge units on the donor feed.",
-     "enforcement": "the arrestor parts (Polyphaser IS-50NX-C2 class per the ROM precedent)"},
-    {"topic": "Testing", "ifc": "510.5.4, 510.6.1", "nfpa": "18.5, 20.3.10.1",
-     "requirement": "initial and acceptance, then annual and 5-year inspections.",
-     "enforcement": "process items in the ROM notes"},
-    {"topic": "Personnel", "ifc": "510.5.3", "nfpa": "18.2, 3.3.115",
-     "requirement": "FCC GROL plus approved in-building training, or demonstrated skills to the fire code official.",
-     "enforcement": "process item in the ROM notes"},
-]
-
-
-def _emit_code_tables(pkg, note):
-    """Publish the standards-followed matrix with the PS BOM package (owner
-    2026-11-26). One note line per row, prefixed so it reads as a table."""
-    for row in PS_CODE_TABLE:
-        note("%s code table | %s | IFC %s | NFPA %s | %s | enforced: %s"
-             % (pkg["label"], row["topic"], row["ifc"], row["nfpa"], row["requirement"], row["enforcement"]))
-
-
-def _head_end_entries(pkg, rus, add, note, autonomy_hours=12, ps_mode=False):
+def _head_end_entries(pkg, rus, add, note, base_why="%s per the confirmed head end kit"):
     """Emit the confirmed head end kit (oem_specs.head_end): site_parts sized by
     their per rule and per_remote lines (owner wiring 2026-11-26).
 
     per rules: 'project' (fixed qty, once remotes exist), 'when_remotes' (qty
     when any remote exists), 'beyond_master_max' (ceil((rus - per master max) /
-    per master max)), 'remotes_per_<N>' (ceil(rus / N)), and 'battery' (sized
-    from limits.battery at autonomy_hours: 12 h is the code default, NFPA 1225
-    18.13.2 / IFC 510.4.2.3; 24 h is the owner option). per_remote entries are
-    qty times the modeled remote count. Entries marked variant 'converged only'
-    emit only in the public safety pass (ps_mode). Quantities are the confirmed
-    kit values; no prices."""
+    per master max)), 'remotes_per_<N>' (ceil(rus / N)). per_remote entries are
+    qty times the modeled remote count. Quantities are the confirmed kit values;
+    no prices."""
     he = pkg.get("head_end") or {}
     for it in (he.get("site_parts") or []):
         role, per, why = it["role"], it.get("per", "project"), it.get("why", "")
         if not rus:
-            continue
-        if it.get("variant") == "converged only" and not ps_mode:
             continue
         if per == "project" or per == "when_remotes":
             qty = int(it.get("qty", 0))
@@ -308,32 +236,6 @@ def _head_end_entries(pkg, rus, add, note, autonomy_hours=12, ps_mode=False):
         elif per.startswith("remotes_per_"):
             n = int(per.split("_")[-1])
             qty = int(math.ceil(rus / n - 1e-9)) if n else 0
-        elif per == "battery":
-            bat = (pkg.get("limits") or {}).get("battery") or {}
-            load = bat.get("load_w") or {}
-            total_w = float(load.get("bda_mu", 0)) + float(load.get("per_remote", 0)) * rus
-            ratio = float(bat.get("ah_per_w_hour", 0))
-            options = sorted(bat.get("options", []), key=lambda o: o.get("ah", 0))
-            if not ratio or not options:
-                note("%s: the battery option list or the Ah sizing ratio is missing; the battery line is left out."
-                     % pkg["label"])
-                continue
-            needed = total_w * autonomy_hours / ratio if total_w else 0
-            pick = next((o for o in options if o.get("ah", 0) >= needed), None)
-            if pick is None:
-                big = options[-1]
-                qty = int(math.ceil(needed / big.get("ah", 1) - 1e-9))
-                pick = big
-            else:
-                qty = 1
-            why = ("%d h autonomy at %.0f W (head end %s plus %s per remote x%d): needs %.0f Ah "
-                   "(Ah = load x hours / %.1f); %s"
-                   % (autonomy_hours, total_w, load.get("bda_mu"), load.get("per_remote"), rus,
-                      needed, ratio, "x%d of the %g Ah %s option"
-                      % (qty, pick.get("ah"), pick.get("model_label", "battery")) if qty > 1
-                      else "one %g Ah %s covers it" % (pick.get("ah"), pick.get("model_label", "battery"))))
-            add(pick["role"], qty, SITE, "12 h code minimum per NFPA 1225 18.13.2 / IFC 510.4.2.3: " + why)
-            continue
         else:
             note("%s: unknown head end sizing rule %r; the line is skipped." % (pkg["label"], per))
             continue
@@ -349,24 +251,9 @@ def _head_end_entries(pkg, rus, add, note, autonomy_hours=12, ps_mode=False):
             continue
         note("%s donor side: %s" % (pkg["label"], he["donor_parts"].get("arrestor_why", "")))
         add(role, int(qty), SITE, "%s" % he["donor_parts"].get("arrestor_why", "donor side per the design look"))
-    if rus:
-        add_note = ("%s code basis (IFC 2024 / NFPA 1225 2022, re-read 2026-11-26): DAQ 3.0 at 95 percent general and "
-                    "99 percent critical coverage (510.4.1.1 / 18.8, 18.9); UL 2524 listed components (510.4 / "
-                    "18.12.1.3); standby power 12 h at 100 percent or a 2 h battery with generator power carrying the "
-                    "full load for 12 h (510.4.2.3 / 18.13.2); NEMA 4 cabinets and NEMA 3R batteries (510.4.2.4 / "
-                    "18.3.1); donor isolation 20 dB above system gain (510.4.2.4(4) / 18.3.3.2, 18.10); oscillation "
-                    "detection (18.3.2); fire alarm monitoring with the annunciator where a fire command center exists "
-                    "(510.4.2.5 / 18.14). Assumptions: the -95 dBm figure appears only in the IFC 2015 and 2021 "
-                    "wording, not in IFC 2024 or NFPA 1225; the one-story buildings under 12,000 sq ft exception "
-                    "applies only where the fire code official accepts it (510.1 exception 4)."
-                    % pkg["label"])
-        note(add_note)
-    if pkg.get("public_safety"):
-        _emit_code_tables(pkg, note)
 
 
-def expand_oem(items, pkg_key, system_type=None, packages=None, area_sqft=None,
-               autonomy_hours=12, ps_mode=False):
+def expand_oem(items, pkg_key, system_type=None, packages=None, area_sqft=None):
     """Replace the generic OEM lines with the package's parts.
 
     Returns (items, overlay, notes). overlay maps each new role to a catalog
@@ -406,8 +293,7 @@ def expand_oem(items, pkg_key, system_type=None, packages=None, area_sqft=None,
             "%g per remote, median of %d jobs" % (r["value"], r["jobs"]))
 
     if _is_spec(pkg) and pkg.get("limits"):
-        kept = _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor,
-                            autonomy_hours=autonomy_hours, ps_mode=ps_mode)
+        kept = _expand_spec(items, pkg_key, pkg, area_sqft, add, note, has_floor)
         return kept + out, overlay, notes
 
     remotes = sources = repeaters = 0
