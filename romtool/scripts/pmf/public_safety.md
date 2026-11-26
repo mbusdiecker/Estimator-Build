@@ -100,7 +100,11 @@ survivability) enforced by the tool rather than remembered.
   BOM notes; the same table is PS_CODE_TABLE in romtool/oem.py. Suite: 457 passed, 17 skipped.
 - Codes on disk: codes/NFPA-1225-2022-Chapter-18.pdf + nfpa1225_ch18_key_sections.md,
   ifc510_2024_sections.md (verbatim from codes.iccsafe.org), codes_sbc_quick_reference.md.
-- Committed: da60076 and this build; the headend and physics-ul trees committed in the same pass.
+- Committed per the owner (2026-11-26 'commit'): romtool-public-safety @ 8be481f (this phase, all of it),
+  romtool-headend @ 970e700 (the head end wiring; the PS files dropped there - they live on this tree),
+  romtool-physics-ul @ cca7284 (the comparison layer). None pushed. IMPORTANT topology note: the
+  iteration trees are git worktrees of the Estimator Build repo; the new phase branch is
+  romtool-public-safety, and future iterations should be git worktrees, not folder copies.
 
 ## Build plan (this phase)
 
