@@ -1,160 +1,1079 @@
 {
- "basis": "Public safety ROM per OEM and frequency, Sugar House building model, the same pmf machinery as the cellular comparison. Coverage by the NFPA two-tier preset (95 percent floor area / 99 percent critical area at -95 dBm at the portable, per IFC 510.4.1 and NFPA 1225 18.8-18.9 as carried in PS_CODE_TABLE). Port powers from the vendor sheets: FiRe-78 33 dBm PS700/800 DL per remote (30 dBm composite for the B14 run), Westell CS45 34 dBm per band, Comba V3 33 dBm per band, PSR-VU-9537 28 dBm VHF / 37 dBm UHF. Design by the same N-advance rule (N = 3 antennas per floor). Config estimates (grade E). Assumptions: the -95 dBm threshold at the portable is the IFC 2015/2021 ERCES figure used as the design input (the 2024 IFC and NFPA 1225 use DAQ 3.0 without a dBm value); the critical-area tier applies where the fire code official designates it; the site receiver link budget is an AHJ input per 510.4.2.2 and is outside these DL numbers; battery autonomy 12 h per NFPA 1225 18.13.2 / IFC 510.4.2.3 with the 24 h option available. No prices.",
+ "basis": "PS ROM per OEM and frequency: the DL plate from the pmf runs, the uplink from the ps_ul noise-coordination engine, the grid-method self-check from the floor model, the 90.219 and delay plates, and the converged-plate intermod screen. Config estimates (grade E). No prices.",
  "floors": 45,
- "rows": [
+ "ant_gain_dbi": 5.0,
+ "rom": [
   {
    "oem": "ADRF",
-   "model": "FiRe-78-8-U1 ERCES + ADXV-R-3378P-U2 remote (UL 2524, P25 Ph2)",
-   "freq": "700 MHz PS (769-775/799-805)",
-   "dl_port_dbm": 33.0,
-   "design_N": 3,
-   "p_min_dbm": -11.53,
-   "headroom_db": 44.53,
-   "k_floors_per_port": 48,
-   "cov_pct": 100.0,
-   "antennas_bldg": 135,
-   "architecture": "fiber star: 1 head end, up to 8 remote ports",
-   "remotes_used": 1,
-   "kit": "1 FiRe-78-8-U1 head end, 1 ADXV-R-3378P-U2 remote (2 W), ADRF-BBU-W-045-2S x2 sized 12 h at the head end and remote draw, PSR-ANN-1 annunciator, AD-PA-617-960-D donor pair + IS-50NX-C2 arrestor, 1/2 in plenum riser",
-   "note": "the PSR-78-9533-U1-27 (0.5 W) variant is the lower-power option; the head end carries 700, 800 and FirstNet together",
-   "plate": "1/2 in trunk and taps; k capped at 48 (one tap per floor plate)"
+   "model": "FiRe-78-8-U1 + ADXV-R-3378P-U2",
+   "freq": "700 PS",
+   "prefix": "ps_fire700",
+   "plate": {
+    "port_dbm": 33.0,
+    "design_N": 3,
+    "p_min_dbm": -11.53,
+    "headroom_db": 44.53,
+    "k": 48,
+    "cov_pct": 100.0,
+    "antennas_per_floor": 3,
+    "antennas_bldg": 135,
+    "remotes_bldg": 1,
+    "floors_per_port": 48,
+    "erp_per_channel_dbm": 38.0,
+    "erp_pass_5w": false,
+    "erp_pad_db": 1.0
+   },
+   "gate": {
+    "area_cap_sqft": null,
+    "k_cap": null,
+    "applied": false
+   }
   },
   {
    "oem": "ADRF",
-   "model": "FiRe-78-8-U1 ERCES + ADXV-R-3378P-U2 remote (UL 2524, P25 Ph2)",
-   "freq": "800 MHz PS (851-861/806-816)",
-   "dl_port_dbm": 33.0,
-   "design_N": 3,
-   "p_min_dbm": -11.53,
-   "headroom_db": 44.53,
-   "k_floors_per_port": 48,
-   "cov_pct": 100.0,
-   "antennas_bldg": 135,
-   "architecture": "same deployment as the 700 MHz run: one dual-band deployment covers both",
-   "remotes_used": 0,
-   "kit": "no additional hardware: the head end and remote carry both bands; the battery sizing above covers the combined draw",
-   "note": "",
-   "plate": "1/2 in trunk and taps; k capped at 48 (one tap per floor plate)"
+   "model": "FiRe-78-8-U1 + ADXV-R-3378P-U2",
+   "freq": "800 PS",
+   "prefix": "ps_fire800",
+   "plate": {
+    "port_dbm": 33.0,
+    "design_N": 3,
+    "p_min_dbm": -11.53,
+    "headroom_db": 44.53,
+    "k": 48,
+    "cov_pct": 100.0,
+    "antennas_per_floor": 3,
+    "antennas_bldg": 135,
+    "remotes_bldg": 1,
+    "floors_per_port": 48,
+    "erp_per_channel_dbm": 38.0,
+    "erp_pass_5w": false,
+    "erp_pad_db": 1.0
+   },
+   "gate": {
+    "area_cap_sqft": null,
+    "k_cap": null,
+    "applied": false
+   }
   },
   {
    "oem": "ADRF",
-   "model": "FiRe-78-8-U1 ERCES",
-   "freq": "FirstNet Band 14 LTE",
-   "dl_port_dbm": 30.0,
-   "design_N": 3,
-   "p_min_dbm": -11.72,
-   "headroom_db": 41.72,
-   "k_floors_per_port": 48,
-   "cov_pct": 100.0,
-   "antennas_bldg": 135,
-   "architecture": "shares the 700/800 deployment",
-   "remotes_used": 0,
-   "kit": "no additional hardware; the BSF-14 band-selective filter available for the neighbor-band isolation; the FirstNet Authority consent form (47 CFR 90.219) is a job step",
-   "note": "the FiRe-78 SS lists FirstNet + PS 700 + PS 800 in one composite table; the B14 run here uses the 30 dBm composite",
-   "plate": "1/2 in trunk and taps; k capped at 48 (one tap per floor plate)"
+   "model": "FiRe-78-8-U1 (FirstNet)",
+   "freq": "B14",
+   "prefix": "ps_fire_b14",
+   "plate": {
+    "port_dbm": 30.0,
+    "design_N": 3,
+    "p_min_dbm": -11.72,
+    "headroom_db": 41.72,
+    "k": 48,
+    "cov_pct": 100.0,
+    "antennas_per_floor": 3,
+    "antennas_bldg": 135,
+    "remotes_bldg": 1,
+    "floors_per_port": 48,
+    "erp_per_channel_dbm": 35.0,
+    "erp_pass_5w": true
+   },
+   "gate": {
+    "area_cap_sqft": null,
+    "k_cap": null,
+    "applied": false
+   }
   },
   {
    "oem": "ADRF",
-   "model": "PSR-VU-9537-X (UL 2524 second edition)",
-   "freq": "VHF 136-174 MHz",
-   "dl_port_dbm": 28.0,
-   "design_N": 3,
-   "p_min_dbm": -11.61,
-   "headroom_db": 39.61,
-   "k_floors_per_port": 48,
-   "cov_pct": 100.0,
-   "antennas_bldg": 135,
-   "architecture": "standalone repeater on one trunk",
-   "remotes_used": 1,
-   "kit": "1 PSR-VU-9537-X, BPF-V-1 VHF donor band-pass filter, BBx-U battery sized 12 h, PSR-ANN-1, donor antenna + arrestor",
-   "note": "",
-   "plate": "1/2 in trunk and taps; k capped at 48 (one tap per floor plate)"
+   "model": "PSR-VU-9537-X",
+   "freq": "VHF 136-174",
+   "prefix": "ps_vu_vhf",
+   "plate": {
+    "port_dbm": 28.0,
+    "design_N": 3,
+    "p_min_dbm": -11.61,
+    "headroom_db": 39.61,
+    "k": 48,
+    "cov_pct": 100.0,
+    "antennas_per_floor": 3,
+    "antennas_bldg": 135,
+    "remotes_bldg": 1,
+    "floors_per_port": 48,
+    "erp_per_channel_dbm": 33.0,
+    "erp_pass_5w": true
+   },
+   "gate": {
+    "area_cap_sqft": null,
+    "k_cap": null,
+    "applied": false
+   }
   },
   {
    "oem": "ADRF",
-   "model": "PSR-VU-9537-X (UL 2524 second edition)",
-   "freq": "UHF 380-512 MHz",
-   "dl_port_dbm": 37.0,
-   "design_N": 3,
-   "p_min_dbm": -11.75,
-   "headroom_db": 48.75,
-   "k_floors_per_port": 48,
-   "cov_pct": 100.0,
-   "antennas_bldg": 135,
-   "architecture": "same repeater carries VHF and UHF bands",
-   "remotes_used": 0,
-   "kit": "no additional hardware: the PSR-VU is dual-band; BPF-U-1 UHF donor filter added to the VHF kit above",
-   "note": "",
-   "plate": "1/2 in trunk and taps; k capped at 48 (one tap per floor plate)"
+   "model": "PSR-VU-9537-X",
+   "freq": "UHF 380-512",
+   "prefix": "ps_vu_uhf",
+   "plate": {
+    "port_dbm": 37.0,
+    "design_N": 3,
+    "p_min_dbm": -11.75,
+    "headroom_db": 48.75,
+    "k": 48,
+    "cov_pct": 100.0,
+    "antennas_per_floor": 3,
+    "antennas_bldg": 135,
+    "remotes_bldg": 1,
+    "floors_per_port": 48,
+    "erp_per_channel_dbm": 42.0,
+    "erp_pass_5w": false,
+    "erp_pad_db": 5.0
+   },
+   "gate": {
+    "area_cap_sqft": null,
+    "k_cap": null,
+    "applied": false
+   }
   },
   {
    "oem": "Westell",
-   "model": "CS45-734-834-A0 ProtectLink (UL 2524)",
-   "freq": "700 MHz PS",
-   "dl_port_dbm": 34.0,
-   "design_N": 3,
-   "p_min_dbm": -11.7,
-   "headroom_db": 45.7,
-   "k_floors_per_port": 48,
-   "cov_pct": 100.0,
-   "antennas_bldg": 135,
-   "architecture": "standalone BDA on one trunk (or the V2 fiber DAS kit)",
-   "remotes_used": 1,
-   "kit": "1 CS45-734-834-A0, CS19-BBU-005 + 145 Ah battery (12 h class), CS40-ANNUNC optional, wall-mount donor + lightning arrestor, NEMA 4 cabinet per the code table",
-   "note": "",
-   "plate": "1/2 in trunk and taps; k capped at 48 (one tap per floor plate)"
+   "model": "CS45-734-834-A0",
+   "freq": "700 PS",
+   "prefix": "ps_westell700",
+   "plate": {
+    "port_dbm": 34.0,
+    "design_N": 3,
+    "p_min_dbm": -11.7,
+    "headroom_db": 45.7,
+    "k": 48,
+    "cov_pct": 100.0,
+    "antennas_per_floor": 3,
+    "antennas_bldg": 135,
+    "remotes_bldg": 1,
+    "floors_per_port": 48,
+    "erp_per_channel_dbm": 39.0,
+    "erp_pass_5w": false,
+    "erp_pad_db": 2.0
+   },
+   "gate": {
+    "area_cap_sqft": null,
+    "k_cap": null,
+    "applied": false
+   }
   },
   {
    "oem": "Westell",
-   "model": "CS45-734-834-A0 ProtectLink (UL 2524)",
-   "freq": "800 MHz PS",
-   "dl_port_dbm": 34.0,
-   "design_N": 3,
-   "p_min_dbm": -11.7,
-   "headroom_db": 45.7,
-   "k_floors_per_port": 48,
-   "cov_pct": 100.0,
-   "antennas_bldg": 135,
-   "architecture": "one dual-band BDA covers both",
-   "remotes_used": 0,
-   "kit": "no additional hardware: the CS45 carries 700 and 800 in one unit",
-   "note": "",
-   "plate": "1/2 in trunk and taps; k capped at 48 (one tap per floor plate)"
+   "model": "CS45-734-834-A0",
+   "freq": "800 PS",
+   "prefix": "ps_westell800",
+   "plate": {
+    "port_dbm": 34.0,
+    "design_N": 3,
+    "p_min_dbm": -11.7,
+    "headroom_db": 45.7,
+    "k": 48,
+    "cov_pct": 100.0,
+    "antennas_per_floor": 3,
+    "antennas_bldg": 135,
+    "remotes_bldg": 1,
+    "floors_per_port": 48,
+    "erp_per_channel_dbm": 39.0,
+    "erp_pass_5w": false,
+    "erp_pad_db": 2.0
+   },
+   "gate": {
+    "area_cap_sqft": null,
+    "k_cap": null,
+    "applied": false
+   }
   },
   {
    "oem": "Comba",
-   "model": "ComFlex NG V3 PS BDA (UL 2524, P25 Ph2, Band 14 option)",
-   "freq": "700 MHz PS",
-   "dl_port_dbm": 33.0,
-   "design_N": 3,
-   "p_min_dbm": -11.53,
-   "headroom_db": 44.53,
-   "k_floors_per_port": 48,
-   "cov_pct": 100.0,
-   "antennas_bldg": 135,
-   "architecture": "standalone BDA on one trunk (or 1 MU + RUs fiber DAS)",
-   "remotes_used": 1,
-   "kit": "1 V3 PS BDA (33 dBm per band option) or the MU + RU configuration, BBU V2 LiFePO4 sized 12 h (60 Ah at about 190 W load), MU-DEMOD not applicable to the PS line",
-   "note": "",
-   "plate": "1/2 in trunk and taps; k capped at 48 (one tap per floor plate)"
+   "model": "ComFlex NG V3 PS",
+   "freq": "700 PS",
+   "prefix": "ps_comba700",
+   "plate": {
+    "port_dbm": 33.0,
+    "design_N": 3,
+    "p_min_dbm": -11.53,
+    "headroom_db": 44.53,
+    "k": 48,
+    "cov_pct": 100.0,
+    "antennas_per_floor": 3,
+    "antennas_bldg": 135,
+    "remotes_bldg": 1,
+    "floors_per_port": 48,
+    "erp_per_channel_dbm": 38.0,
+    "erp_pass_5w": false,
+    "erp_pad_db": 1.0
+   },
+   "gate": {
+    "area_cap_sqft": null,
+    "k_cap": null,
+    "applied": false
+   }
   },
   {
    "oem": "Comba",
-   "model": "ComFlex NG V3 PS BDA (UL 2524, P25 Ph2, Band 14 option)",
-   "freq": "800 MHz PS",
-   "dl_port_dbm": 33.0,
-   "design_N": 3,
-   "p_min_dbm": -11.53,
-   "headroom_db": 44.53,
-   "k_floors_per_port": 48,
-   "cov_pct": 100.0,
-   "antennas_bldg": 135,
-   "architecture": "dual-band, same unit",
-   "remotes_used": 0,
-   "kit": "no additional hardware: the V3 PS BDA carries 700 and 800; Band 14 is a license-based software option",
-   "note": "",
-   "plate": "1/2 in trunk and taps; k capped at 48 (one tap per floor plate)"
+   "model": "ComFlex NG V3 PS",
+   "freq": "800 PS",
+   "prefix": "ps_comba800",
+   "plate": {
+    "port_dbm": 33.0,
+    "design_N": 3,
+    "p_min_dbm": -11.53,
+    "headroom_db": 44.53,
+    "k": 48,
+    "cov_pct": 100.0,
+    "antennas_per_floor": 3,
+    "antennas_bldg": 135,
+    "remotes_bldg": 1,
+    "floors_per_port": 48,
+    "erp_per_channel_dbm": 38.0,
+    "erp_pass_5w": false,
+    "erp_pad_db": 1.0
+   },
+   "gate": {
+    "area_cap_sqft": null,
+    "k_cap": null,
+    "applied": false
+   }
   }
  ],
- "provenance": "span-60 reruns 2026-11-26; the earlier span-20 runs (k=21) are superseded (their P_min bisect hit the window floor)"
+ "uplink": {
+  "basis": "PS uplink engine (grade E): band-reciprocal chain at the design k, AHJ site inputs parameterized. Assumptions: 3 W portable, 5 dB hip-height body loss, distribution net UL gain 0 dB (conservative), site ERP/NF/ambient defaults are AHJ placeholders until the site sheet arrives; the squelch floor uses a 3 dB distribution noise figure estimate (grade D). Vendor notes: UL NF 4.5 dB at max gain from the FiRe-78 SS; UL composite output cap -21 dBm class from the SS composite table; max/damaging input not published: placeholders flagged grade D",
+  "oem": "ADRF FiRe-78-8-U1 (ADXV-R-3378P-U2 remotes)",
+  "site_nf_db": 6.0,
+  "site_floor_dbm": -127.03,
+  "trunk_loss_at_k_db": 38.43,
+  "bands": [
+   {
+    "band": "PS700",
+    "freq_mhz": 772.0,
+    "delivered_far_dl_dbm": -5.43,
+    "ul_port_far_dbm": -8.63,
+    "near_ring_dl_dbm": -0.72,
+    "near_input_bda_dbm": -3.92,
+    "ul_gain_recommended_db": 19.1,
+    "ul_gain_far_min_db": 19.1,
+    "ul_gain_noise_max_db": 98.0,
+    "site_arrival_far_dbm": -109.03,
+    "site_arrival_target_dbm": -109.03,
+    "site_noise_active_dbm": -228.93,
+    "site_noise_limit_dbm": -150.0,
+    "noise_margin_db": 78.93,
+    "squelch_threshold_dbm": -125.03,
+    "input_pad_recommendation_db": 11.1,
+    "near_test_operating_pass": false,
+    "near_test_damage_pass": false,
+    "passes": false
+   },
+   {
+    "band": "PS800",
+    "freq_mhz": 860.0,
+    "delivered_far_dl_dbm": -5.43,
+    "ul_port_far_dbm": -8.63,
+    "near_ring_dl_dbm": -1.66,
+    "near_input_bda_dbm": -4.86,
+    "ul_gain_recommended_db": 19.1,
+    "ul_gain_far_min_db": 19.1,
+    "ul_gain_noise_max_db": 98.0,
+    "site_arrival_far_dbm": -109.03,
+    "site_arrival_target_dbm": -109.03,
+    "site_noise_active_dbm": -228.93,
+    "site_noise_limit_dbm": -150.0,
+    "noise_margin_db": 78.93,
+    "squelch_threshold_dbm": -125.03,
+    "input_pad_recommendation_db": 10.1,
+    "near_test_operating_pass": false,
+    "near_test_damage_pass": false,
+    "passes": false
+   }
+  ]
+ },
+ "grid": {
+  "basis": "IFC 510.5.4 grid-method self-check from the floor model (grade E): 20 cells honoring the 80 ft max grid dimension, cell-center predictions with the planner's propagation engine, AHJ thresholds (RSSI -95 dBm, SINR 18 dB), the calculated uplink per cell (LA County method) to the site target (floor -127.0 + 18 dB), critical-area discrete points when the floor carries zones, spread and near-ring metrics per band. Design estimate, not a substitute for the field walk.",
+  "grid": {
+   "rows": 4,
+   "cols": 5,
+   "worst_cell_dim_m": 11.5,
+   "max_dim_rule_m": 24.4,
+   "dimension_rule_ok": true
+  },
+  "design": {
+   "port_dbm": 33.0,
+   "n": 3,
+   "k": 48,
+   "ul_gain_db": 30.4,
+   "sites": 1,
+   "placement": {
+    "returned": 1,
+    "forced": false,
+    "note": "planner would not place the full design plate; grid uses the pruned placement"
+   },
+   "ul_gain_trunk_model_db": 11.8
+  },
+  "uplink": {
+   "site_floor_dbm": -127.03,
+   "target_arrival_dbm": -109.03,
+   "site_erp": 50.0,
+   "site_nf": 6.0,
+   "ambient": -85.0,
+   "g_donor": 15.5,
+   "arrival_margin": 18.0,
+   "noise_rule": "la"
+  },
+  "bands": {
+   "PS700": {
+    "cells": [
+     {
+      "cell": 1,
+      "x_m": 5.8,
+      "y_m": 2.2,
+      "dl_dbm": -15.7,
+      "dl_pass": true,
+      "sinr_db_est": 109.3,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -108.9,
+      "ul_pass": true
+     },
+     {
+      "cell": 2,
+      "x_m": 17.2,
+      "y_m": 2.2,
+      "dl_dbm": -13.8,
+      "dl_pass": true,
+      "sinr_db_est": 111.2,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.9,
+      "ul_pass": true
+     },
+     {
+      "cell": 3,
+      "x_m": 28.8,
+      "y_m": 2.2,
+      "dl_dbm": -9.3,
+      "dl_pass": true,
+      "sinr_db_est": 115.8,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -102.4,
+      "ul_pass": true
+     },
+     {
+      "cell": 4,
+      "x_m": 40.2,
+      "y_m": 2.2,
+      "dl_dbm": -13.8,
+      "dl_pass": true,
+      "sinr_db_est": 111.3,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.9,
+      "ul_pass": true
+     },
+     {
+      "cell": 5,
+      "x_m": 51.8,
+      "y_m": 2.2,
+      "dl_dbm": -15.9,
+      "dl_pass": true,
+      "sinr_db_est": 109.1,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -109.0,
+      "ul_pass": true
+     },
+     {
+      "cell": 6,
+      "x_m": 5.8,
+      "y_m": 6.6,
+      "dl_dbm": -15.3,
+      "dl_pass": true,
+      "sinr_db_est": 109.8,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -108.4,
+      "ul_pass": true
+     },
+     {
+      "cell": 7,
+      "x_m": 17.2,
+      "y_m": 6.6,
+      "dl_dbm": -12.9,
+      "dl_pass": true,
+      "sinr_db_est": 112.1,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.0,
+      "ul_pass": true
+     },
+     {
+      "cell": 8,
+      "x_m": 28.8,
+      "y_m": 6.6,
+      "dl_dbm": -0.2,
+      "dl_pass": true,
+      "sinr_db_est": 124.8,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -93.4,
+      "ul_pass": true
+     },
+     {
+      "cell": 9,
+      "x_m": 40.2,
+      "y_m": 6.6,
+      "dl_dbm": -13.1,
+      "dl_pass": true,
+      "sinr_db_est": 112.0,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.2,
+      "ul_pass": true
+     },
+     {
+      "cell": 10,
+      "x_m": 51.8,
+      "y_m": 6.6,
+      "dl_dbm": -15.4,
+      "dl_pass": true,
+      "sinr_db_est": 109.6,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -108.6,
+      "ul_pass": true
+     },
+     {
+      "cell": 11,
+      "x_m": 5.8,
+      "y_m": 10.9,
+      "dl_dbm": -15.5,
+      "dl_pass": true,
+      "sinr_db_est": 109.6,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -108.6,
+      "ul_pass": true
+     },
+     {
+      "cell": 12,
+      "x_m": 17.2,
+      "y_m": 10.9,
+      "dl_dbm": -12.9,
+      "dl_pass": true,
+      "sinr_db_est": 112.1,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.1,
+      "ul_pass": true
+     },
+     {
+      "cell": 13,
+      "x_m": 28.8,
+      "y_m": 10.9,
+      "dl_dbm": -2.1,
+      "dl_pass": true,
+      "sinr_db_est": 123.0,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -95.2,
+      "ul_pass": true
+     },
+     {
+      "cell": 14,
+      "x_m": 40.2,
+      "y_m": 10.9,
+      "dl_dbm": -13.1,
+      "dl_pass": true,
+      "sinr_db_est": 112.0,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.2,
+      "ul_pass": true
+     },
+     {
+      "cell": 15,
+      "x_m": 51.8,
+      "y_m": 10.9,
+      "dl_dbm": -15.5,
+      "dl_pass": true,
+      "sinr_db_est": 109.5,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -108.6,
+      "ul_pass": true
+     },
+     {
+      "cell": 16,
+      "x_m": 5.8,
+      "y_m": 15.3,
+      "dl_dbm": -15.9,
+      "dl_pass": true,
+      "sinr_db_est": 109.1,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -109.0,
+      "ul_pass": true
+     },
+     {
+      "cell": 17,
+      "x_m": 17.2,
+      "y_m": 15.3,
+      "dl_dbm": -13.7,
+      "dl_pass": true,
+      "sinr_db_est": 111.3,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.8,
+      "ul_pass": true
+     },
+     {
+      "cell": 18,
+      "x_m": 28.8,
+      "y_m": 15.3,
+      "dl_dbm": -9.8,
+      "dl_pass": true,
+      "sinr_db_est": 115.3,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -102.9,
+      "ul_pass": true
+     },
+     {
+      "cell": 19,
+      "x_m": 40.2,
+      "y_m": 15.3,
+      "dl_dbm": -13.6,
+      "dl_pass": true,
+      "sinr_db_est": 111.4,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.7,
+      "ul_pass": true
+     },
+     {
+      "cell": 20,
+      "x_m": 51.8,
+      "y_m": 15.3,
+      "dl_dbm": -15.8,
+      "dl_pass": true,
+      "sinr_db_est": 109.2,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -109.0,
+      "ul_pass": true
+     }
+    ],
+    "n_cells": 20,
+    "n_fail": 0,
+    "floor_pass": true,
+    "fail_breakdown": {
+     "dl": 0,
+     "sinr": 0,
+     "calc_ul": 0
+    },
+    "retest_zone": false,
+    "spread": {
+     "min_dbm": -16.6,
+     "p5_dbm": -16.1,
+     "p95_dbm": -6.3,
+     "max_dbm": 8.2,
+     "spread_db": 24.9
+    },
+    "near_ring": [
+     {
+      "antenna": "L04_auto_auto_a1",
+      "x_m": 28.5,
+      "y_m": 8.5,
+      "near_ring_dl_dbm": 1.9,
+      "near_input_bda_dbm": -1.3
+     }
+    ]
+   },
+   "PS800": {
+    "cells": [
+     {
+      "cell": 1,
+      "x_m": 5.8,
+      "y_m": 2.2,
+      "dl_dbm": -16.6,
+      "dl_pass": true,
+      "sinr_db_est": 108.4,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -108.9,
+      "ul_pass": true
+     },
+     {
+      "cell": 2,
+      "x_m": 17.2,
+      "y_m": 2.2,
+      "dl_dbm": -14.7,
+      "dl_pass": true,
+      "sinr_db_est": 110.3,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -107.0,
+      "ul_pass": true
+     },
+     {
+      "cell": 3,
+      "x_m": 28.8,
+      "y_m": 2.2,
+      "dl_dbm": -10.2,
+      "dl_pass": true,
+      "sinr_db_est": 114.8,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -102.5,
+      "ul_pass": true
+     },
+     {
+      "cell": 4,
+      "x_m": 40.2,
+      "y_m": 2.2,
+      "dl_dbm": -14.6,
+      "dl_pass": true,
+      "sinr_db_est": 110.4,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.9,
+      "ul_pass": true
+     },
+     {
+      "cell": 5,
+      "x_m": 51.8,
+      "y_m": 2.2,
+      "dl_dbm": -16.7,
+      "dl_pass": true,
+      "sinr_db_est": 108.3,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -109.0,
+      "ul_pass": true
+     },
+     {
+      "cell": 6,
+      "x_m": 5.8,
+      "y_m": 6.6,
+      "dl_dbm": -16.1,
+      "dl_pass": true,
+      "sinr_db_est": 108.9,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -108.4,
+      "ul_pass": true
+     },
+     {
+      "cell": 7,
+      "x_m": 17.2,
+      "y_m": 6.6,
+      "dl_dbm": -13.8,
+      "dl_pass": true,
+      "sinr_db_est": 111.2,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.1,
+      "ul_pass": true
+     },
+     {
+      "cell": 8,
+      "x_m": 28.8,
+      "y_m": 6.6,
+      "dl_dbm": -1.2,
+      "dl_pass": true,
+      "sinr_db_est": 123.9,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -93.5,
+      "ul_pass": true
+     },
+     {
+      "cell": 9,
+      "x_m": 40.2,
+      "y_m": 6.6,
+      "dl_dbm": -13.9,
+      "dl_pass": true,
+      "sinr_db_est": 111.1,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.2,
+      "ul_pass": true
+     },
+     {
+      "cell": 10,
+      "x_m": 51.8,
+      "y_m": 6.6,
+      "dl_dbm": -16.3,
+      "dl_pass": true,
+      "sinr_db_est": 108.8,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -108.6,
+      "ul_pass": true
+     },
+     {
+      "cell": 11,
+      "x_m": 5.8,
+      "y_m": 10.9,
+      "dl_dbm": -16.3,
+      "dl_pass": true,
+      "sinr_db_est": 108.7,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -108.6,
+      "ul_pass": true
+     },
+     {
+      "cell": 12,
+      "x_m": 17.2,
+      "y_m": 10.9,
+      "dl_dbm": -13.8,
+      "dl_pass": true,
+      "sinr_db_est": 111.2,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.1,
+      "ul_pass": true
+     },
+     {
+      "cell": 13,
+      "x_m": 28.8,
+      "y_m": 10.9,
+      "dl_dbm": -3.0,
+      "dl_pass": true,
+      "sinr_db_est": 122.0,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -95.3,
+      "ul_pass": true
+     },
+     {
+      "cell": 14,
+      "x_m": 40.2,
+      "y_m": 10.9,
+      "dl_dbm": -14.0,
+      "dl_pass": true,
+      "sinr_db_est": 111.1,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.2,
+      "ul_pass": true
+     },
+     {
+      "cell": 15,
+      "x_m": 51.8,
+      "y_m": 10.9,
+      "dl_dbm": -16.4,
+      "dl_pass": true,
+      "sinr_db_est": 108.7,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -108.6,
+      "ul_pass": true
+     },
+     {
+      "cell": 16,
+      "x_m": 5.8,
+      "y_m": 15.3,
+      "dl_dbm": -16.8,
+      "dl_pass": true,
+      "sinr_db_est": 108.3,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -109.0,
+      "ul_pass": true
+     },
+     {
+      "cell": 17,
+      "x_m": 17.2,
+      "y_m": 15.3,
+      "dl_dbm": -14.6,
+      "dl_pass": true,
+      "sinr_db_est": 110.5,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.9,
+      "ul_pass": true
+     },
+     {
+      "cell": 18,
+      "x_m": 28.8,
+      "y_m": 15.3,
+      "dl_dbm": -10.7,
+      "dl_pass": true,
+      "sinr_db_est": 114.3,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -103.0,
+      "ul_pass": true
+     },
+     {
+      "cell": 19,
+      "x_m": 40.2,
+      "y_m": 15.3,
+      "dl_dbm": -14.5,
+      "dl_pass": true,
+      "sinr_db_est": 110.6,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -106.7,
+      "ul_pass": true
+     },
+     {
+      "cell": 20,
+      "x_m": 51.8,
+      "y_m": 15.3,
+      "dl_dbm": -16.7,
+      "dl_pass": true,
+      "sinr_db_est": 108.3,
+      "sinr_pass": true,
+      "calc_ul_site_dbm": -109.0,
+      "ul_pass": true
+     }
+    ],
+    "n_cells": 20,
+    "n_fail": 0,
+    "floor_pass": true,
+    "fail_breakdown": {
+     "dl": 0,
+     "sinr": 0,
+     "calc_ul": 0
+    },
+    "retest_zone": false,
+    "spread": {
+     "min_dbm": -17.5,
+     "p5_dbm": -16.9,
+     "p95_dbm": -7.3,
+     "max_dbm": 7.3,
+     "spread_db": 24.7
+    },
+    "near_ring": [
+     {
+      "antenna": "L04_auto_auto_a1",
+      "x_m": 28.5,
+      "y_m": 8.5,
+      "near_ring_dl_dbm": 1.0,
+      "near_input_bda_dbm": -2.2
+     }
+    ]
+   }
+  },
+  "critical_areas": null,
+  "caps_report": {
+   "enabled": false,
+   "area_sqft_per_antenna_now": 10831.2,
+   "floors_per_port_now": 48,
+   "area_cap_sqft": null,
+   "k_cap": null,
+   "would_require_min_antennas": null,
+   "would_require_min_ports": null,
+   "note": "caps are off (the owner default): pass --caps-area-sqft or --caps-k to see what they would require; the runs themselves never change until the owner makes them the build rule"
+  }
+ },
+ "compliance": {
+  "fire": {
+   "basis": "FCC 90.219 and delay compliance plate (grade E); the carrier count per band is a job input and not assumed here",
+   "oem": "adrf_fire",
+   "erp_per_channel": {
+    "dl_port_dbm": 33.0,
+    "ant_gain_dbi": 5.0,
+    "erp_dbm": 38.0,
+    "cap_dbm": 37.0,
+    "cap_w": 5.0,
+    "pass": false
+   },
+   "noise_figure": {
+    "vendor_nf_db": 4.5,
+    "source": "FiRe-78 SS (UL NF at max gain)",
+    "limit_db": 9.0,
+    "pass": true
+   },
+   "uplink_noise_erp": {
+    "in_band_limit_dbm_10khz": -43.0,
+    "out_of_band_1mhz_dbm": -70.0,
+    "note": "satisfied by the squelch design in the quiescent state; verify at the no-harm acceptance test (Collier method)"
+   },
+   "delay": {
+    "filter_khz": 12.5,
+    "filter_delay_us": 80.0,
+    "fiber_us": 0.3,
+    "coax_us": 0.0,
+    "total_us": 80.3,
+    "limit_us": 15.0,
+    "pass": false,
+    "filter_wide_enough_khz": 75.0,
+    "wide_filter_total_us": 13.6,
+    "note": "NTIA TR-11-480: a 12.5 kHz filter alone is at least 80 us; 25/75/200 kHz bring the floor to 40/13.3/5 us. Collier recommends 25 or 75 kHz."
+   },
+   "cross_building_isolation": {
+    "required": false,
+    "rule": "any ERRCS within 300 ft of another building's ERRCS: at least 100 dB cross isolation; relocate the donor or the antennas or add head-end attenuation (PCTEL OPT014-1 procedure; BDA gain 80 dB with a 20 dB target validates 100 dB)"
+   },
+   "class_b_registration": "Class B boosters must be registered in the FCC signal booster database; record the ID in the equipment list"
+  },
+  "comba": {
+   "basis": "FCC 90.219 and delay compliance plate (grade E); the carrier count per band is a job input and not assumed here",
+   "oem": "comba",
+   "erp_per_channel": {
+    "dl_port_dbm": 33.0,
+    "ant_gain_dbi": 5.0,
+    "erp_dbm": 38.0,
+    "cap_dbm": 37.0,
+    "cap_w": 5.0,
+    "pass": false
+   },
+   "noise_figure": {
+    "vendor_nf_db": 5.0,
+    "source": "V3 manual (under 5 dB at 90 dB)",
+    "limit_db": 9.0,
+    "pass": true
+   },
+   "uplink_noise_erp": {
+    "in_band_limit_dbm_10khz": -43.0,
+    "out_of_band_1mhz_dbm": -70.0,
+    "note": "satisfied by the squelch design in the quiescent state; verify at the no-harm acceptance test (Collier method)"
+   },
+   "delay": {
+    "filter_khz": 12.5,
+    "filter_delay_us": 80.0,
+    "fiber_us": 0.3,
+    "coax_us": 0.0,
+    "total_us": 80.3,
+    "limit_us": 15.0,
+    "pass": false,
+    "filter_wide_enough_khz": 75.0,
+    "wide_filter_total_us": 13.6,
+    "note": "NTIA TR-11-480: a 12.5 kHz filter alone is at least 80 us; 25/75/200 kHz bring the floor to 40/13.3/5 us. Collier recommends 25 or 75 kHz."
+   },
+   "cross_building_isolation": {
+    "required": false,
+    "rule": "any ERRCS within 300 ft of another building's ERRCS: at least 100 dB cross isolation; relocate the donor or the antennas or add head-end attenuation (PCTEL OPT014-1 procedure; BDA gain 80 dB with a 20 dB target validates 100 dB)"
+   },
+   "class_b_registration": "Class B boosters must be registered in the FCC signal booster database; record the ID in the equipment list"
+  },
+  "westell": {
+   "basis": "FCC 90.219 and delay compliance plate (grade E); the carrier count per band is a job input and not assumed here",
+   "oem": "westell",
+   "erp_per_channel": {
+    "dl_port_dbm": 33.0,
+    "ant_gain_dbi": 5.0,
+    "erp_dbm": 38.0,
+    "cap_dbm": 37.0,
+    "cap_w": 5.0,
+    "pass": false
+   },
+   "noise_figure": {
+    "vendor_nf_db": 7.0,
+    "source": "CS45 DS (CS40 figure under 7 dB)",
+    "limit_db": 9.0,
+    "pass": true
+   },
+   "uplink_noise_erp": {
+    "in_band_limit_dbm_10khz": -43.0,
+    "out_of_band_1mhz_dbm": -70.0,
+    "note": "satisfied by the squelch design in the quiescent state; verify at the no-harm acceptance test (Collier method)"
+   },
+   "delay": {
+    "filter_khz": 12.5,
+    "filter_delay_us": 80.0,
+    "fiber_us": 0.3,
+    "coax_us": 0.0,
+    "total_us": 80.3,
+    "limit_us": 15.0,
+    "pass": false,
+    "filter_wide_enough_khz": 75.0,
+    "wide_filter_total_us": 13.6,
+    "note": "NTIA TR-11-480: a 12.5 kHz filter alone is at least 80 us; 25/75/200 kHz bring the floor to 40/13.3/5 us. Collier recommends 25 or 75 kHz."
+   },
+   "cross_building_isolation": {
+    "required": false,
+    "rule": "any ERRCS within 300 ft of another building's ERRCS: at least 100 dB cross isolation; relocate the donor or the antennas or add head-end attenuation (PCTEL OPT014-1 procedure; BDA gain 80 dB with a 20 dB target validates 100 dB)"
+   },
+   "class_b_registration": "Class B boosters must be registered in the FCC signal booster database; record the ID in the equipment list"
+  },
+  "vu": {
+   "basis": "FCC 90.219 and delay compliance plate (grade E); the carrier count per band is a job input and not assumed here",
+   "oem": "adrf_vu",
+   "erp_per_channel": {
+    "dl_port_dbm": 33.0,
+    "ant_gain_dbi": 5.0,
+    "erp_dbm": 38.0,
+    "cap_dbm": 37.0,
+    "cap_w": 5.0,
+    "pass": false
+   },
+   "noise_figure": {
+    "vendor_nf_db": 3.5,
+    "source": "PSR-VU DS (under 3.5 dB without duplexing)",
+    "limit_db": 9.0,
+    "pass": true
+   },
+   "uplink_noise_erp": {
+    "in_band_limit_dbm_10khz": -43.0,
+    "out_of_band_1mhz_dbm": -70.0,
+    "note": "satisfied by the squelch design in the quiescent state; verify at the no-harm acceptance test (Collier method)"
+   },
+   "delay": {
+    "filter_khz": 12.5,
+    "filter_delay_us": 80.0,
+    "fiber_us": 0.3,
+    "coax_us": 0.0,
+    "total_us": 80.3,
+    "limit_us": 32.0,
+    "pass": false,
+    "filter_wide_enough_khz": 75.0,
+    "wide_filter_total_us": 13.6,
+    "note": "NTIA TR-11-480: a 12.5 kHz filter alone is at least 80 us; 25/75/200 kHz bring the floor to 40/13.3/5 us. Collier recommends 25 or 75 kHz."
+   },
+   "cross_building_isolation": {
+    "required": false,
+    "rule": "any ERRCS within 300 ft of another building's ERRCS: at least 100 dB cross isolation; relocate the donor or the antennas or add head-end attenuation (PCTEL OPT014-1 procedure; BDA gain 80 dB with a 20 dB target validates 100 dB)"
+   },
+   "class_b_registration": "Class B boosters must be registered in the FCC signal booster database; record the ID in the equipment list"
+  }
+ },
+ "intermod": {
+  "basis": "two-tone IM3 screen (grade E): band center frequencies stand for the carriers; verify the actual TX list and run the field PIM test where the converged plates carry both cellular and ERCES. The DC OUC rule requires intermod studies when other radio systems share the building.",
+  "tx_carriers_mhz": {
+   "B12_700": 751.0,
+   "B5_850": 881.5,
+   "B2_1900": 1960.0,
+   "B66_2100": 2145.0,
+   "N71_600": 634.5,
+   "N41_2500": 2593.0,
+   "N77_CBAND": 3840.0
+  },
+  "ps_windows_mhz": [
+   {
+    "name": "PS700-DL",
+    "lo": 769.0,
+    "hi": 775.0
+   },
+   {
+    "name": "PS700-UL",
+    "lo": 799.0,
+    "hi": 805.0
+   },
+   {
+    "name": "PS800-DL",
+    "lo": 851.0,
+    "hi": 861.0
+   },
+   {
+    "name": "PS800-UL",
+    "lo": 806.0,
+    "hi": 816.0
+   },
+   {
+    "name": "B14-DL",
+    "lo": 758.0,
+    "hi": 775.0
+   },
+   {
+    "name": "B14-UL",
+    "lo": 788.0,
+    "hi": 805.0
+   },
+   {
+    "name": "VHF",
+    "lo": 136.0,
+    "hi": 174.0
+   },
+   {
+    "name": "UHF",
+    "lo": 380.0,
+    "hi": 512.0
+   }
+  ],
+  "hits": [
+   {
+    "product_mhz": 387.5,
+    "label": "2xN71_600-B5_850",
+    "band_pair": [
+     "B5_850",
+     "N71_600"
+    ],
+    "lands_in": "UHF"
+   },
+   {
+    "product_mhz": 450.0,
+    "label": "2xB66_2100-N77_CBAND",
+    "band_pair": [
+     "B66_2100",
+     "N77_CBAND"
+    ],
+    "lands_in": "UHF"
+   }
+  ],
+  "verdict": "PIM test trigger: 2 IM3 products land in the PS windows"
+ },
+ "caps": [
+  {
+   "enabled": false,
+   "area_cap_sqft": null,
+   "k_cap": null,
+   "note": "Owner direction 2026-11-26: build the antenna square-footage and remote-coverage gates in but leave them off. While off, the gates report what they WOULD require; --caps-on applies them to the reported design numbers. Per-antenna area and floors-per-port as built live in the grid block and the plates."
+  }
+ ]
 }

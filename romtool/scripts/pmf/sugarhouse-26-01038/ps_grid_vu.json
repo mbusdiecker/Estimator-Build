@@ -1,0 +1,295 @@
+{
+ "basis": "IFC 510.5.4 grid-method self-check from the floor model (grade E): 20 cells honoring the 80 ft max grid dimension, cell-center predictions with the planner's propagation engine, AHJ thresholds (RSSI -95 dBm, SINR 18 dB), the calculated uplink per cell (LA County method) to the site target (floor -127.0 + 18 dB), critical-area discrete points when the floor carries zones, spread and near-ring metrics per band. Design estimate, not a substitute for the field walk.",
+ "grid": {
+  "rows": 4,
+  "cols": 5,
+  "worst_cell_dim_m": 11.5,
+  "max_dim_rule_m": 24.4,
+  "dimension_rule_ok": true
+ },
+ "design": {
+  "port_dbm": 37.0,
+  "n": 3,
+  "k": 48,
+  "ul_gain_db": 25.5,
+  "sites": 1,
+  "placement": {
+   "returned": 1,
+   "forced": false,
+   "note": "planner would not place the full design plate; grid uses the pruned placement"
+  },
+  "ul_gain_trunk_model_db": 11.8
+ },
+ "uplink": {
+  "site_floor_dbm": -127.03,
+  "target_arrival_dbm": -109.03,
+  "site_erp": 50.0,
+  "site_nf": 6.0,
+  "ambient": -85.0,
+  "g_donor": 15.5,
+  "arrival_margin": 18.0,
+  "noise_rule": "la"
+ },
+ "bands": {
+  "UHF_450": {
+   "cells": [
+    {
+     "cell": 1,
+     "x_m": 5.8,
+     "y_m": 2.2,
+     "dl_dbm": -7.6,
+     "dl_pass": true,
+     "sinr_db_est": 117.4,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 2,
+     "x_m": 17.2,
+     "y_m": 2.2,
+     "dl_dbm": -5.5,
+     "dl_pass": true,
+     "sinr_db_est": 119.6,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.7,
+     "ul_pass": true
+    },
+    {
+     "cell": 3,
+     "x_m": 28.8,
+     "y_m": 2.2,
+     "dl_dbm": -0.8,
+     "dl_pass": true,
+     "sinr_db_est": 124.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -102.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 4,
+     "x_m": 40.2,
+     "y_m": 2.2,
+     "dl_dbm": -5.4,
+     "dl_pass": true,
+     "sinr_db_est": 119.6,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 5,
+     "x_m": 51.8,
+     "y_m": 2.2,
+     "dl_dbm": -7.8,
+     "dl_pass": true,
+     "sinr_db_est": 117.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -109.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 6,
+     "x_m": 5.8,
+     "y_m": 6.6,
+     "dl_dbm": -7.2,
+     "dl_pass": true,
+     "sinr_db_est": 117.9,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.4,
+     "ul_pass": true
+    },
+    {
+     "cell": 7,
+     "x_m": 17.2,
+     "y_m": 6.6,
+     "dl_dbm": -4.5,
+     "dl_pass": true,
+     "sinr_db_est": 120.5,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -105.7,
+     "ul_pass": true
+    },
+    {
+     "cell": 8,
+     "x_m": 28.8,
+     "y_m": 6.6,
+     "dl_dbm": 8.4,
+     "dl_pass": true,
+     "sinr_db_est": 133.4,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -92.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 9,
+     "x_m": 40.2,
+     "y_m": 6.6,
+     "dl_dbm": -4.7,
+     "dl_pass": true,
+     "sinr_db_est": 120.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -105.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 10,
+     "x_m": 51.8,
+     "y_m": 6.6,
+     "dl_dbm": -7.4,
+     "dl_pass": true,
+     "sinr_db_est": 117.7,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 11,
+     "x_m": 5.8,
+     "y_m": 10.9,
+     "dl_dbm": -7.4,
+     "dl_pass": true,
+     "sinr_db_est": 117.7,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 12,
+     "x_m": 17.2,
+     "y_m": 10.9,
+     "dl_dbm": -4.6,
+     "dl_pass": true,
+     "sinr_db_est": 120.5,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -105.8,
+     "ul_pass": true
+    },
+    {
+     "cell": 13,
+     "x_m": 28.8,
+     "y_m": 10.9,
+     "dl_dbm": 6.5,
+     "dl_pass": true,
+     "sinr_db_est": 131.5,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -94.7,
+     "ul_pass": true
+    },
+    {
+     "cell": 14,
+     "x_m": 40.2,
+     "y_m": 10.9,
+     "dl_dbm": -4.7,
+     "dl_pass": true,
+     "sinr_db_est": 120.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -105.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 15,
+     "x_m": 51.8,
+     "y_m": 10.9,
+     "dl_dbm": -7.4,
+     "dl_pass": true,
+     "sinr_db_est": 117.6,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.7,
+     "ul_pass": true
+    },
+    {
+     "cell": 16,
+     "x_m": 5.8,
+     "y_m": 15.3,
+     "dl_dbm": -7.8,
+     "dl_pass": true,
+     "sinr_db_est": 117.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -109.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 17,
+     "x_m": 17.2,
+     "y_m": 15.3,
+     "dl_dbm": -5.3,
+     "dl_pass": true,
+     "sinr_db_est": 119.7,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 18,
+     "x_m": 28.8,
+     "y_m": 15.3,
+     "dl_dbm": -1.3,
+     "dl_pass": true,
+     "sinr_db_est": 123.8,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -102.5,
+     "ul_pass": true
+    },
+    {
+     "cell": 19,
+     "x_m": 40.2,
+     "y_m": 15.3,
+     "dl_dbm": -5.3,
+     "dl_pass": true,
+     "sinr_db_est": 119.8,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.5,
+     "ul_pass": true
+    },
+    {
+     "cell": 20,
+     "x_m": 51.8,
+     "y_m": 15.3,
+     "dl_dbm": -7.8,
+     "dl_pass": true,
+     "sinr_db_est": 117.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -109.0,
+     "ul_pass": true
+    }
+   ],
+   "n_cells": 20,
+   "n_fail": 0,
+   "floor_pass": true,
+   "fail_breakdown": {
+    "dl": 0,
+    "sinr": 0,
+    "calc_ul": 0
+   },
+   "retest_zone": false,
+   "spread": {
+    "min_dbm": -8.6,
+    "p5_dbm": -8.0,
+    "p95_dbm": 2.2,
+    "max_dbm": 16.8,
+    "spread_db": 25.5
+   },
+   "near_ring": [
+    {
+     "antenna": "L04_auto_auto_a1",
+     "x_m": 28.5,
+     "y_m": 8.5,
+     "near_ring_dl_dbm": 10.5,
+     "near_input_bda_dbm": 3.3
+    }
+   ]
+  }
+ },
+ "critical_areas": null,
+ "caps_report": {
+  "enabled": false,
+  "area_sqft_per_antenna_now": 10831.2,
+  "floors_per_port_now": 48,
+  "area_cap_sqft": null,
+  "k_cap": null,
+  "would_require_min_antennas": null,
+  "would_require_min_ports": null,
+  "note": "caps are design gates reported only; the runs themselves are unchanged until the owner turns them on"
+ }
+}

@@ -1,0 +1,75 @@
+{
+ "basis": "two-tone IM3 screen (grade E): band center frequencies stand for the carriers; verify the actual TX list and run the field PIM test where the converged plates carry both cellular and ERCES. The DC OUC rule requires intermod studies when other radio systems share the building.",
+ "tx_carriers_mhz": {
+  "B12_700": 751.0,
+  "B5_850": 881.5,
+  "B2_1900": 1960.0,
+  "B66_2100": 2145.0,
+  "N71_600": 634.5,
+  "N41_2500": 2593.0,
+  "N77_CBAND": 3840.0
+ },
+ "ps_windows_mhz": [
+  {
+   "name": "PS700-DL",
+   "lo": 769.0,
+   "hi": 775.0
+  },
+  {
+   "name": "PS700-UL",
+   "lo": 799.0,
+   "hi": 805.0
+  },
+  {
+   "name": "PS800-DL",
+   "lo": 851.0,
+   "hi": 861.0
+  },
+  {
+   "name": "PS800-UL",
+   "lo": 806.0,
+   "hi": 816.0
+  },
+  {
+   "name": "B14-DL",
+   "lo": 758.0,
+   "hi": 775.0
+  },
+  {
+   "name": "B14-UL",
+   "lo": 788.0,
+   "hi": 805.0
+  },
+  {
+   "name": "VHF",
+   "lo": 136.0,
+   "hi": 174.0
+  },
+  {
+   "name": "UHF",
+   "lo": 380.0,
+   "hi": 512.0
+  }
+ ],
+ "hits": [
+  {
+   "product_mhz": 387.5,
+   "label": "2xN71_600-B5_850",
+   "band_pair": [
+    "B5_850",
+    "N71_600"
+   ],
+   "lands_in": "UHF"
+  },
+  {
+   "product_mhz": 450.0,
+   "label": "2xB66_2100-N77_CBAND",
+   "band_pair": [
+    "B66_2100",
+    "N77_CBAND"
+   ],
+   "lands_in": "UHF"
+  }
+ ],
+ "verdict": "PIM test trigger: 2 IM3 products land in the PS windows"
+}

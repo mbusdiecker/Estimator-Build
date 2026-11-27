@@ -1,0 +1,40 @@
+{
+ "basis": "FCC 90.219 and delay compliance plate (grade E); the carrier count per band is a job input and not assumed here",
+ "oem": "westell",
+ "erp_per_channel": {
+  "dl_port_dbm": 33.0,
+  "ant_gain_dbi": 5.0,
+  "erp_dbm": 38.0,
+  "cap_dbm": 37.0,
+  "cap_w": 5.0,
+  "pass": false
+ },
+ "noise_figure": {
+  "vendor_nf_db": 7.0,
+  "source": "CS45 DS (CS40 figure under 7 dB)",
+  "limit_db": 9.0,
+  "pass": true
+ },
+ "uplink_noise_erp": {
+  "in_band_limit_dbm_10khz": -43.0,
+  "out_of_band_1mhz_dbm": -70.0,
+  "note": "satisfied by the squelch design in the quiescent state; verify at the no-harm acceptance test (Collier method)"
+ },
+ "delay": {
+  "filter_khz": 12.5,
+  "filter_delay_us": 80.0,
+  "fiber_us": 0.3,
+  "coax_us": 0.0,
+  "total_us": 80.3,
+  "limit_us": 15.0,
+  "pass": false,
+  "filter_wide_enough_khz": 75.0,
+  "wide_filter_total_us": 13.6,
+  "note": "NTIA TR-11-480: a 12.5 kHz filter alone is at least 80 us; 25/75/200 kHz bring the floor to 40/13.3/5 us. Collier recommends 25 or 75 kHz."
+ },
+ "cross_building_isolation": {
+  "required": false,
+  "rule": "any ERRCS within 300 ft of another building's ERRCS: at least 100 dB cross isolation; relocate the donor or the antennas or add head-end attenuation (PCTEL OPT014-1 procedure; BDA gain 80 dB with a 20 dB target validates 100 dB)"
+ },
+ "class_b_registration": "Class B boosters must be registered in the FCC signal booster database; record the ID in the equipment list"
+}

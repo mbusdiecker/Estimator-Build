@@ -1,0 +1,51 @@
+{
+ "basis": "PS uplink engine (grade E): band-reciprocal chain at the design k, AHJ site inputs parameterized. Assumptions: 3 W portable, 5 dB hip-height body loss, distribution net UL gain 0 dB (conservative), site ERP/NF/ambient defaults are AHJ placeholders until the site sheet arrives; the squelch floor uses a 3 dB distribution noise figure estimate (grade D). Vendor notes: gain 85-95 dB range (top used), NF under 3.5 dB without duplexing per the PSR-VU DS; UL output cap and input limits placeholders grade D",
+ "oem": "ADRF PSR-VU-9537-X",
+ "site_nf_db": 6.0,
+ "site_floor_dbm": -127.03,
+ "trunk_loss_at_k_db": 38.43,
+ "bands": [
+  {
+   "band": "VHF_150",
+   "freq_mhz": 154.0,
+   "delivered_far_dl_dbm": -10.43,
+   "ul_port_far_dbm": -8.63,
+   "near_ring_dl_dbm": 8.28,
+   "near_input_bda_dbm": 10.08,
+   "ul_gain_recommended_db": 19.1,
+   "ul_gain_far_min_db": 19.1,
+   "ul_gain_noise_max_db": 99.0,
+   "site_arrival_far_dbm": -109.03,
+   "site_arrival_target_dbm": -109.03,
+   "site_noise_active_dbm": -229.93,
+   "site_noise_limit_dbm": -150.0,
+   "noise_margin_db": 79.93,
+   "squelch_threshold_dbm": -125.03,
+   "input_pad_recommendation_db": 25.1,
+   "near_test_operating_pass": false,
+   "near_test_damage_pass": false,
+   "passes": false
+  },
+  {
+   "band": "UHF_450",
+   "freq_mhz": 453.0,
+   "delivered_far_dl_dbm": -10.43,
+   "ul_port_far_dbm": -8.63,
+   "near_ring_dl_dbm": -1.09,
+   "near_input_bda_dbm": 0.71,
+   "ul_gain_recommended_db": 19.1,
+   "ul_gain_far_min_db": 19.1,
+   "ul_gain_noise_max_db": 99.0,
+   "site_arrival_far_dbm": -109.03,
+   "site_arrival_target_dbm": -109.03,
+   "site_noise_active_dbm": -229.93,
+   "site_noise_limit_dbm": -150.0,
+   "noise_margin_db": 79.93,
+   "squelch_threshold_dbm": -125.03,
+   "input_pad_recommendation_db": 15.7,
+   "near_test_operating_pass": false,
+   "near_test_damage_pass": false,
+   "passes": false
+  }
+ ]
+}

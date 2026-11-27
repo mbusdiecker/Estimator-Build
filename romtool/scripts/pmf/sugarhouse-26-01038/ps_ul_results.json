@@ -1,107 +1,51 @@
 {
- "basis": "PS ROM per OEM and frequency, Sugar House building model (grade E): DL via pmf/NFPA two-tier runs, UL far-portable check; assumptions: site receiver -116 dBm (DAQ 3.0), portable 2 W, donor line 30 m 1/2 inch",
- "site_rx_dbm": -116.0,
- "ue_tx_dbm": 33.0,
- "rows": [
+ "basis": "PS uplink engine (grade E): band-reciprocal chain at the design k, AHJ site inputs parameterized. Assumptions: 3 W portable, 5 dB hip-height body loss, distribution net UL gain 0 dB (conservative), site ERP/NF/ambient defaults are AHJ placeholders until the site sheet arrives; the squelch floor uses a 3 dB distribution noise figure estimate (grade D). Vendor notes: UL NF 4.5 dB at max gain from the FiRe-78 SS; UL composite output cap -21 dBm class from the SS composite table; max/damaging input not published: placeholders flagged grade D",
+ "oem": "ADRF FiRe-78-8-U1 (ADXV-R-3378P-U2 remotes)",
+ "site_nf_db": 6.0,
+ "site_floor_dbm": -127.03,
+ "trunk_loss_at_k_db": 38.43,
+ "bands": [
   {
-   "oem": "adrf_fire",
-   "model": "FiRe-78-8-U1 + ADXV-R-3378P-U2 remotes",
-   "bands": [
-    {
-     "band": "PS700",
-     "ue_at_bda_dbm": -0.5,
-     "site_rx_dbm": 101.0,
-     "site_cnr_db": 221.5,
-     "margin_vs_sens_db": 217.0,
-     "passes": true
-    },
-    {
-     "band": "PS800",
-     "ue_at_bda_dbm": -0.5,
-     "site_rx_dbm": 100.9,
-     "site_cnr_db": 221.4,
-     "margin_vs_sens_db": 216.9,
-     "passes": true
-    },
-    {
-     "band": "B14",
-     "ue_at_bda_dbm": -0.5,
-     "site_rx_dbm": 101.0,
-     "site_cnr_db": 221.5,
-     "margin_vs_sens_db": 217.0,
-     "passes": true
-    }
-   ],
-   "source": "FiRe-78 SS: UL NF 4.5 dB at max gain; ADXV-R 2 W remotes; BDA UL gain 90 dB class"
+   "band": "PS700",
+   "freq_mhz": 772.0,
+   "delivered_far_dl_dbm": -5.43,
+   "ul_port_far_dbm": -8.63,
+   "near_ring_dl_dbm": -0.72,
+   "near_input_bda_dbm": -3.92,
+   "ul_gain_recommended_db": 19.1,
+   "ul_gain_far_min_db": 19.1,
+   "ul_gain_noise_max_db": 98.0,
+   "site_arrival_far_dbm": -109.03,
+   "site_arrival_target_dbm": -109.03,
+   "site_noise_active_dbm": -228.93,
+   "site_noise_limit_dbm": -150.0,
+   "noise_margin_db": 78.93,
+   "squelch_threshold_dbm": -125.03,
+   "input_pad_recommendation_db": 11.1,
+   "near_test_operating_pass": false,
+   "near_test_damage_pass": false,
+   "passes": false
   },
   {
-   "oem": "westell",
-   "model": "CS45-734-834-A0",
-   "bands": [
-    {
-     "band": "PS700",
-     "ue_at_bda_dbm": -0.5,
-     "site_rx_dbm": 91.0,
-     "site_cnr_db": 209.0,
-     "margin_vs_sens_db": 207.0,
-     "passes": true
-    },
-    {
-     "band": "PS800",
-     "ue_at_bda_dbm": -0.5,
-     "site_rx_dbm": 90.9,
-     "site_cnr_db": 208.9,
-     "margin_vs_sens_db": 206.9,
-     "passes": true
-    }
-   ],
-   "source": "CS45 DS: 90 dB DL / 80 dB UL gain; NF under 7 dB at max gain is the CS40 figure; 2.5 W per band"
-  },
-  {
-   "oem": "comba",
-   "model": "ComFlex NG V3 PS BDA",
-   "bands": [
-    {
-     "band": "PS700",
-     "ue_at_bda_dbm": -0.5,
-     "site_rx_dbm": 101.0,
-     "site_cnr_db": 221.0,
-     "margin_vs_sens_db": 217.0,
-     "passes": true
-    },
-    {
-     "band": "PS800",
-     "ue_at_bda_dbm": -0.5,
-     "site_rx_dbm": 100.9,
-     "site_cnr_db": 220.9,
-     "margin_vs_sens_db": 216.9,
-     "passes": true
-    }
-   ],
-   "source": "V3 manual: uplink noise figure under 5 dB at 90 dB uplink gain; DL 33 dBm per band"
-  },
-  {
-   "oem": "adrf_vu",
-   "model": "PSR-VU-9537-X",
-   "bands": [
-    {
-     "band": "VHF",
-     "ue_at_bda_dbm": -0.5,
-     "site_rx_dbm": 103.5,
-     "site_cnr_db": 225.0,
-     "margin_vs_sens_db": 219.5,
-     "passes": true
-    },
-    {
-     "band": "UHF",
-     "ue_at_bda_dbm": -0.5,
-     "site_rx_dbm": 102.0,
-     "site_cnr_db": 223.5,
-     "margin_vs_sens_db": 218.0,
-     "passes": true
-    }
-   ],
-   "source": "PSR-VU DS: VHF/UHF repeater, gain 85-95 dB, noise figure under 3.5 dB without duplexing"
+   "band": "PS800",
+   "freq_mhz": 860.0,
+   "delivered_far_dl_dbm": -5.43,
+   "ul_port_far_dbm": -8.63,
+   "near_ring_dl_dbm": -1.66,
+   "near_input_bda_dbm": -4.86,
+   "ul_gain_recommended_db": 19.1,
+   "ul_gain_far_min_db": 19.1,
+   "ul_gain_noise_max_db": 98.0,
+   "site_arrival_far_dbm": -109.03,
+   "site_arrival_target_dbm": -109.03,
+   "site_noise_active_dbm": -228.93,
+   "site_noise_limit_dbm": -150.0,
+   "noise_margin_db": 78.93,
+   "squelch_threshold_dbm": -125.03,
+   "input_pad_recommendation_db": 10.1,
+   "near_test_operating_pass": false,
+   "near_test_damage_pass": false,
+   "passes": false
   }
  ]
 }

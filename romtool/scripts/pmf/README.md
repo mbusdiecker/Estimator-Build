@@ -309,3 +309,63 @@ applies where the fire code official designates it; the uplink side needs the AH
 (510.4.2.2) and is outside these DL numbers; the PSR-VU 9537-X gain is range-only in the ds
 (85-95 dB) so the 38 dBm DL port row is the UHF composite top of range; per-remote PSU draws
 for the ADXV-R and the Comba V3 remote remain the 45 W placeholders.
+
+## UL, near-far, grid, compliance, IMD, and the owner gates (2026-11-26, day 2)
+
+New modules in scripts/pmf, all grade E estimates, no prices:
+- ps_ul.py: the talk-in engine. Band-reciprocal chain (ul at the BDA = portable
+  EIRP - DL port + predicted DL at the point), the AHJ site inputs (ERP, site
+  NF, ambient cal, donor gain), the arrival target = the site noise floor +
+  18 dB (DC), the noise coordination against the -150 dBm LA rule or the -
+  15 dB DC rule, the squelch threshold = the distribution input noise + 5 dB,
+  and the near test with the input pad recommendation. Runs per OEM per band
+  group; vendor UL gain/NF/output caps from the sheets with placeholders
+  flagged.
+- ps_grid.py: the IFC 510.5.4 grid-method self-check from the same floor
+  model: 20 cells honoring the 24.4 m max grid dimension, cell-center
+  predictions through the planner's own propagation (_lin_from/_contrib),
+  pass/fail per cell on RSSI and the SINR/BER equivalents, the 40-cell retest
+  flag, the calculated uplink per cell (LA County method) with the UL gain
+  derived from the worst cell, the critical-area discrete points when the
+  floor carries critical areas, the per-floor level spread (min/p5/p95/max)
+  and the per-antenna 1.5 m near-ring level.
+- ps_compliance.py: the FCC 90.219 ERP-per-channel plate (37 dBm cap), the
+  noise figure plate (9 dB), the quiescent noise ERP notes, and the
+  propagation delay budget (filter + fiber at 5 us/km + coax) against the
+  15/32 us AHJ limits with the Collier filter-width recommendation.
+- ps_imd.py: a two-tone IM3 screen for converged cellular+PS plates; band
+  centers stand for the carriers; flags the products landing in the PS
+  passbands (the PIM test trigger the AHJs cite).
+- ps_rom.py: the assembler that folds the pmf runs, the UL, the grid, the
+  compliance plates, and the IMD screen into one ps_rom_results.json, plus
+  the owner gates.
+
+The owner gates (2026-11-26: 'antenna square footage and remote coverage
+should be limited at some point, build it in but do not turn it on yet'):
+the antenna-area cap (--caps-area-sqft, evaluated per floor in the grid
+module: it reports would_require_min_antennas) and the floors-per-port cap
+(--caps-k, reported in the ROM rows and applied by --caps-on in ps_rom).
+They are OFF in every saved run; the saved demo ps_grid_capsdemo.json shows
+the gate output with a 10,000 sq ft example. Turning them on as build rules
+is a later owner decision.
+
+Findings the modules produced on the Sugar House floor model (design plate
+N=3 per floor, k=48):
+- The grid cells pass everywhere (20/20) with the engine's own placement;
+  the placement optimizer settles for 1 antenna per floor at these port
+  powers while the design plate says 3, so the placement tension is real and
+  the grid module reports which placement it used.
+- The UL solution exists at every OEM/band (recommended gain 19-30 dB class,
+  the squelch around -125 dBm at the BDA input) and the site noise sits far
+  below the -150 dBm rule at the default 50 dBm ERP / -85 dBm ambient cal.
+- The near test FAILS by default everywhere: a portable 1.5 m off the
+  antenna drives the BDA input to about -1 to -5 dBm; the modules emit the
+  input pad (about 10-14 dB) that fixes it, per the DC near-test rule.
+- ERP per channel busts the 5 W cap on the 33 dBm ports with 5 dBi antennas
+  (38 dBm; the UHF PSR-VU at 42 dBm needs a 5 dB pad): the plate emits the
+  pad per run.
+- The 12.5 kHz Class A filter alone is 80 us of delay: over both the SBC 15
+  us and the Collier 32 us limits; the plate recommends the 75 kHz filter
+  (13.6 us) per Collier's own practice.
+- The converged-plate IM3 screen found 2 products landing in UHF (387.5 MHz
+  from N71+B5, 450 MHz from B66+N77): the PIM test trigger for shared plates.
