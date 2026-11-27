@@ -268,3 +268,29 @@ Answer recorded here so it stops drifting:
    antenna-proximity hot spots and is non-monotonic with layout; the
    per-cell spread (within each antenna's coverage cell) is the closer
    near-far measure and is flagged for refinement.
+
+## Floor-plan-based density loop (2026-11-26, session 6)
+
+Owner correction: the viable edge and the near test must follow the ACTUAL
+floor plan. If one antenna covers 100k sq ft and a second is added, the two
+may deliver 65k each while the users can only stand in the 100k (or the 50k
+the floor is asked to cover).
+
+Implemented in ps_grid's density loop:
+- Best-server cells: each antenna's coverage is the walkable floor points
+  where it is the strongest server, clipped by the walls - the areas shrink
+  with overlap exactly as the floor geometry dictates (measured: 11,238 sq ft
+  median cell at N=1 down to 958 at N=12 on this floor).
+- Union coverage: the walkable union at each N is what the users get; the
+  recommended N requires the union to meet the coverage target (95 percent
+  here) - on this floor the union is 100 percent at every N, so the near test
+  is the binding constraint, not coverage.
+- Near test stands at the nearest point a person can actually be: the planar
+  nearest walkable point plus the ceiling-to-hip vertical offset
+  (--radio-offset-m, 1.5 m default), so the 3D distance floors at about 1.5 m
+  no matter how the planar plan allows closer. Measured near input: -4.2 dBm
+  at N=1 to -14.7 dBm at N=12 at 772 MHz; the DC OUC line (-15 dBm class)
+  is crossed only around 13-14 antennas per floor: density alone is
+  impractical, and the branch-loss/pad lever (about 11 dB in the taps) is the
+  design answer, as the owner's coupler observation stated.
+The loop curve is in ps_grid_density.json.

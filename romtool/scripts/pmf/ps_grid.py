@@ -111,6 +111,10 @@ def main():
                         "where the sheets are silent: grade D)")
     a.add_argument("--near-damaging-db", type=float, default=0.0,
                    help="BDA damaging input threshold (vendor spec placeholder)")
+    a.add_argument("--radio-offset-m", type=float, default=1.5,
+                   help="ceiling-to-hip vertical offset m: the near radio "
+                        "cannot stand closer to a ceiling antenna in 3D "
+                        "than this, whatever the planar plan allows")
     a.add_argument("--noise-rule", default="la")
     a.add_argument("--site-erp", type=float, required=True,
                    help="host site ERP dBm (AHJ input per site)")
@@ -317,6 +321,71 @@ def main():
 
     # critical areas: the floor model's zones if it carries them
     crit = None
+    # floor-plan-based per-antenna statistics: best-server cells clipped to
+    # the walkable floor, the union coverage, and the near test at the
+    # nearest point a person can actually stand (owner 2026-11-26)
+    raw_walls = floor.get("walls", [])
+    def floor_plan_stats(bid, ant_specs, eirps_map, eirp_ue):
+        b = bmap[bid]
+        walls = WallRays(raw_walls) if raw_walls else None
+        fullstats = _Grid(floor, 2, outline, crit_polys)
+        pt_area = (fullstats.step / ppm) ** 2 * 10.7639
+        per_i = []
+        for (aid, ax, ay) in ant_specs:
+            e = eirps_map[bid].get(aid)
+            if e is None:
+                per_i.append(None)
+                continue
+            per_i.append(ap_mod._contrib(fullstats, b, ax, ay, e[0], 0.0,
+                                         walls, dv=None))
+        n = len([p for p in per_i if p is not None])
+        cells = []
+        worst = {"d_m": None, "near_in_dbm": None}
+        union_pct = None
+        if n:
+            tot = [0.0] * fullstats.n
+            for p in per_i:
+                if p is None:
+                    continue
+                tot = [t + v for t, v in zip(tot, p)]
+            thr_mw = 10.0 ** (args.thr / 10.0)
+            cov_pts = sum(1 for v in tot if v >= thr_mw)
+            union_pct = 100.0 * cov_pts / fullstats.n
+            for i, p in enumerate(per_i):
+                if p is None:
+                    continue
+                own = sum(1 for j, v in enumerate(tot)
+                          if v >= thr_mw and p[j] == max(per_i[k][j]
+                                                         for k in range(len(per_i))
+                                                         if per_i[k] is not None))
+                cells.append({"antenna": ant_specs[i][0],
+                              "best_server_area_sqft": round(own * pt_area, 0)})
+            d_min = 1e9
+            for i, p in enumerate(per_i):
+                if p is None:
+                    continue
+                ax, ay = ant_specs[i][1], ant_specs[i][2]
+                j = min(range(fullstats.n),
+                        key=lambda k: (fullstats.xs[k] - ax) ** 2
+                        + (fullstats.ys[k] - ay) ** 2)
+                d_m = math.hypot(fullstats.xs[j] - ax, fullstats.ys[j] - ay) / ppm
+                if d_m < d_min:
+                    d_min = d_m
+            f_mhz = float((bands_cfg or {}).get(bid, {}).get("freq_mhz", 772.0))
+            # the near radio lives at hip height: the 3D distance never drops
+            # below the ceiling-to-hip offset, no matter how close the planar
+            # point is (owner 2026-11-26: the user can only stand in the
+            # walkable area, under a ceiling-mounted antenna)
+            d_3d = math.sqrt(d_min ** 2 + args.radio_offset_m ** 2)
+            air_db = fspl_db(f_mhz, max(d_3d, 0.5))
+            worst = {"d_planar_m": round(d_min, 2),
+                     "d_3d_m": round(d_3d, 2),
+                     "near_in_dbm": round(eirp_ue - air_db, 2)}
+        return {"union_cov_pct": (round(union_pct, 1) if union_pct is not None
+                                  else None),
+                "best_server_cells": cells,
+                "near_worst": worst}
+
     # the owner's sequential density loop (2026-11-26): minimal coverage plate
     # first, then add antennas until the near-far check passes: the per-floor
     # cell shrinks with each antenna (the under-antenna coupling drops
@@ -354,28 +423,32 @@ def main():
                                 for i in range(len(dpts))}
                           for bid in bands}
             ant_list = [("d%d" % i, x, y) for i, (x, y) in enumerate(dpts)]
+            share = 10.0 * math.log10(n)
             firsts = {}
             per_band_all = {}
             for bid in bands:
                 b = bmap[bid]
-                lv = _lin_from(full, {bid: b}, floor, [], {bid: dens_eirps[bid]},
-                               auto_ants=[(a0, x, y) for a0, x, y in ant_list])
-                vals = sorted(10.0 * math.log10(v) for v in lv[bid] if v > 0)
-                smin = vals[0] if vals else -200.0
-                smax = vals[-1] if vals else -200.0
+                fp = floor_plan_stats(bid, ant_list, dens_eirps, eirp_ue)
+                near_w = fp["near_worst"]
                 f = float((bands_cfg or {}).get(bid, {}).get("freq_mhz", 772.0))
-                near_in = eirp_ue - fspl_db(f, 1.5) - share
-                spread = smax - smin
+                near_in = near_w["near_in_dbm"] - share
                 near_pass = (near_in <= max_in - near_op
                              and near_in <= dmg_in - near_dmg)
-                cov_ok = bool(vals and smin >= args.thr)
-                per_band_all[bid] = {"min_dbm": round(smin, 1),
-                                     "max_dbm": round(smax, 1),
-                                     "spread_db": round(spread, 1),
+                areas = [c["best_server_area_sqft"] for c in fp["best_server_cells"]]
+                areas.sort()
+                union_pct = fp["union_cov_pct"] or 0.0
+                cov_ok = bool(union_pct >= args.cov)
+                per_band_all[bid] = {"union_cov_pct": union_pct,
+                                     "cells_min_sqft": areas[0] if areas else None,
+                                     "cells_median_sqft": (areas[len(areas)//2]
+                                                           if areas else None),
+                                     "cells_max_sqft": areas[-1] if areas else None,
+                                     "near_walk_dist_m": near_w["d_planar_m"],
+                                     "near_3d_dist_m": near_w["d_3d_m"],
                                      "near_input_at_bda_dbm": round(near_in, 2),
                                      "near_pass": bool(near_pass),
                                      "coverage_min_ok": cov_ok}
-                if near_pass and cov_ok and spread <= args.spread_target_db:
+                if near_pass and cov_ok:
                     firsts[bid] = n
             curve.append({"n": n, "bands": per_band_all})
         density_loop = {"solve": True, "spread_target_db": args.spread_target_db,
@@ -390,8 +463,8 @@ def main():
                         "curve": curve}
 
     # critical areas: the floor model's zones if it carries them
-    crit = None
     zones = floor.get("zones") or []
+    crit = None
     if zones:
         crit = []
         critpts = []

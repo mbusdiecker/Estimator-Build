@@ -551,27 +551,35 @@
  "density_loop": {
   "solve": true,
   "spread_target_db": 20.0,
-  "recommended_n": null,
-  "first_pass_by_band": {},
-  "equiv_branch_loss_db": null,
+  "recommended_n": 12,
+  "first_pass_by_band": {
+   "PS800": 12
+  },
+  "equiv_branch_loss_db": 10.8,
   "equivalence_note": "the density route builds the same dB of branch loss the taps or pad would; each doubling of antennas is about 3 dB",
   "curve": [
    {
     "n": 1,
     "bands": {
      "PS700": {
-      "min_dbm": -33.4,
-      "max_dbm": -2.7,
-      "spread_db": 30.8,
-      "near_input_at_bda_dbm": -3.92,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 11238.0,
+      "cells_median_sqft": 11238.0,
+      "cells_max_sqft": 11238.0,
+      "near_walk_dist_m": 0.35,
+      "near_3d_dist_m": 1.54,
+      "near_input_at_bda_dbm": -4.16,
       "near_pass": false,
       "coverage_min_ok": true
      },
      "PS800": {
-      "min_dbm": -34.2,
-      "max_dbm": -3.6,
-      "spread_db": 30.6,
-      "near_input_at_bda_dbm": -4.86,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 11238.0,
+      "cells_median_sqft": 11238.0,
+      "cells_max_sqft": 11238.0,
+      "near_walk_dist_m": 0.35,
+      "near_3d_dist_m": 1.54,
+      "near_input_at_bda_dbm": -5.1,
       "near_pass": false,
       "coverage_min_ok": true
      }
@@ -581,18 +589,24 @@
     "n": 2,
     "bands": {
      "PS700": {
-      "min_dbm": -32.4,
-      "max_dbm": -3.7,
-      "spread_db": 28.8,
-      "near_input_at_bda_dbm": -6.93,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 5619.0,
+      "cells_median_sqft": 5619.0,
+      "cells_max_sqft": 5619.0,
+      "near_walk_dist_m": 0.28,
+      "near_3d_dist_m": 1.53,
+      "near_input_at_bda_dbm": -7.08,
       "near_pass": false,
       "coverage_min_ok": true
      },
      "PS800": {
-      "min_dbm": -33.3,
-      "max_dbm": -4.6,
-      "spread_db": 28.7,
-      "near_input_at_bda_dbm": -7.87,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 5619.0,
+      "cells_median_sqft": 5619.0,
+      "cells_max_sqft": 5619.0,
+      "near_walk_dist_m": 0.28,
+      "near_3d_dist_m": 1.53,
+      "near_input_at_bda_dbm": -8.02,
       "near_pass": false,
       "coverage_min_ok": true
      }
@@ -602,18 +616,24 @@
     "n": 3,
     "bands": {
      "PS700": {
-      "min_dbm": -32.1,
-      "max_dbm": -4.9,
-      "spread_db": 27.2,
-      "near_input_at_bda_dbm": -8.7,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 3681.0,
+      "cells_median_sqft": 3681.0,
+      "cells_max_sqft": 3875.0,
+      "near_walk_dist_m": 0.26,
+      "near_3d_dist_m": 1.52,
+      "near_input_at_bda_dbm": -8.83,
       "near_pass": false,
       "coverage_min_ok": true
      },
      "PS800": {
-      "min_dbm": -32.9,
-      "max_dbm": -5.8,
-      "spread_db": 27.1,
-      "near_input_at_bda_dbm": -9.63,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 3681.0,
+      "cells_median_sqft": 3681.0,
+      "cells_max_sqft": 3875.0,
+      "near_walk_dist_m": 0.26,
+      "near_3d_dist_m": 1.52,
+      "near_input_at_bda_dbm": -9.76,
       "near_pass": false,
       "coverage_min_ok": true
      }
@@ -623,18 +643,24 @@
     "n": 4,
     "bands": {
      "PS700": {
-      "min_dbm": -32.5,
-      "max_dbm": -2.7,
-      "spread_db": 29.8,
-      "near_input_at_bda_dbm": -9.94,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 2723.0,
+      "cells_median_sqft": 2831.0,
+      "cells_max_sqft": 2895.0,
+      "near_walk_dist_m": 0.18,
+      "near_3d_dist_m": 1.51,
+      "near_input_at_bda_dbm": -10.0,
       "near_pass": false,
       "coverage_min_ok": true
      },
      "PS800": {
-      "min_dbm": -33.3,
-      "max_dbm": -3.7,
-      "spread_db": 29.7,
-      "near_input_at_bda_dbm": -10.88,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 2713.0,
+      "cells_median_sqft": 2831.0,
+      "cells_max_sqft": 2906.0,
+      "near_walk_dist_m": 0.18,
+      "near_3d_dist_m": 1.51,
+      "near_input_at_bda_dbm": -10.94,
       "near_pass": false,
       "coverage_min_ok": true
      }
@@ -644,18 +670,24 @@
     "n": 5,
     "bands": {
      "PS700": {
-      "min_dbm": -31.9,
-      "max_dbm": -9.6,
-      "spread_db": 22.3,
-      "near_input_at_bda_dbm": -10.91,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 2110.0,
+      "cells_median_sqft": 2260.0,
+      "cells_max_sqft": 2347.0,
+      "near_walk_dist_m": 0.35,
+      "near_3d_dist_m": 1.54,
+      "near_input_at_bda_dbm": -11.15,
       "near_pass": false,
       "coverage_min_ok": true
      },
      "PS800": {
-      "min_dbm": -32.7,
-      "max_dbm": -10.5,
-      "spread_db": 22.2,
-      "near_input_at_bda_dbm": -11.85,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 2110.0,
+      "cells_median_sqft": 2260.0,
+      "cells_max_sqft": 2347.0,
+      "near_walk_dist_m": 0.35,
+      "near_3d_dist_m": 1.54,
+      "near_input_at_bda_dbm": -12.09,
       "near_pass": false,
       "coverage_min_ok": true
      }
@@ -665,18 +697,24 @@
     "n": 6,
     "bands": {
      "PS700": {
-      "min_dbm": -32.1,
-      "max_dbm": -3.1,
-      "spread_db": 29.0,
-      "near_input_at_bda_dbm": -11.71,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1830.0,
+      "cells_median_sqft": 1851.0,
+      "cells_max_sqft": 2002.0,
+      "near_walk_dist_m": 0.15,
+      "near_3d_dist_m": 1.51,
+      "near_input_at_bda_dbm": -11.75,
       "near_pass": false,
       "coverage_min_ok": true
      },
      "PS800": {
-      "min_dbm": -32.9,
-      "max_dbm": -4.0,
-      "spread_db": 28.9,
-      "near_input_at_bda_dbm": -12.64,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1830.0,
+      "cells_median_sqft": 1851.0,
+      "cells_max_sqft": 2002.0,
+      "near_walk_dist_m": 0.15,
+      "near_3d_dist_m": 1.51,
+      "near_input_at_bda_dbm": -12.69,
       "near_pass": false,
       "coverage_min_ok": true
      }
@@ -686,18 +724,24 @@
     "n": 7,
     "bands": {
      "PS700": {
-      "min_dbm": -31.9,
-      "max_dbm": -8.2,
-      "spread_db": 23.7,
-      "near_input_at_bda_dbm": -12.38,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1550.0,
+      "cells_median_sqft": 1593.0,
+      "cells_max_sqft": 1744.0,
+      "near_walk_dist_m": 0.25,
+      "near_3d_dist_m": 1.52,
+      "near_input_at_bda_dbm": -12.5,
       "near_pass": false,
       "coverage_min_ok": true
      },
      "PS800": {
-      "min_dbm": -32.7,
-      "max_dbm": -9.1,
-      "spread_db": 23.6,
-      "near_input_at_bda_dbm": -13.31,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1550.0,
+      "cells_median_sqft": 1582.0,
+      "cells_max_sqft": 1744.0,
+      "near_walk_dist_m": 0.25,
+      "near_3d_dist_m": 1.52,
+      "near_input_at_bda_dbm": -13.43,
       "near_pass": false,
       "coverage_min_ok": true
      }
@@ -707,18 +751,24 @@
     "n": 8,
     "bands": {
      "PS700": {
-      "min_dbm": -31.9,
-      "max_dbm": -3.7,
-      "spread_db": 28.2,
-      "near_input_at_bda_dbm": -12.96,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1356.0,
+      "cells_median_sqft": 1432.0,
+      "cells_max_sqft": 1475.0,
+      "near_walk_dist_m": 0.14,
+      "near_3d_dist_m": 1.51,
+      "near_input_at_bda_dbm": -12.99,
       "near_pass": false,
       "coverage_min_ok": true
      },
      "PS800": {
-      "min_dbm": -32.7,
-      "max_dbm": -4.6,
-      "spread_db": 28.1,
-      "near_input_at_bda_dbm": -13.89,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1356.0,
+      "cells_median_sqft": 1432.0,
+      "cells_max_sqft": 1475.0,
+      "near_walk_dist_m": 0.14,
+      "near_3d_dist_m": 1.51,
+      "near_input_at_bda_dbm": -13.93,
       "near_pass": false,
       "coverage_min_ok": true
      }
@@ -728,18 +778,24 @@
     "n": 9,
     "bands": {
      "PS700": {
-      "min_dbm": -32.0,
-      "max_dbm": -2.7,
-      "spread_db": 29.3,
-      "near_input_at_bda_dbm": -13.47,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1195.0,
+      "cells_median_sqft": 1238.0,
+      "cells_max_sqft": 1335.0,
+      "near_walk_dist_m": 0.12,
+      "near_3d_dist_m": 1.5,
+      "near_input_at_bda_dbm": -13.49,
       "near_pass": false,
       "coverage_min_ok": true
      },
      "PS800": {
-      "min_dbm": -32.9,
-      "max_dbm": -3.7,
-      "spread_db": 29.2,
-      "near_input_at_bda_dbm": -14.4,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1195.0,
+      "cells_median_sqft": 1238.0,
+      "cells_max_sqft": 1345.0,
+      "near_walk_dist_m": 0.12,
+      "near_3d_dist_m": 1.5,
+      "near_input_at_bda_dbm": -14.43,
       "near_pass": false,
       "coverage_min_ok": true
      }
@@ -749,19 +805,25 @@
     "n": 10,
     "bands": {
      "PS700": {
-      "min_dbm": -31.7,
-      "max_dbm": -10.6,
-      "spread_db": 21.1,
-      "near_input_at_bda_dbm": -13.92,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1066.0,
+      "cells_median_sqft": 1163.0,
+      "cells_max_sqft": 1173.0,
+      "near_walk_dist_m": 0.28,
+      "near_3d_dist_m": 1.53,
+      "near_input_at_bda_dbm": -14.07,
       "near_pass": false,
       "coverage_min_ok": true
      },
      "PS800": {
-      "min_dbm": -32.5,
-      "max_dbm": -11.5,
-      "spread_db": 21.0,
-      "near_input_at_bda_dbm": -14.86,
-      "near_pass": false,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1066.0,
+      "cells_median_sqft": 1163.0,
+      "cells_max_sqft": 1173.0,
+      "near_walk_dist_m": 0.28,
+      "near_3d_dist_m": 1.53,
+      "near_input_at_bda_dbm": -15.01,
+      "near_pass": true,
       "coverage_min_ok": true
      }
     }
@@ -770,18 +832,24 @@
     "n": 11,
     "bands": {
      "PS700": {
-      "min_dbm": -31.9,
-      "max_dbm": -10.1,
-      "spread_db": 21.8,
-      "near_input_at_bda_dbm": -14.34,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 936.0,
+      "cells_median_sqft": 1012.0,
+      "cells_max_sqft": 1152.0,
+      "near_walk_dist_m": 0.25,
+      "near_3d_dist_m": 1.52,
+      "near_input_at_bda_dbm": -14.45,
       "near_pass": false,
       "coverage_min_ok": true
      },
      "PS800": {
-      "min_dbm": -32.7,
-      "max_dbm": -11.0,
-      "spread_db": 21.7,
-      "near_input_at_bda_dbm": -15.28,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 936.0,
+      "cells_median_sqft": 1012.0,
+      "cells_max_sqft": 1152.0,
+      "near_walk_dist_m": 0.25,
+      "near_3d_dist_m": 1.52,
+      "near_input_at_bda_dbm": -15.39,
       "near_pass": true,
       "coverage_min_ok": true
      }
@@ -791,18 +859,24 @@
     "n": 12,
     "bands": {
      "PS700": {
-      "min_dbm": -31.8,
-      "max_dbm": -2.9,
-      "spread_db": 28.9,
-      "near_input_at_bda_dbm": -14.72,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 904.0,
+      "cells_median_sqft": 958.0,
+      "cells_max_sqft": 980.0,
+      "near_walk_dist_m": 0.1,
+      "near_3d_dist_m": 1.5,
+      "near_input_at_bda_dbm": -14.74,
       "near_pass": false,
       "coverage_min_ok": true
      },
      "PS800": {
-      "min_dbm": -32.7,
-      "max_dbm": -3.8,
-      "spread_db": 28.8,
-      "near_input_at_bda_dbm": -15.65,
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 904.0,
+      "cells_median_sqft": 958.0,
+      "cells_max_sqft": 980.0,
+      "near_walk_dist_m": 0.1,
+      "near_3d_dist_m": 1.5,
+      "near_input_at_bda_dbm": -15.67,
       "near_pass": true,
       "coverage_min_ok": true
      }
