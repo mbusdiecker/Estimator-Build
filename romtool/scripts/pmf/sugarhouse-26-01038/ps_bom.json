@@ -1,0 +1,358 @@
+{
+ "basis": "PS BOM export for the budget tool: the kit lines from the package expansion at the design remote count plus the design plate lines, rebalanced equally per remote. Counts and config only; pricing is day 3 on the fresh ask.",
+ "floors": 45,
+ "channels": 32,
+ "ant_gain_dbi": 5.0,
+ "groups": [
+  {
+   "group": "FiRe-78-8-U1 + ADXV-R-3378P-U2 700 PS",
+   "oem": "ADRF",
+   "pkg": "adrf_fire_erces",
+   "freq": "700 PS",
+   "kit_lines": [
+    {
+     "item": "Digital dual-band 700/800 PS fiber repeater, channelized, up to 8 remotes, UL 2524, P25 Phase 2",
+     "manufacturer": "ADRF",
+     "model": "FiRe-78-8-U1",
+     "qty": 1,
+     "unit": "ea",
+     "role": "head_end"
+    },
+    {
+     "item": "PSR-ANN series annunciator for the fire command center (NFPA 1225 18.14)",
+     "manufacturer": "ADRF",
+     "model": "PSR-ANN-U2",
+     "qty": 1,
+     "unit": "ea",
+     "role": "annunciator"
+    },
+    {
+     "item": "Wall battery backup unit 24 V, 120 Ah (2S)",
+     "manufacturer": "ADRF",
+     "model": "ADRF-BBU-W-120-2S",
+     "qty": 2,
+     "unit": "ea",
+     "role": "battery_bbu_120ah"
+    },
+    {
+     "item": "Low-band high isolation donor (617-960 MHz)",
+     "manufacturer": "ADRF",
+     "model": "AD-PA-617-960-D",
+     "qty": 1,
+     "unit": "ea",
+     "role": "donor_antenna"
+    },
+    {
+     "item": "125-1000 MHz lightning arrestor (the Melville donor side)",
+     "manufacturer": "Polyphaser",
+     "model": "IS-50NX-C2",
+     "qty": 1,
+     "unit": "ea",
+     "role": "arrestor_ps"
+    },
+    {
+     "item": "1/2 in plenum riser low-loss coax (survivability per NFPA 1225 18.12.3)",
+     "manufacturer": "RFS",
+     "model": "ICA12-50JPLLR",
+     "qty": 1650,
+     "unit": "ft",
+     "role": "coax_plenum_ft"
+    },
+    {
+     "item": "Crossband coupler (low 698 to 940 MHz, high 1710 to 2700 MHz), inserts the PS band group onto the shared plate",
+     "manufacturer": "ADRF",
+     "model": "ADRF-CBC-700-2600-4310",
+     "qty": 3,
+     "unit": "ea",
+     "role": "convergence_combiner"
+    },
+    {
+     "item": "2 W 700/800 IP66 PS remote module, UL 2524 (PS package family)",
+     "manufacturer": "ADRF",
+     "model": "ADXV-R-3378P-U2",
+     "qty": 1,
+     "unit": "ea",
+     "role": "remote_unit"
+    }
+   ],
+   "plate_lines": [
+    {
+     "item": "service antennas (design plate 4 per floor)",
+     "qty": 180,
+     "unit": "ea",
+     "role": "plate_service_antennas"
+    },
+    {
+     "item": "tap plates / splitter devices (1/2 in trunk)",
+     "qty": 179,
+     "unit": "ea",
+     "role": "plate_splitters"
+    },
+    {
+     "item": "riser coax 1/2 in trunk and taps (per the run geometry; the package line carries the survivable plenum run)",
+     "qty": "per design",
+     "unit": "ft",
+     "role": "plate_riser_coax"
+    }
+   ]
+  },
+  {
+   "group": "PSR-VU-9537-X VHF 136-174",
+   "oem": "ADRF",
+   "pkg": "adrf_psr_vu",
+   "freq": "VHF 136-174",
+   "kit_lines": [
+    {
+     "item": "VHF/UHF channelized digital repeater: VHF 136-174 MHz and UHF 380-512 MHz, up to 1 wideband and 8 non-contiguous narrow bands per band, P25 Phase 1/2 and analog, gain VHF 85 dB, UHF 85 dB (APCO25) / 95 dB (LMR450), composite output VHF 28 dBm / UHF 37 dBm downlink and VHF 24 / UHF 27 dBm uplink, NEMA 4 indoor or outdoor, oscillation detection with automatic shutdown, UL 2524 second edition (MET)",
+     "manufacturer": "ADRF",
+     "model": "PSR-VU-9537-X",
+     "qty": 1,
+     "unit": "ea",
+     "role": "head_end"
+    },
+    {
+     "item": "VHF band pass filter, 138-174 MHz, insertion loss 2.0 dB max, 30 W, SMA",
+     "manufacturer": "ADRF",
+     "model": "ADRF-BPF-V-1",
+     "qty": 1,
+     "unit": "ea",
+     "role": "bpf_vhf"
+    },
+    {
+     "item": "UHF band pass filter, 380-512 MHz, insertion loss 1.0 dB max, 30 W, SMA",
+     "manufacturer": "ADRF",
+     "model": "ADRF-BPF-U-1",
+     "qty": 1,
+     "unit": "ea",
+     "role": "bpf_uhf"
+    },
+    {
+     "item": "PSR annunciator (included in the UL 2524 comprehensive listing)",
+     "manufacturer": "ADRF",
+     "model": "PSR-ANN series",
+     "qty": 1,
+     "unit": "ea",
+     "role": "annunciator"
+    },
+    {
+     "item": "Battery backup module, 120 Ah class, UL 2524 comprehensive listing member",
+     "manufacturer": "ADRF",
+     "model": "ADRF-BBx 120 Ah (24/48 V class)",
+     "qty": 2,
+     "unit": "ea",
+     "role": "battery_bbu_120ah"
+    },
+    {
+     "item": "Donor antenna per the PS frequency plan (VHF/UHF); sheets per the vendor at the ROM step",
+     "manufacturer": "ADRF",
+     "model": "VHF/UHF PS donor per the jurisdiction frequency plan",
+     "qty": 1,
+     "unit": "ea",
+     "role": "donor_antenna"
+    },
+    {
+     "item": "Lightning protector rated for the VHF/UHF donor feed (IS-50NX-C2 covers 125-1000 MHz; VHF/UHF guard band per the filter sheets)",
+     "manufacturer": "Polyphaser",
+     "model": "IS-50NX-C2 class",
+     "qty": 1,
+     "unit": "ea",
+     "role": "arrestor_ps"
+    },
+    {
+     "item": "Donor antenna per the PS frequency plan (VHF/UHF); sheets per the vendor at the ROM step",
+     "manufacturer": "ADRF",
+     "model": "VHF/UHF PS donor per the jurisdiction frequency plan",
+     "qty": 1,
+     "unit": "ea",
+     "role": "donor_antenna"
+    },
+    {
+     "item": "Lightning protector rated for the VHF/UHF donor feed (IS-50NX-C2 covers 125-1000 MHz; VHF/UHF guard band per the filter sheets)",
+     "manufacturer": "Polyphaser",
+     "model": "IS-50NX-C2 class",
+     "qty": 1,
+     "unit": "ea",
+     "role": "arrestor_ps"
+    }
+   ],
+   "plate_lines": [
+    {
+     "item": "service antennas (design plate 4 per floor)",
+     "qty": 180,
+     "unit": "ea",
+     "role": "plate_service_antennas"
+    },
+    {
+     "item": "tap plates / splitter devices (1/2 in trunk)",
+     "qty": 178,
+     "unit": "ea",
+     "role": "plate_splitters"
+    },
+    {
+     "item": "riser coax 1/2 in trunk and taps (per the run geometry; the package line carries the survivable plenum run)",
+     "qty": "per design",
+     "unit": "ft",
+     "role": "plate_riser_coax"
+    },
+    {
+     "item": "REBALANCE PER REMOTE (equal split): antennas [90, 90], splitters [89, 89], floors [23, 22]",
+     "qty": 2,
+     "unit": "group",
+     "role": "rebalance"
+    }
+   ]
+  },
+  {
+   "group": "CS45-734-834-A0 700 PS",
+   "oem": "Westell",
+   "pkg": "westell_cs45_ps",
+   "freq": "700 PS",
+   "kit_lines": [
+    {
+     "item": "ProtectLink PS BDA, 700/800 MHz dual-band, 2.5 W per band, 90 dB DL / 80 dB UL gain, Class A (12.5-75 kHz, 96 channels in blocks of 8) or Class B (150 kHz-10 MHz), FirstNet filter profile, oscillation management with isolation test, NFPA/UL 2524 alarms",
+     "manufacturer": "Westell",
+     "model": "CS45-734-834-A0",
+     "qty": 1,
+     "unit": "ea",
+     "role": "master_unit"
+    },
+    {
+     "item": "Wall-mountable battery cabinet",
+     "manufacturer": "Westell",
+     "model": "CS19-BBU-005",
+     "qty": 1,
+     "unit": "ea",
+     "role": "battery_cabinet"
+    },
+    {
+     "item": "145 Ah SLA 12 V battery (one per 12 h at the 123 W dual-band draw; two for 24 h)",
+     "manufacturer": "Westell",
+     "model": "CS19-BAT145AH-SLA",
+     "qty": 1,
+     "unit": "ea",
+     "role": "battery_12h"
+    },
+    {
+     "item": "Crossband coupler (low 698 to 940 MHz, high 1710 to 2700 MHz), inserts the PS band group onto the shared plate",
+     "manufacturer": "ADRF",
+     "model": "ADRF-CBC-700-2600-4310",
+     "qty": 3,
+     "unit": "ea",
+     "role": "convergence_combiner"
+    },
+    {
+     "item": "Low-band high isolation donor antenna (PS donor basis; the Donor antenna per the ROM look)",
+     "manufacturer": "ADRF",
+     "model": "AD-PA-617-960-D",
+     "qty": 3,
+     "unit": "ea",
+     "role": "donor_antenna"
+    },
+    {
+     "item": "125-1000 MHz lightning arrestor per the ROM donor precedent",
+     "manufacturer": "Polyphaser",
+     "model": "IS-50NX-C2",
+     "qty": 3,
+     "unit": "ea",
+     "role": "arrestor_ps"
+    }
+   ],
+   "plate_lines": [
+    {
+     "item": "service antennas (design plate 4 per floor)",
+     "qty": 180,
+     "unit": "ea",
+     "role": "plate_service_antennas"
+    },
+    {
+     "item": "tap plates / splitter devices (1/2 in trunk)",
+     "qty": 179,
+     "unit": "ea",
+     "role": "plate_splitters"
+    },
+    {
+     "item": "riser coax 1/2 in trunk and taps (per the run geometry; the package line carries the survivable plenum run)",
+     "qty": "per design",
+     "unit": "ft",
+     "role": "plate_riser_coax"
+    }
+   ]
+  },
+  {
+   "group": "ComFlex NG V3 PS 700 PS",
+   "oem": "Comba",
+   "pkg": "comba_ps_v3",
+   "freq": "700 PS",
+   "kit_lines": [
+    {
+     "item": "V3 PS BDA or Master Unit: dual-band 700/800 public safety (US/Canada) with the LTE Band 14 option, single band up to 64 channels per band or 96 shared on dual band, Class A or B, DL power 27 dBm or 33 dBm per band, max system gain 90/90 dB, up to 4 FOUs and 32 remote units per Master, UL 2524 alarm configuration, UL50E Type 4 / NEMA 4 enclosure, HCAI listed",
+     "manufacturer": "Comba",
+     "model": "RxxxV3-PS-BDA/MU",
+     "qty": 1,
+     "unit": "ea",
+     "role": "head_end"
+    },
+    {
+     "item": "PS battery backup unit, 60 Ah LiFePO4 at 51.2 V nominal",
+     "manufacturer": "Comba",
+     "model": "Public-Safety-BBU-V2 (60 Ah LiFePO4)",
+     "qty": 1,
+     "unit": "ea",
+     "role": "battery_bbu_60ah"
+    },
+    {
+     "item": "Crossband coupler (low 698 to 940 MHz, high 1710 to 2700 MHz), inserts the PS band group onto the shared plate",
+     "manufacturer": "ADRF",
+     "model": "ADRF-CBC-700-2600-4310",
+     "qty": 3,
+     "unit": "ea",
+     "role": "convergence_combiner"
+    },
+    {
+     "item": "V3 PS remote unit (fiber), supports P25 P1/P2 and digital and conventional analog simultaneously",
+     "manufacturer": "Comba",
+     "model": "V3 PS RU/MU remote class",
+     "qty": 1,
+     "unit": "ea",
+     "role": "remote_unit"
+    },
+    {
+     "item": "Low-band high isolation donor antenna (PS donor basis)",
+     "manufacturer": "ADRF",
+     "model": "AD-PA-617-960-D",
+     "qty": 3,
+     "unit": "ea",
+     "role": "donor_antenna"
+    },
+    {
+     "item": "125-1000 MHz lightning arrestor per the ROM donor precedent",
+     "manufacturer": "Polyphaser",
+     "model": "IS-50NX-C2",
+     "qty": 3,
+     "unit": "ea",
+     "role": "arrestor_ps"
+    }
+   ],
+   "plate_lines": [
+    {
+     "item": "service antennas (design plate 4 per floor)",
+     "qty": 180,
+     "unit": "ea",
+     "role": "plate_service_antennas"
+    },
+    {
+     "item": "tap plates / splitter devices (1/2 in trunk)",
+     "qty": 179,
+     "unit": "ea",
+     "role": "plate_splitters"
+    },
+    {
+     "item": "riser coax 1/2 in trunk and taps (per the run geometry; the package line carries the survivable plenum run)",
+     "qty": "per design",
+     "unit": "ft",
+     "role": "plate_riser_coax"
+    }
+   ]
+  }
+ ]
+}

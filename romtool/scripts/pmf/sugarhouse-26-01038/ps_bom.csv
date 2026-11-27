@@ -1,0 +1,43 @@
+group,manufacturer,model,item,qty,unit,note
+FiRe-78-8-U1 + ADXV-R-3378P-U2 700 PS,ADRF,FiRe-78-8-U1,"Digital dual-band 700/800 PS fiber repeater, channelized, up to 8 remotes, UL 2524, P25 Phase 2",1,ea,oem.adrf_fire_erces.head_end
+FiRe-78-8-U1 + ADXV-R-3378P-U2 700 PS,ADRF,PSR-ANN-U2,PSR-ANN series annunciator for the fire command center (NFPA 1225 18.14),1,ea,oem.adrf_fire_erces.annunciator
+FiRe-78-8-U1 + ADXV-R-3378P-U2 700 PS,ADRF,ADRF-BBU-W-120-2S,"Wall battery backup unit 24 V, 120 Ah (2S)",2,ea,oem.adrf_fire_erces.battery_bbu_120ah
+FiRe-78-8-U1 + ADXV-R-3378P-U2 700 PS,ADRF,AD-PA-617-960-D,Low-band high isolation donor (617-960 MHz),1,ea,oem.adrf_fire_erces.donor_antenna
+FiRe-78-8-U1 + ADXV-R-3378P-U2 700 PS,Polyphaser,IS-50NX-C2,125-1000 MHz lightning arrestor (the Melville donor side),1,ea,oem.adrf_fire_erces.arrestor_ps
+FiRe-78-8-U1 + ADXV-R-3378P-U2 700 PS,RFS,ICA12-50JPLLR,1/2 in plenum riser low-loss coax (survivability per NFPA 1225 18.12.3),1650,ft,oem.adrf_fire_erces.coax_plenum_ft
+FiRe-78-8-U1 + ADXV-R-3378P-U2 700 PS,ADRF,ADRF-CBC-700-2600-4310,"Crossband coupler (low 698 to 940 MHz, high 1710 to 2700 MHz), inserts the PS band group onto the shared plate",3,ea,oem.adrf_fire_erces.convergence_combiner
+FiRe-78-8-U1 + ADXV-R-3378P-U2 700 PS,ADRF,ADXV-R-3378P-U2,"2 W 700/800 IP66 PS remote module, UL 2524 (PS package family)",1,ea,oem.adrf_fire_erces.remote_unit
+FiRe-78-8-U1 + ADXV-R-3378P-U2 700 PS,,,service antennas (design plate 4 per floor),180,ea,plate_service_antennas
+FiRe-78-8-U1 + ADXV-R-3378P-U2 700 PS,,,tap plates / splitter devices (1/2 in trunk),179,ea,plate_splitters
+FiRe-78-8-U1 + ADXV-R-3378P-U2 700 PS,,,riser coax 1/2 in trunk and taps (per the run geometry; the package line carries the survivable plenum run),per design,ft,plate_riser_coax
+PSR-VU-9537-X VHF 136-174,ADRF,PSR-VU-9537-X,"VHF/UHF channelized digital repeater: VHF 136-174 MHz and UHF 380-512 MHz, up to 1 wideband and 8 non-contiguous narrow bands per band, P25 Phase 1/2 and analog, gain VHF 85 dB, UHF 85 dB (APCO25) / 95 dB (LMR450), composite output VHF 28 dBm / UHF 37 dBm downlink and VHF 24 / UHF 27 dBm uplink, NEMA 4 indoor or outdoor, oscillation detection with automatic shutdown, UL 2524 second edition (MET)",1,ea,oem.adrf_psr_vu.head_end
+PSR-VU-9537-X VHF 136-174,ADRF,ADRF-BPF-V-1,"VHF band pass filter, 138-174 MHz, insertion loss 2.0 dB max, 30 W, SMA",1,ea,oem.adrf_psr_vu.bpf_vhf
+PSR-VU-9537-X VHF 136-174,ADRF,ADRF-BPF-U-1,"UHF band pass filter, 380-512 MHz, insertion loss 1.0 dB max, 30 W, SMA",1,ea,oem.adrf_psr_vu.bpf_uhf
+PSR-VU-9537-X VHF 136-174,ADRF,PSR-ANN series,PSR annunciator (included in the UL 2524 comprehensive listing),1,ea,oem.adrf_psr_vu.annunciator
+PSR-VU-9537-X VHF 136-174,ADRF,ADRF-BBx 120 Ah (24/48 V class),"Battery backup module, 120 Ah class, UL 2524 comprehensive listing member",2,ea,oem.adrf_psr_vu.battery_bbu_120ah
+PSR-VU-9537-X VHF 136-174,ADRF,VHF/UHF PS donor per the jurisdiction frequency plan,Donor antenna per the PS frequency plan (VHF/UHF); sheets per the vendor at the ROM step,1,ea,oem.adrf_psr_vu.donor_antenna
+PSR-VU-9537-X VHF 136-174,Polyphaser,IS-50NX-C2 class,Lightning protector rated for the VHF/UHF donor feed (IS-50NX-C2 covers 125-1000 MHz; VHF/UHF guard band per the filter sheets),1,ea,oem.adrf_psr_vu.arrestor_ps
+PSR-VU-9537-X VHF 136-174,ADRF,VHF/UHF PS donor per the jurisdiction frequency plan,Donor antenna per the PS frequency plan (VHF/UHF); sheets per the vendor at the ROM step,1,ea,oem.adrf_psr_vu.donor_antenna
+PSR-VU-9537-X VHF 136-174,Polyphaser,IS-50NX-C2 class,Lightning protector rated for the VHF/UHF donor feed (IS-50NX-C2 covers 125-1000 MHz; VHF/UHF guard band per the filter sheets),1,ea,oem.adrf_psr_vu.arrestor_ps
+PSR-VU-9537-X VHF 136-174,,,service antennas (design plate 4 per floor),180,ea,plate_service_antennas
+PSR-VU-9537-X VHF 136-174,,,tap plates / splitter devices (1/2 in trunk),178,ea,plate_splitters
+PSR-VU-9537-X VHF 136-174,,,riser coax 1/2 in trunk and taps (per the run geometry; the package line carries the survivable plenum run),per design,ft,plate_riser_coax
+PSR-VU-9537-X VHF 136-174,,,"REBALANCE PER REMOTE (equal split): antennas [90, 90], splitters [89, 89], floors [23, 22]",2,group,rebalance
+CS45-734-834-A0 700 PS,Westell,CS45-734-834-A0,"ProtectLink PS BDA, 700/800 MHz dual-band, 2.5 W per band, 90 dB DL / 80 dB UL gain, Class A (12.5-75 kHz, 96 channels in blocks of 8) or Class B (150 kHz-10 MHz), FirstNet filter profile, oscillation management with isolation test, NFPA/UL 2524 alarms",1,ea,oem.westell_cs45_ps.master_unit
+CS45-734-834-A0 700 PS,Westell,CS19-BBU-005,Wall-mountable battery cabinet,1,ea,oem.westell_cs45_ps.battery_cabinet
+CS45-734-834-A0 700 PS,Westell,CS19-BAT145AH-SLA,145 Ah SLA 12 V battery (one per 12 h at the 123 W dual-band draw; two for 24 h),1,ea,oem.westell_cs45_ps.battery_12h
+CS45-734-834-A0 700 PS,ADRF,ADRF-CBC-700-2600-4310,"Crossband coupler (low 698 to 940 MHz, high 1710 to 2700 MHz), inserts the PS band group onto the shared plate",3,ea,oem.westell_cs45_ps.convergence_combiner
+CS45-734-834-A0 700 PS,ADRF,AD-PA-617-960-D,Low-band high isolation donor antenna (PS donor basis; the Donor antenna per the ROM look),3,ea,oem.westell_cs45_ps.donor_antenna
+CS45-734-834-A0 700 PS,Polyphaser,IS-50NX-C2,125-1000 MHz lightning arrestor per the ROM donor precedent,3,ea,oem.westell_cs45_ps.arrestor_ps
+CS45-734-834-A0 700 PS,,,service antennas (design plate 4 per floor),180,ea,plate_service_antennas
+CS45-734-834-A0 700 PS,,,tap plates / splitter devices (1/2 in trunk),179,ea,plate_splitters
+CS45-734-834-A0 700 PS,,,riser coax 1/2 in trunk and taps (per the run geometry; the package line carries the survivable plenum run),per design,ft,plate_riser_coax
+ComFlex NG V3 PS 700 PS,Comba,RxxxV3-PS-BDA/MU,"V3 PS BDA or Master Unit: dual-band 700/800 public safety (US/Canada) with the LTE Band 14 option, single band up to 64 channels per band or 96 shared on dual band, Class A or B, DL power 27 dBm or 33 dBm per band, max system gain 90/90 dB, up to 4 FOUs and 32 remote units per Master, UL 2524 alarm configuration, UL50E Type 4 / NEMA 4 enclosure, HCAI listed",1,ea,oem.comba_ps_v3.head_end
+ComFlex NG V3 PS 700 PS,Comba,Public-Safety-BBU-V2 (60 Ah LiFePO4),"PS battery backup unit, 60 Ah LiFePO4 at 51.2 V nominal",1,ea,oem.comba_ps_v3.battery_bbu_60ah
+ComFlex NG V3 PS 700 PS,ADRF,ADRF-CBC-700-2600-4310,"Crossband coupler (low 698 to 940 MHz, high 1710 to 2700 MHz), inserts the PS band group onto the shared plate",3,ea,oem.comba_ps_v3.convergence_combiner
+ComFlex NG V3 PS 700 PS,Comba,V3 PS RU/MU remote class,"V3 PS remote unit (fiber), supports P25 P1/P2 and digital and conventional analog simultaneously",1,ea,oem.comba_ps_v3.remote_unit
+ComFlex NG V3 PS 700 PS,ADRF,AD-PA-617-960-D,Low-band high isolation donor antenna (PS donor basis),3,ea,oem.comba_ps_v3.donor_antenna
+ComFlex NG V3 PS 700 PS,Polyphaser,IS-50NX-C2,125-1000 MHz lightning arrestor per the ROM donor precedent,3,ea,oem.comba_ps_v3.arrestor_ps
+ComFlex NG V3 PS 700 PS,,,service antennas (design plate 4 per floor),180,ea,plate_service_antennas
+ComFlex NG V3 PS 700 PS,,,tap plates / splitter devices (1/2 in trunk),179,ea,plate_splitters
+ComFlex NG V3 PS 700 PS,,,riser coax 1/2 in trunk and taps (per the run geometry; the package line carries the survivable plenum run),per design,ft,plate_riser_coax

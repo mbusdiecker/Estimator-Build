@@ -18,17 +18,27 @@ Neither gate changes the runs while off; they report only.
 import argparse
 import json
 import math
+import sys
 
 SPECS = [
-    ("ps_fire700", "ADRF", "FiRe-78-8-U1 + ADXV-R-3378P-U2", "700 PS", 33.0, {"oem": "adrf_fire"}),
-    ("ps_fire800", "ADRF", "FiRe-78-8-U1 + ADXV-R-3378P-U2", "800 PS", 33.0, {"oem": "adrf_fire"}),
-    ("ps_fire_b14", "ADRF", "FiRe-78-8-U1 (FirstNet)", "B14", 30.0, {"oem": "adrf_fire"}),
-    ("ps_vu_vhf", "ADRF", "PSR-VU-9537-X", "VHF 136-174", 28.0, {"oem": "adrf_vu"}),
-    ("ps_vu_uhf", "ADRF", "PSR-VU-9537-X", "UHF 380-512", 37.0, {"oem": "adrf_vu"}),
-    ("ps_westell700", "Westell", "CS45-734-834-A0", "700 PS", 34.0, {"oem": "westell"}),
-    ("ps_westell800", "Westell", "CS45-734-834-A0", "800 PS", 34.0, {"oem": "westell"}),
-    ("ps_comba700", "Comba", "ComFlex NG V3 PS", "700 PS", 33.0, {"oem": "comba"}),
-    ("ps_comba800", "Comba", "ComFlex NG V3 PS", "800 PS", 33.0, {"oem": "comba"}),
+    ("ps_fire700", "ADRF", "FiRe-78-8-U1 + ADXV-R-3378P-U2", "700 PS", 33.0,
+     {"oem": "adrf_fire", "pkg": "adrf_fire_erces"}),
+    ("ps_fire800", "ADRF", "FiRe-78-8-U1 + ADXV-R-3378P-U2", "800 PS", 33.0,
+     {"oem": "adrf_fire", "pkg": "adrf_fire_erces", "share_of": "ps_fire700"}),
+    ("ps_fire_b14", "ADRF", "FiRe-78-8-U1 (FirstNet)", "FirstNet B14", 30.0,
+     {"oem": "adrf_fire", "pkg": "adrf_fire_erces", "share_of": "ps_fire700"}),
+    ("ps_vu_vhf", "ADRF", "PSR-VU-9537-X", "VHF 136-174", 28.0,
+     {"oem": "adrf_vu", "pkg": "adrf_psr_vu"}),
+    ("ps_vu_uhf", "ADRF", "PSR-VU-9537-X", "UHF 380-512", 37.0,
+     {"oem": "adrf_vu", "pkg": "adrf_psr_vu", "share_of": "ps_vu_vhf"}),
+    ("ps_westell700", "Westell", "CS45-734-834-A0", "700 PS", 34.0,
+     {"oem": "westell", "pkg": "westell_cs45_ps"}),
+    ("ps_westell800", "Westell", "CS45-734-834-A0", "800 PS", 34.0,
+     {"oem": "westell", "pkg": "westell_cs45_ps", "share_of": "ps_westell700"}),
+    ("ps_comba700", "Comba", "ComFlex NG V3 PS", "700 PS", 33.0,
+     {"oem": "comba", "pkg": "comba_ps_v3"}),
+    ("ps_comba800", "Comba", "ComFlex NG V3 PS", "800 PS", 33.0,
+     {"oem": "comba", "pkg": "comba_ps_v3", "share_of": "ps_comba700"}),
 ]
 
 def even_split(total, parts):
@@ -53,6 +63,16 @@ def main():
                     help="apply the near-test density from the ps_ul solve "
                          "(the DC OUC margins when that profile ran): the "
                          "plate takes max(coverage N, density N)")
+    ap.add_argument("--bom-out", default=None,
+                    help="write the flat BOM JSON (the kit lines from the "
+                         "package expansion plus the design plate lines, "
+                         "rebalance included)")
+    ap.add_argument("--bom-csv", default=None, help="write the flat BOM CSV")
+    ap.add_argument("--combine", default=None,
+                    help="mash another ps_rom_results.json into this one "
+                         "(the floors-split approach: run the chosen floor "
+                         "groups as separate designs, then combine; the "
+                         "remote and antenna counts add)")
     ap.add_argument("--caps-on", action="store_true",
                     help="apply the gates to the reported design numbers "
                          "(default: report-only)")
@@ -264,6 +284,137 @@ def main():
            "architecture_sbc": arch, "converged_order_requirement": converged_note,
            "rom": rows, "uplink": ul, "grid": grid, "compliance": comp,
            "intermod": imd, "caps": caps_block}
+    # BOM export (owner 2026-11-26): the kit lines from the package expansion
+    # plus the design plate lines, with the rebalance split per remote. Built
+    # for the budget tool to pull; pricing is day 3 on the fresh ask.
+    if args.bom_out or args.bom_csv:
+        sys.path.insert(0, "..")
+        from romtool.oem import expand_oem, load_oem_packages
+        pkgs = load_oem_packages()
+        groups = []
+        seen_pkg = set()
+        csv_rows = []
+        rmap = {r["prefix"]: r for r in rows}
+        for prefix, oem, model, freq, port, meta in SPECS:
+            if prefix not in rmap:
+                continue
+            if meta.get("share_of"):
+                continue  # the shared-band rows ride the primary deployment
+            row = rmap[prefix]
+            plate = row["plate"]
+            remotes = plate["remotes_bldg"]
+            pkg_key = meta["pkg"]
+            if pkg_key in seen_pkg:
+                continue
+            seen_pkg.add(pkg_key)
+            exp_lines = []
+            try:
+                exp, _ov, _nt = expand_oem(
+                    [{"role": "oem.remote", "qty": remotes}], pkg_key, None,
+                    None, 58000, autonomy_hours=12, ps_mode=True)
+                parts = (pkgs["packages"][pkg_key] or {}).get("parts", {})
+                for l in exp:
+                    info = parts.get(l.get("oem_role") or "", {})
+                    exp_lines.append({
+                        "item": l.get("item") or info.get("description", ""),
+                        "manufacturer": info.get("manufacturer", ""),
+                        "model": info.get("model", ""),
+                        "qty": l.get("qty"), "unit": l.get("unit", "ea"),
+                        "role": l.get("oem_role", "")})
+                    csv_rows.append({
+                        "group": "%s %s" % (model, freq),
+                        "manufacturer": info.get("manufacturer", ""),
+                        "model": info.get("model", ""),
+                        "item": l.get("item") or info.get("description", ""),
+                        "qty": l.get("qty"), "unit": l.get("unit", "ea"),
+                        "note": l.get("role", "")})
+            except Exception as exc:
+                exp_lines.append({"item": "BOM EXPANSION FAILED: %s" % exc,
+                                  "qty": 1, "unit": "ea", "role": "",
+                                  "manufacturer": "", "model": ""})
+            reb = row.get("bom_rebalance", {})
+            ant = plate["antennas_bldg"]
+            spl = max(ant - remotes, 0)
+            plate_lines = [
+                {"item": "service antennas (design plate %d per floor)"
+                         % plate["design_N"], "qty": ant, "unit": "ea",
+                 "role": "plate_service_antennas"},
+                {"item": "tap plates / splitter devices (1/2 in trunk)",
+                 "qty": spl, "unit": "ea", "role": "plate_splitters"},
+                {"item": "riser coax 1/2 in trunk and taps (per the run "
+                         "geometry; the package line carries the survivable "
+                         "plenum run)",
+                 "qty": "per design", "unit": "ft",
+                 "role": "plate_riser_coax"},
+            ]
+            if remotes > 1 and reb.get("antennas_per_remote"):
+                plate_lines.append({
+                    "item": "REBALANCE PER REMOTE (equal split): antennas "
+                            "%s, splitters %s, floors %s"
+                            % (reb["antennas_per_remote"],
+                               reb.get("splitters_per_remote"),
+                               reb.get("floors_per_remote")),
+                    "qty": remotes, "unit": "group",
+                    "role": "rebalance"})
+            groups.append({"group": "%s %s" % (model, freq), "oem": oem,
+                           "pkg": pkg_key, "freq": freq,
+                           "kit_lines": exp_lines,
+                           "plate_lines": plate_lines})
+            for pl in plate_lines:
+                csv_rows.append({"group": groups[-1]["group"],
+                                 "manufacturer": "", "model": "",
+                                 "item": pl["item"], "qty": pl["qty"],
+                                 "unit": pl["unit"], "note": pl["role"]})
+        doc_bom = {"basis": "PS BOM export for the budget tool: the kit lines "
+                            "from the package expansion at the design remote "
+                            "count plus the design plate lines, rebalanced "
+                            "equally per remote. Counts and config only; "
+                            "pricing is day 3 on the fresh ask.",
+                   "floors": args.floors, "channels": args.channels,
+                   "ant_gain_dbi": args.ant_gain, "groups": groups}
+        if args.bom_out:
+            json.dump(doc_bom, open(args.bom_out, "w"), indent=1)
+            print("BOM JSON:", args.bom_out, "| groups:", len(groups))
+        if args.bom_csv:
+            import csv
+            with open(args.bom_csv, "w", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=["group", "manufacturer",
+                                                  "model", "item", "qty",
+                                                  "unit", "note"])
+                w.writeheader()
+                w.writerows(csv_rows)
+            print("BOM CSV:", args.bom_csv, "| lines:", len(csv_rows))
+
+    # mash (owner 2026-11-26): split the building by chosen floors, run as
+    # two designs, combine. The remote and antenna counts add; the rebalance
+    # re-splits the summed antennas across the summed remotes.
+    if args.combine:
+        other = json.load(open(args.combine))
+        merged_rows = []
+        for row in rows:
+            for orow in other.get("rom", []):
+                if (orow.get("oem") == row["oem"]
+                        and orow.get("freq") == row["freq"]):
+                    a = row["plate"]
+                    b = orow["plate"]
+                    a["remotes_bldg"] = a["remotes_bldg"] + b["remotes_bldg"]
+                    a["antennas_bldg"] = a["antennas_bldg"] + b["antennas_bldg"]
+                    n_r = a["remotes_bldg"]
+                    a["antennas_per_remote"] = even_split(a["antennas_bldg"], n_r)
+                    a["mash_note"] = ("combined from %s: the remote and "
+                                      "antenna counts added; floors per "
+                                      "remote re-split" % args.combine)
+            merged_rows.append(row)
+        doc["rom"] = merged_rows
+        doc["mash"] = {"combined_from": args.combine,
+                       "note": "the floors-split approach: separate designs "
+                               "per floor group, mashed quantities; the "
+                               "coverage numbers stay per design"}
+        out = f"{d}/ps_rom_results.json"
+        json.dump(doc, open(out, "w"), indent=1)
+        print("combined into", out)
+        return
+
     out = f"{d}/ps_rom_results.json"
     json.dump(doc, open(out, "w"), indent=1)
     print("wrote", out, "| rows:", len(rows))

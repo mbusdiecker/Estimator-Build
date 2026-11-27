@@ -20,7 +20,7 @@
    "forced": false,
    "note": "planner would not place the full design plate; grid uses the pruned placement"
   },
-  "ahj_profile": "ifc_default",
+  "ahj_profile": "dc_ouc",
   "ul_gain_trunk_model_db": 11.8
  },
  "uplink": {
@@ -281,7 +281,24 @@
      "near_ring_dl_dbm": -13.1,
      "near_input_bda_dbm": -1.3
     }
-   ]
+   ],
+   "floor_plan": {
+    "union_cov_pct": 100.0,
+    "best_server_cells": [
+     {
+      "antenna": "L04_auto_auto_a1",
+      "best_server_area_sqft": 11238.0,
+      "cell_spread_db": 24.9
+     }
+    ],
+    "cell_spread_median_db": 24.9,
+    "cell_spread_max_db": 24.9,
+    "near_worst": {
+     "d_planar_m": 0.71,
+     "d_3d_m": 1.66,
+     "near_in_dbm": -4.8
+    }
+   }
   },
   "PS800": {
    "cells": [
@@ -530,7 +547,24 @@
      "near_ring_dl_dbm": -14.1,
      "near_input_bda_dbm": -2.2
     }
-   ]
+   ],
+   "floor_plan": {
+    "union_cov_pct": 100.0,
+    "best_server_cells": [
+     {
+      "antenna": "L04_auto_auto_a1",
+      "best_server_area_sqft": 11238.0,
+      "cell_spread_db": 24.7
+     }
+    ],
+    "cell_spread_median_db": 24.7,
+    "cell_spread_max_db": 24.7,
+    "near_worst": {
+     "d_planar_m": 0.71,
+     "d_3d_m": 1.66,
+     "near_in_dbm": -5.73
+    }
+   }
   }
  },
  "critical_areas": null,
@@ -542,10 +576,373 @@
   "area_cap_sqft": null,
   "k_cap": null,
   "would_require_min_antennas": null,
-  "remote_sqft_cap": 250000.0,
-  "total_building_sqft_at_cap": 487403.0,
-  "would_require_remotes_at_cap": 2,
+  "remote_sqft_cap": null,
+  "total_building_sqft_at_cap": null,
+  "would_require_remotes_at_cap": null,
   "would_require_min_ports": null,
   "note": "caps are off (the owner default): pass --caps-area-sqft or --caps-k to see what they would require; the runs themselves never change until the owner makes them the build rule"
+ },
+ "density_loop": {
+  "solve": true,
+  "spread_target_db": 20.0,
+  "branch_baseline_db": 11.08,
+  "branch_baseline_source": "ps_ul solve (balanced model)",
+  "recommended_n": 1,
+  "first_pass_by_band": {
+   "PS700": 1,
+   "PS800": 1
+  },
+  "equiv_branch_loss_db": 0.0,
+  "equivalence_note": "the density route builds the same dB of branch loss the taps or pad would; each doubling of antennas is about 3 dB",
+  "curve": [
+   {
+    "n": 1,
+    "bands": {
+     "PS700": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 11238.0,
+      "cells_median_sqft": 11238.0,
+      "cells_max_sqft": 11238.0,
+      "cell_spread_median_db": 30.8,
+      "near_walk_dist_m": 0.35,
+      "near_3d_dist_m": 1.54,
+      "near_input_at_bda_dbm": -15.24,
+      "near_pass": true,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 11238.0,
+      "cells_median_sqft": 11238.0,
+      "cells_max_sqft": 11238.0,
+      "cell_spread_median_db": 30.6,
+      "near_walk_dist_m": 0.35,
+      "near_3d_dist_m": 1.54,
+      "near_input_at_bda_dbm": -16.18,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 2,
+    "bands": {
+     "PS700": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 5619.0,
+      "cells_median_sqft": 5619.0,
+      "cells_max_sqft": 5619.0,
+      "cell_spread_median_db": 28.8,
+      "near_walk_dist_m": 0.28,
+      "near_3d_dist_m": 1.53,
+      "near_input_at_bda_dbm": -18.16,
+      "near_pass": true,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 5619.0,
+      "cells_median_sqft": 5619.0,
+      "cells_max_sqft": 5619.0,
+      "cell_spread_median_db": 28.7,
+      "near_walk_dist_m": 0.28,
+      "near_3d_dist_m": 1.53,
+      "near_input_at_bda_dbm": -19.1,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 3,
+    "bands": {
+     "PS700": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 3681.0,
+      "cells_median_sqft": 3681.0,
+      "cells_max_sqft": 3875.0,
+      "cell_spread_median_db": 23.9,
+      "near_walk_dist_m": 0.26,
+      "near_3d_dist_m": 1.52,
+      "near_input_at_bda_dbm": -19.91,
+      "near_pass": true,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 3681.0,
+      "cells_median_sqft": 3681.0,
+      "cells_max_sqft": 3875.0,
+      "cell_spread_median_db": 23.8,
+      "near_walk_dist_m": 0.26,
+      "near_3d_dist_m": 1.52,
+      "near_input_at_bda_dbm": -20.84,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 4,
+    "bands": {
+     "PS700": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 2723.0,
+      "cells_median_sqft": 2831.0,
+      "cells_max_sqft": 2895.0,
+      "cell_spread_median_db": 22.9,
+      "near_walk_dist_m": 0.18,
+      "near_3d_dist_m": 1.51,
+      "near_input_at_bda_dbm": -21.08,
+      "near_pass": true,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 2713.0,
+      "cells_median_sqft": 2831.0,
+      "cells_max_sqft": 2906.0,
+      "cell_spread_median_db": 22.7,
+      "near_walk_dist_m": 0.18,
+      "near_3d_dist_m": 1.51,
+      "near_input_at_bda_dbm": -22.02,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 5,
+    "bands": {
+     "PS700": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 2110.0,
+      "cells_median_sqft": 2260.0,
+      "cells_max_sqft": 2347.0,
+      "cell_spread_median_db": 21.4,
+      "near_walk_dist_m": 0.35,
+      "near_3d_dist_m": 1.54,
+      "near_input_at_bda_dbm": -22.23,
+      "near_pass": true,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 2110.0,
+      "cells_median_sqft": 2260.0,
+      "cells_max_sqft": 2347.0,
+      "cell_spread_median_db": 21.4,
+      "near_walk_dist_m": 0.35,
+      "near_3d_dist_m": 1.54,
+      "near_input_at_bda_dbm": -23.17,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 6,
+    "bands": {
+     "PS700": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1830.0,
+      "cells_median_sqft": 1851.0,
+      "cells_max_sqft": 2002.0,
+      "cell_spread_median_db": 20.9,
+      "near_walk_dist_m": 0.15,
+      "near_3d_dist_m": 1.51,
+      "near_input_at_bda_dbm": -22.83,
+      "near_pass": true,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1830.0,
+      "cells_median_sqft": 1851.0,
+      "cells_max_sqft": 2002.0,
+      "cell_spread_median_db": 20.8,
+      "near_walk_dist_m": 0.15,
+      "near_3d_dist_m": 1.51,
+      "near_input_at_bda_dbm": -23.77,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 7,
+    "bands": {
+     "PS700": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1550.0,
+      "cells_median_sqft": 1593.0,
+      "cells_max_sqft": 1744.0,
+      "cell_spread_median_db": 20.0,
+      "near_walk_dist_m": 0.25,
+      "near_3d_dist_m": 1.52,
+      "near_input_at_bda_dbm": -23.58,
+      "near_pass": true,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1550.0,
+      "cells_median_sqft": 1582.0,
+      "cells_max_sqft": 1744.0,
+      "cell_spread_median_db": 19.9,
+      "near_walk_dist_m": 0.25,
+      "near_3d_dist_m": 1.52,
+      "near_input_at_bda_dbm": -24.51,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 8,
+    "bands": {
+     "PS700": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1356.0,
+      "cells_median_sqft": 1432.0,
+      "cells_max_sqft": 1475.0,
+      "cell_spread_median_db": 18.5,
+      "near_walk_dist_m": 0.14,
+      "near_3d_dist_m": 1.51,
+      "near_input_at_bda_dbm": -24.07,
+      "near_pass": true,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1356.0,
+      "cells_median_sqft": 1432.0,
+      "cells_max_sqft": 1475.0,
+      "cell_spread_median_db": 18.5,
+      "near_walk_dist_m": 0.14,
+      "near_3d_dist_m": 1.51,
+      "near_input_at_bda_dbm": -25.01,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 9,
+    "bands": {
+     "PS700": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1195.0,
+      "cells_median_sqft": 1238.0,
+      "cells_max_sqft": 1335.0,
+      "cell_spread_median_db": 18.2,
+      "near_walk_dist_m": 0.12,
+      "near_3d_dist_m": 1.5,
+      "near_input_at_bda_dbm": -24.57,
+      "near_pass": true,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1195.0,
+      "cells_median_sqft": 1238.0,
+      "cells_max_sqft": 1345.0,
+      "cell_spread_median_db": 18.1,
+      "near_walk_dist_m": 0.12,
+      "near_3d_dist_m": 1.5,
+      "near_input_at_bda_dbm": -25.51,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 10,
+    "bands": {
+     "PS700": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1066.0,
+      "cells_median_sqft": 1163.0,
+      "cells_max_sqft": 1173.0,
+      "cell_spread_median_db": 19.7,
+      "near_walk_dist_m": 0.28,
+      "near_3d_dist_m": 1.53,
+      "near_input_at_bda_dbm": -25.15,
+      "near_pass": true,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 1066.0,
+      "cells_median_sqft": 1163.0,
+      "cells_max_sqft": 1173.0,
+      "cell_spread_median_db": 19.7,
+      "near_walk_dist_m": 0.28,
+      "near_3d_dist_m": 1.53,
+      "near_input_at_bda_dbm": -26.09,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 11,
+    "bands": {
+     "PS700": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 936.0,
+      "cells_median_sqft": 1012.0,
+      "cells_max_sqft": 1152.0,
+      "cell_spread_median_db": 18.0,
+      "near_walk_dist_m": 0.25,
+      "near_3d_dist_m": 1.52,
+      "near_input_at_bda_dbm": -25.53,
+      "near_pass": true,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 936.0,
+      "cells_median_sqft": 1012.0,
+      "cells_max_sqft": 1152.0,
+      "cell_spread_median_db": 18.0,
+      "near_walk_dist_m": 0.25,
+      "near_3d_dist_m": 1.52,
+      "near_input_at_bda_dbm": -26.47,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 12,
+    "bands": {
+     "PS700": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 904.0,
+      "cells_median_sqft": 958.0,
+      "cells_max_sqft": 980.0,
+      "cell_spread_median_db": 16.3,
+      "near_walk_dist_m": 0.1,
+      "near_3d_dist_m": 1.5,
+      "near_input_at_bda_dbm": -25.82,
+      "near_pass": true,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "union_cov_pct": 100.0,
+      "cells_min_sqft": 904.0,
+      "cells_median_sqft": 958.0,
+      "cells_max_sqft": 980.0,
+      "cell_spread_median_db": 16.2,
+      "near_walk_dist_m": 0.1,
+      "near_3d_dist_m": 1.5,
+      "near_input_at_bda_dbm": -26.75,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   }
+  ]
  }
 }

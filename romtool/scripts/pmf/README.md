@@ -369,3 +369,48 @@ N=3 per floor, k=48):
   (13.6 us) per Collier's own practice.
 - The converged-plate IM3 screen found 2 products landing in UHF (387.5 MHz
   from N71+B5, 450 MHz from B66+N77): the PIM test trigger for shared plates.
+
+## Roadmap and state (2026-11-26, owner directives applied)
+
+Day 2 builds, done and verified:
+- PS ROM per OEM and frequency with the near-far engine (branch loss / pad /
+  density levers, the balanced model as the default), the grid-test self-check
+  on the real floor plan (best-server cells, union coverage, the near test at
+  the nearest walkable 3D point), the loading-case option, the per-AHJ
+  profiles, the PIM field gate, the compliance plates, the intermod screen.
+- BOM export: ps_rom --bom-out/--bom-csv writes the flat BOM (the kit lines
+  from the package expansion at the design remote count plus the design plate
+  lines), rebalanced equally per remote. Counts and config only.
+- Floors split and mash (the owner approach): run the chosen floor groups as
+  separate designs (ps_rom --floors N), then --combine mashes the quantities
+  (the remotes and antennas add, the rebalance re-splits).
+- Owner gates report-only: 250k sq ft per remote/BDA; the antenna-area cap
+  still open (the owner has not set a number).
+
+Day 2, dormant by owner decision: the estimator configurator surface for the
+PS packages (the expansion works; the estimator side waits).
+
+Day 3: PRICING. Starts only on the owner's fresh ask. The BOM export above is
+the ingestion point for the budget tool; the pricing phase layers cost on
+these groups and then hands off to the budget workbook.
+
+Vendor spec list still missing (grade D placeholders in the tool until they
+land):
+- All four units: maximum operating input power and damaging threshold (the
+  near-test line is -10/-0 placeholders); the AGC behavior mode (the active
+  vs programmed channel sharing).
+- ADRF FiRe-78-8-U1: UL gain range per band, UL composite output confirmation
+  at other gains, the squelch capability and threshold range.
+- ADRF ADXV-R-3378P-U2: per-band UL gain, per-band PSU draw split (102 W total
+  provided), the noise figure per band.
+- Westell CS45-734-834-A0: the CS45 NF (the CS40 figure is standing in), the
+  fiber-DAS remote variant draw and specs.
+- Comba V3 PS: UL output per band at the specified gain, the ALC mode default
+  (the active vs programmed sharing), the RU UL NF per band.
+- ADRF PSR-VU-9537-X: UL output cap, max input, the duplexing-loss figure.
+- Per site (the AHJ): the channel counts per band, the site ERP/NF/antenna
+  data, the coverage threshold wording adopted (the -95 stands per the owner).
+
+Owner build preferences: profiles ride along as the engagements name them; the
+split-and-mash replaces a sectors flag; the estimator stays out of this clone
+until the owner moves.
