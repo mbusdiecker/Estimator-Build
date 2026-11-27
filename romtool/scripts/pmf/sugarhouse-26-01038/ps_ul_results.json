@@ -1,5 +1,5 @@
 {
- "basis": "PS uplink engine (grade E): band-reciprocal chain at the design k, AHJ site inputs parameterized. Assumptions: 3 W portable, 5 dB hip-height body loss, distribution net UL gain 0 dB (conservative), site ERP/NF/ambient defaults are AHJ placeholders until the site sheet arrives; the squelch floor uses a 3 dB distribution noise figure estimate (grade D). Vendor notes: UL NF 4.5 dB at max gain from the FiRe-78 SS; UL composite output cap -21 dBm class from the SS composite table; max/damaging input not published: placeholders flagged grade D",
+ "basis": "PS uplink engine (grade E): band-reciprocal chain at the design k, AHJ site inputs parameterized. Assumptions: 3 W portable, 5 dB hip-height body loss, distribution net UL gain 0 dB (conservative), site ERP/NF/ambient defaults are AHJ placeholders until the site sheet arrives; the squelch floor uses a 3 dB distribution noise figure estimate (grade D). Vendor notes: UL composite output 30 dBm and total system gain 85 dB are OWNER-PROVIDED figures (2026-11-26); UL NF 4.5 dB at max gain from the FiRe-78 SS; max/damaging input not published: placeholders flagged grade D",
  "channels": 32,
  "port_composite_dbm": 33.0,
  "port_per_channel_dbm": 17.95,
@@ -25,11 +25,22 @@
    "noise_margin_db": 86.89,
    "squelch_threshold_dbm": -125.03,
    "input_pad_recommendation_db": 11.1,
-   "ul_out_cap_composite_dbm": -21.0,
-   "ul_out_cap_per_channel_dbm": -36.05,
-   "ul_out_cap_binds": true,
+   "ul_out_cap_composite_dbm": 30.0,
+   "ul_out_cap_per_channel_dbm": 14.95,
+   "ul_out_cap_binds": false,
    "near_test_operating_pass": false,
    "near_test_damage_pass": false,
+   "near_far_pair": {
+    "far_in_at_bda_dbm": -0.67,
+    "near_in_pre_pad_dbm": -3.92,
+    "pad_applied_db": 11.1,
+    "near_in_post_pad_dbm": -15.02,
+    "out_cap_per_channel_dbm": 14.95,
+    "classB_far_arrival_dbm": -109.03,
+    "classB_agc_gain_reduction_db": 0.0,
+    "classB_far_pass": true,
+    "class_a_recommended": false
+   },
    "passes": false
   },
   {
@@ -49,11 +60,22 @@
    "noise_margin_db": 86.89,
    "squelch_threshold_dbm": -125.03,
    "input_pad_recommendation_db": 10.1,
-   "ul_out_cap_composite_dbm": -21.0,
-   "ul_out_cap_per_channel_dbm": -36.05,
-   "ul_out_cap_binds": true,
+   "ul_out_cap_composite_dbm": 30.0,
+   "ul_out_cap_per_channel_dbm": 14.95,
+   "ul_out_cap_binds": false,
    "near_test_operating_pass": false,
    "near_test_damage_pass": false,
+   "near_far_pair": {
+    "far_in_at_bda_dbm": -0.67,
+    "near_in_pre_pad_dbm": -4.86,
+    "pad_applied_db": 10.1,
+    "near_in_post_pad_dbm": -14.96,
+    "out_cap_per_channel_dbm": 14.95,
+    "classB_far_arrival_dbm": -109.03,
+    "classB_agc_gain_reduction_db": 0.0,
+    "classB_far_pass": true,
+    "class_a_recommended": false
+   },
    "passes": false
   }
  ]

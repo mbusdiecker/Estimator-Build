@@ -35,11 +35,12 @@ KTB_12K5 = -174.0 + 10.0 * math.log10(12500.0)  # -133.03 dBm
 # vendor uplink specs (from data sheets on disk; placeholders flagged)
 OEM_HW = {
     "adrf_fire": {"label": "ADRF FiRe-78-8-U1 (ADXV-R-3378P-U2 remotes)",
-                  "ul_gain_max": 90.0, "ul_nf": 4.5, "ul_out_cap_dbm": -21.0,
+                  "ul_gain_max": 85.0, "ul_nf": 4.5, "ul_out_cap_dbm": 30.0,
                   "max_input_dbm": -10.0, "damaging_dbm": 0.0,
-                  "spec_note": "UL NF 4.5 dB at max gain from the FiRe-78 SS; "
-                               "UL composite output cap -21 dBm class from the "
-                               "SS composite table; max/damaging input not "
+                  "spec_note": "UL composite output 30 dBm and total system "
+                               "gain 85 dB are OWNER-PROVIDED figures "
+                               "(2026-11-26); UL NF 4.5 dB at max gain from "
+                               "the FiRe-78 SS; max/damaging input not "
                                "published: placeholders flagged grade D"},
     "westell": {"label": "Westell CS45-734-834-A0",
                 "ul_gain_max": 80.0, "ul_nf": 7.0, "ul_out_cap_dbm": 27.0,
@@ -76,10 +77,14 @@ def main():
                     help="channels in the passband: the composite port is split "
                          "by 10log10(channels) per the industry convention; "
                          "explicitly entered on every run by owner direction")
-    # AHJ / host site inputs (overridable; documented assumptions)
-    ap.add_argument("--site-erp", type=float, default=50.0, help="host site ERP dBm (AHJ input)")
-    ap.add_argument("--site-nf", type=float, default=6.0, help="host site receiver NF dB (AHJ input)")
-    ap.add_argument("--ambient", type=float, default=-85.0, help="site DL ambient at the donor dBm (cal basis)")
+    # AHJ / host site inputs: per-site, researched or given pre-ROM (owner
+    # rule); no defaults, explicit entry required
+    ap.add_argument("--site-erp", type=float, required=True,
+                    help="host site ERP dBm (AHJ input per site)")
+    ap.add_argument("--site-nf", type=float, required=True,
+                    help="host site receiver NF dB (AHJ input per site)")
+    ap.add_argument("--ambient", type=float, required=True,
+                    help="site DL ambient at the donor dBm (cal per site)")
     ap.add_argument("--ue-tx", type=float, default=34.8, help="portable TX dBm (3 W class)")
     ap.add_argument("--body-loss", type=float, default=5.0, help="hip-height body loss dB")
     ap.add_argument("--arrival-margin", type=float, default=18.0,
@@ -151,6 +156,23 @@ def main():
         # UL output cap per channel: the composite cap also splits by channels
         out_cap_ch = hw["ul_out_cap_dbm"] - 10.0 * math.log10(a.channels)
         cap_binds = (ul_far_at_bda + g_rec) > out_cap_ch
+        # near/far simultaneous pair (the field near test): one radio at the
+        # farthest covered point, one directly under an antenna. Class B
+        # (shared wideband AGC) starves the far channel by the near channel's
+        # excess over the per-channel cap; Class A per-channel AGC does not.
+        pair = {"far_in_at_bda_dbm": round(ul_far_at_bda, 2),
+                "near_in_pre_pad_dbm": round(ul_near_at_bda, 2),
+                "pad_applied_db": pad_db,
+                "near_in_post_pad_dbm": round(ul_near_at_bda - pad_db, 2),
+                "out_cap_per_channel_dbm": round(out_cap_ch, 2)}
+        excess = max(0.0, (ul_near_at_bda - pad_db) + g_rec - out_cap_ch)
+        classb_far_gain = g_rec - excess
+        classb_far_arrival = ul_far_at_bda + classb_far_gain + a.g_donor \
+            + a.ambient - a.site_erp
+        pair.update({"classB_far_arrival_dbm": round(classb_far_arrival, 2),
+                     "classB_agc_gain_reduction_db": round(excess, 2),
+                     "classB_far_pass": bool(classb_far_arrival >= target_arrival),
+                     "class_a_recommended": bool(excess > 0.0)})
         rows.append({
             "band": bid, "freq_mhz": f,
             "delivered_far_dl_dbm": round(fd, 2),
@@ -172,8 +194,10 @@ def main():
             "ul_out_cap_binds": bool(cap_binds),
             "near_test_operating_pass": bool(near_ok),
             "near_test_damage_pass": bool(near_dmg),
+            "near_far_pair": pair,
             "passes": bool(arrival >= target_arrival and noise_at_site <= noise_limit
-                           and near_ok and near_dmg and not cap_binds)})
+                           and near_ok and near_dmg and not cap_binds
+                           and pair["classB_far_pass"])})
     doc = {"basis": "PS uplink engine (grade E): band-reciprocal chain at the "
                     "design k, AHJ site inputs parameterized. Assumptions: 3 W "
                     "portable, 5 dB hip-height body loss, distribution net UL "

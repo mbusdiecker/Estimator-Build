@@ -30,6 +30,17 @@
    "ul_out_cap_binds": true,
    "near_test_operating_pass": false,
    "near_test_damage_pass": false,
+   "near_far_pair": {
+    "far_in_at_bda_dbm": 4.07,
+    "near_in_pre_pad_dbm": 10.08,
+    "pad_applied_db": 25.1,
+    "near_in_post_pad_dbm": -15.02,
+    "out_cap_per_channel_dbm": -15.05,
+    "classB_far_arrival_dbm": -115.46,
+    "classB_agc_gain_reduction_db": 6.43,
+    "classB_far_pass": false,
+    "class_a_recommended": true
+   },
    "passes": false
   },
   {
@@ -54,6 +65,17 @@
    "ul_out_cap_binds": true,
    "near_test_operating_pass": false,
    "near_test_damage_pass": false,
+   "near_far_pair": {
+    "far_in_at_bda_dbm": 4.07,
+    "near_in_pre_pad_dbm": 0.71,
+    "pad_applied_db": 15.7,
+    "near_in_post_pad_dbm": -14.99,
+    "out_cap_per_channel_dbm": -15.05,
+    "classB_far_arrival_dbm": -115.49,
+    "classB_agc_gain_reduction_db": 6.46,
+    "classB_far_pass": false,
+    "class_a_recommended": true
+   },
    "passes": false
   }
  ]

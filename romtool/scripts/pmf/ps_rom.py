@@ -41,11 +41,24 @@ def main():
                          "by 10log10(channels); explicitly entered every run")
     ap.add_argument("--caps-area-sqft", type=float, default=None)
     ap.add_argument("--caps-k", type=int, default=None)
+    ap.add_argument("--caps-remote-sqft", type=float, default=None,
+                    help="max building sq ft per remote/BDA (industry "
+                         "practice about 250,000); report-only gate")
     ap.add_argument("--caps-on", action="store_true",
                     help="apply the gates to the reported design numbers "
                          "(default: report-only)")
     args = ap.parse_args()
     d = args.dir
+    floor_sqft = None
+    floor_total_sqft = None
+    grid_hint = None
+    try:
+        grid_hint = json.load(open(f"{d}/ps_grid_results.json"))
+        floor_sqft = (grid_hint.get("caps_report") or {}).get("floor_area_sqft")
+    except FileNotFoundError:
+        pass
+    if floor_sqft:
+        floor_total_sqft = floor_sqft * args.floors
     rows = []
     area_sqft = None
     for prefix, oem, model, freq, port, _ in SPECS:
@@ -72,6 +85,7 @@ def main():
                  "floors_per_port": k}
         # the owner gates (report-only unless --caps-on)
         gate = {"area_cap_sqft": args.caps_area_sqft, "k_cap": args.caps_k,
+                "remote_sqft_cap": args.caps_remote_sqft,
                 "applied": False}
         if args.caps_on and args.caps_k:
             gate["applied"] = True
@@ -80,6 +94,12 @@ def main():
             gate["note"] = "the floors-per-port gate would change the remote " \
                            "count to the minimum above; the plate k shown " \
                            "stays the engine's fit"
+        if args.caps_remote_sqft and floor_total_sqft:
+            gate["min_remotes_required"] = math.ceil(floor_total_sqft
+                                                     / args.caps_remote_sqft)
+            if args.caps_on and (gate["min_remotes_required"]
+                                 > (remotes or 0)):
+                gate["applied"] = True
         if args.caps_area_sqft:
             gate["area_note"] = "the antenna-area gate evaluates per floor in " \
                                 "the grid module (caps_report): pass the same " \

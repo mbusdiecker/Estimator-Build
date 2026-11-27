@@ -1263,8 +1263,8 @@
      "v": 24,
      "load_w": {
       "bda_mu": 121,
-      "per_remote": 45,
-      "per_remote_note": "the ADXV-R-3378P-U2 draw is not on the swept sheets (open); 45 W assumed"
+      "per_remote": 102,
+      "per_remote_note": "ADXV-R-3378P-U2 draw is 102 W (owner-provided 2026-11-26)"
      },
      "options": [
       {
@@ -1577,8 +1577,8 @@
      "v": 51.2,
      "load_w": {
       "bda_mu": 100,
-      "per_remote": 45,
-      "per_remote_note": "the V3 PS remote unit draw is not published in the manual sections read; 45 W assumed (open)"
+      "per_remote": 100,
+      "per_remote_note": "the V3 2 W Class A PS remote draw is 100 W (owner-provided 2026-11-26)"
      },
      "options": [
       {

@@ -74,9 +74,12 @@ def main():
     a.add_argument("--sinr-threshold", type=float, default=18.0)
     a.add_argument("--nf-portable", type=float, default=8.0)
     a.add_argument("--noise-rule", default="la")
-    a.add_argument("--site-erp", type=float, default=50.0)
-    a.add_argument("--site-nf", type=float, default=6.0)
-    a.add_argument("--ambient", type=float, default=-85.0)
+    a.add_argument("--site-erp", type=float, required=True,
+                   help="host site ERP dBm (AHJ input per site)")
+    a.add_argument("--site-nf", type=float, required=True,
+                   help="host site receiver NF dB (AHJ input per site)")
+    a.add_argument("--ambient", type=float, required=True,
+                   help="site DL ambient at the donor dBm (cal per site)")
     a.add_argument("--g-donor", type=float, default=15.5)
     a.add_argument("--ue-tx", type=float, default=34.8)
     a.add_argument("--body-loss", type=float, default=5.0)

@@ -147,3 +147,39 @@ puts the building on the active-DAS / dense-high-rise side of the passive
 boundary and over the 250,000 sq ft fiber-backbone line, favoring the fiber
 architectures. Converged orders must list the PS channel-specific filters as
 order lines (recorded on all five PS packages and in the ROM output).
+
+## Owner answers applied (2026-11-26, session 2)
+
+1. AHJ site inputs (site ERP, site NF, donor ambient cal): REQUIRED, entered
+   per site, researched or given pre-ROM. No defaults remain in ps_ul or
+   ps_grid; the saved artifacts used the explicit placeholder entries noted
+   in the docs.
+2. FiRe-78 uplink: UL composite output 30 dBm, total system gain 85 dB
+   (owner-provided). The ps_ul OEM table uses them; at 32 channels the
+   per-channel out cap does not bind and the near/far pair passes with the
+   input pad.
+3. Same as 1 for ps_grid.
+4. Near/far validation: implemented as the simultaneous pair (one portable at
+   the farthest covered point, one directly under an antenna), with the Class
+   B shared-AGC starvation model: the far channel loses whatever the near
+   channel's excess over the per-channel output cap forces the AGC to remove,
+   after the near-test input pad. The code itself does not define the pair
+   test; it comes from the AHJ technical requirements (DC OUC near-test
+   margins -5 dB operating / -10 dB damaging, the DC Sheriff per-antenna near
+   and far uplink budgets, the SBC simultaneous-portable requirement). Under
+   discussion with the owner: the loading case (10 simultaneous per the DC
+   OUC rule) and the AHJ threshold inputs.
+5. Remote-coverage gate: industry practice about 250,000 sq ft max per BDA
+   or remote is now a toggle (--caps-remote-sqft); report-only until turned
+   on. At Sugar House's about 487,395 sq ft it reports a 2-remote minimum.
+   The antenna-area cap stays open (the owner has not set a number).
+6. Coverage threshold: minus 95 dBm stands regardless of DAQ wording; SINR is
+   checked separately (the grid already reports the per-cell SINR).
+7. Deliverable: BOMs for the budget tool; pricing is day 3.
+8. Pushed: romtool-public-safety and romtool-headend created on
+   github.com/mbusdiecker/Estimator-Build (push only, no merges); romtool-physics-ul
+   was already current on the remote. Claude review pending.
+Vendor draws applied: ADXV-R-3378P-U2 102 W per remote; Comba V3 2 W Class A
+100 W. The 2-remote kit battery sized on them: 2x 120 Ah at 12 h, 4x at 24 h.
+Tool force (the fixed placement): NOT built; the design plates stay the
+right-sizing input per the owner.
