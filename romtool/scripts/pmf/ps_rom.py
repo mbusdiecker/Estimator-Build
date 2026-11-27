@@ -31,6 +31,11 @@ SPECS = [
     ("ps_comba800", "Comba", "ComFlex NG V3 PS", "800 PS", 33.0, {"oem": "comba"}),
 ]
 
+def even_split(total, parts):
+    base = total // parts
+    rem = total % parts
+    return [base + 1] * rem + [base] * (parts - rem) if parts else []
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dir", default="sugarhouse-26-01038")
@@ -104,6 +109,29 @@ def main():
             gate["area_note"] = "the antenna-area gate evaluates per floor in " \
                                 "the grid module (caps_report): pass the same " \
                                 "value there"
+        # BOM rebalance (owner 2026-11-26): equal per remote at BOM emission.
+        # Example: the design says 21 antennas over 2 remotes -> 11 + 10, with
+        # the splitters and coax split the same way. Day 3 note: re-running
+        # the count with the floors split into equal zones per remote may
+        # reduce the total; this block balances whatever the design said.
+        n_r = plate["remotes_bldg"] or 0
+        if n_r > 1:
+            ant_total = plate["antennas_bldg"]
+            spl_total = max(ant_total - n_r, 0)
+            fl = even_split(args.floors, n_r)
+            reb = {"remotes": n_r,
+                   "antennas_per_remote": even_split(ant_total, n_r),
+                   "floors_per_remote": fl,
+                   "splitters_per_remote": even_split(spl_total, n_r),
+                   "note": "antennas, tap plates, splitters and riser coax "
+                           "balanced equally per remote in the emitted BOM; "
+                           "day 3 may re-run the antennas needed by splitting "
+                           "the square footage and floors equally per remote "
+                           "to reduce the count; this balances the current "
+                           "design"}
+        else:
+            reb = {"remotes": 1,
+                   "note": "single remote: no rebalance needed"}
         # the ERP plate per retransmitted channel (90.219)
         erp = round(port_ch + args.ant_gain, 1)
         plate["erp_per_channel_dbm"] = erp
@@ -111,7 +139,8 @@ def main():
         if not plate["erp_pass_5w"]:
             plate["erp_pad_db"] = round(erp - 37.0, 1)
         rows.append({"oem": oem, "model": model, "freq": freq,
-                     "prefix": prefix, "plate": plate, "gate": gate})
+                     "prefix": prefix, "plate": plate, "gate": gate,
+                     "bom_rebalance": reb})
     ul = None
     try:
         ul = json.load(open(f"{d}/ps_ul_results.json"))

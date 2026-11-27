@@ -3,6 +3,17 @@
  "channels": 32,
  "port_composite_dbm": 33.0,
  "port_per_channel_dbm": 17.95,
+ "profile": "ifc_default",
+ "profile_provenance": {
+  "arrival_margin": "profile ifc_default",
+  "noise_rule": "profile ifc_default",
+  "near_op_margin": "profile ifc_default",
+  "near_dmg_margin": "profile ifc_default",
+  "squelch_offset": "profile ifc_default",
+  "ul_erp_donor_cap": "profile ifc_default"
+ },
+ "load_case": "pair",
+ "load_channels": null,
  "oem": "ADRF FiRe-78-8-U1 (ADXV-R-3378P-U2 remotes)",
  "site_nf_db": 6.0,
  "site_floor_dbm": -127.03,
@@ -25,6 +36,9 @@
    "noise_margin_db": 86.89,
    "squelch_threshold_dbm": -125.03,
    "input_pad_recommendation_db": 11.1,
+   "ul_erp_donor_per_channel_dbm": 25.97,
+   "ul_erp_donor_cap_dbm": 24,
+   "ul_erp_donor_pass": false,
    "ul_out_cap_composite_dbm": 30.0,
    "ul_out_cap_per_channel_dbm": 14.95,
    "ul_out_cap_binds": false,
@@ -39,7 +53,8 @@
     "classB_far_arrival_dbm": -109.03,
     "classB_agc_gain_reduction_db": 0.0,
     "classB_far_pass": true,
-    "class_a_recommended": false
+    "class_a_recommended": false,
+    "load_case": "pair"
    },
    "passes": false
   },
@@ -60,6 +75,9 @@
    "noise_margin_db": 86.89,
    "squelch_threshold_dbm": -125.03,
    "input_pad_recommendation_db": 10.1,
+   "ul_erp_donor_per_channel_dbm": 25.97,
+   "ul_erp_donor_cap_dbm": 24,
+   "ul_erp_donor_pass": false,
    "ul_out_cap_composite_dbm": 30.0,
    "ul_out_cap_per_channel_dbm": 14.95,
    "ul_out_cap_binds": false,
@@ -74,7 +92,8 @@
     "classB_far_arrival_dbm": -109.03,
     "classB_agc_gain_reduction_db": 0.0,
     "classB_far_pass": true,
-    "class_a_recommended": false
+    "class_a_recommended": false,
+    "load_case": "pair"
    },
    "passes": false
   }

@@ -87,10 +87,21 @@ def main():
                     help="site DL ambient at the donor dBm (cal per site)")
     ap.add_argument("--ue-tx", type=float, default=34.8, help="portable TX dBm (3 W class)")
     ap.add_argument("--body-loss", type=float, default=5.0, help="hip-height body loss dB")
-    ap.add_argument("--arrival-margin", type=float, default=18.0,
+    ap.add_argument("--profile", default=None,
+                    help="per-AHJ profile from ps_ahj_profiles.json (the CLIargs override)")
+    ap.add_argument("--arrival-margin", type=float, default=None,
                     help="arrival target above the site noise floor (DC: 18 dB)")
-    ap.add_argument("--noise-rule", choices=["la", "dc"], default="la",
+    ap.add_argument("--noise-rule", choices=["la", "dc"], default=None,
                     help="site noise coordination rule: la -150 dBm flat, dc floor-15")
+    ap.add_argument("--near-op-margin", type=float, default=None,
+                    help="near test: dB below max operating power (DC OUC: 5)")
+    ap.add_argument("--near-dmg-margin", type=float, default=None,
+                    help="near test: dB below damaging threshold (DC OUC: 10)")
+    ap.add_argument("--load-case", choices=["pair", "loading"], default="pair",
+                    help="pair: two radios (farthest point + directly under an "
+                         "antenna). loading: the DC OUC instant with 10 "
+                         "channels active, per-channel caps by 10log10(10)")
+    ap.add_argument("--load-channels", type=int, default=10)
     ap.add_argument("--g-donor", type=float, default=15.5, help="donor antenna gain dB")
     ap.add_argument("--das-ul-net", type=float, default=0.0,
                     help="distribution net UL gain dB (fiber remote UL gain; 0 conservative)")
@@ -98,6 +109,23 @@ def main():
                     help="override trunk tap loss dB at k (default: same formula as pmf)")
     ap.add_argument("--out")
     a = ap.parse_args()
+    # per-AHJ profile (the CLI args override); generic fallback when neither
+    sys.path.insert(0, ".")  # -I mode: the script dir is not on the path
+    from ps_profiles import resolve as resolve_profile
+    RESOLVED, PWHERE, PROF = resolve_profile(a.profile, {
+        "arrival_margin": ("arrival_margin_db", "arrival_margin_db", a.arrival_margin),
+        "noise_rule": ("noise_rule", "noise_rule", a.noise_rule),
+        "near_op_margin": ("near_operating_margin_db", "near_operating_margin_db", a.near_op_margin),
+        "near_dmg_margin": ("near_damage_margin_db", "near_damage_margin_db", a.near_dmg_margin),
+        "squelch_offset": ("squelch_offset_db", "squelch_offset_db", None),
+        "ul_erp_donor_cap": ("ul_erp_donor_cap_dbm", "ul_erp_donor_cap_dbm", None),
+    })
+    a.arrival_margin = RESOLVED["arrival_margin"]
+    a.noise_rule = RESOLVED["noise_rule"]
+    NEAR_OP_MARGIN = RESOLVED["near_op_margin"]
+    NEAR_DMG_MARGIN = RESOLVED["near_dmg_margin"]
+    SQUELCH_OFFSET_DB = RESOLVED["squelch_offset"]
+    UL_ERP_DONOR_CAP = RESOLVED["ul_erp_donor_cap"]
     cfg_path = None
     sys.path.insert(0, "..")
     try:
@@ -148,14 +176,22 @@ def main():
         noise_at_site = KTB_12K5 + hw["ul_nf"] + g_rec + a.g_donor + a.ambient - a.site_erp
         arrival = ul_far_at_bda + g_rec + a.g_donor + a.ambient - a.site_erp
         # squelch threshold: distribution noise estimate at the BDA input (+3 dB NF)
-        # plus the DC 5 dB offset; absolute level in dBm
-        squelch_in = KTB_12K5 + 3.0 + 5.0
-        near_ok = ul_near_at_bda <= hw["max_input_dbm"] - 5.0
-        near_dmg = ul_near_at_bda <= hw["damaging_dbm"] - 10.0
-        pad_db = max(0.0, round(ul_near_at_bda - (hw["max_input_dbm"] - 5.0), 1))
-        # UL output cap per channel: the composite cap also splits by channels
+        # plus the profile squelch offset; absolute level in dBm
+        squelch_in = KTB_12K5 + 3.0 + SQUELCH_OFFSET_DB
+        near_ok = ul_near_at_bda <= hw["max_input_dbm"] - NEAR_OP_MARGIN
+        near_dmg = ul_near_at_bda <= hw["damaging_dbm"] - NEAR_DMG_MARGIN
+        pad_db = max(0.0, round(ul_near_at_bda - (hw["max_input_dbm"] - NEAR_OP_MARGIN), 1))
+        # UL output cap per channel: plan-split at -10log10(channels); the
+        # loading case (owner option 2026-11-26) re-tests the instant with
+        # load_channels active (DC OUC uses 10), where per-channel caps are
+        # -10log10(load_channels)
         out_cap_ch = hw["ul_out_cap_dbm"] - 10.0 * math.log10(a.channels)
         cap_binds = (ul_far_at_bda + g_rec) > out_cap_ch
+        load_n = a.load_channels if a.load_case == "loading" else None
+        out_cap_loading = (hw["ul_out_cap_dbm"] - 10.0 * math.log10(load_n)) if load_n else None
+        # UL ERP at the donor per retransmitted channel (SF 9.5.3.1 class rule)
+        ul_erp_donor = (ul_far_at_bda + g_rec) + a.g_donor
+        erp_ok = (ul_erp_donor <= UL_ERP_DONOR_CAP) if UL_ERP_DONOR_CAP else None
         # near/far simultaneous pair (the field near test): one radio at the
         # farthest covered point, one directly under an antenna. Class B
         # (shared wideband AGC) starves the far channel by the near channel's
@@ -172,7 +208,19 @@ def main():
         pair.update({"classB_far_arrival_dbm": round(classb_far_arrival, 2),
                      "classB_agc_gain_reduction_db": round(excess, 2),
                      "classB_far_pass": bool(classb_far_arrival >= target_arrival),
-                     "class_a_recommended": bool(excess > 0.0)})
+                     "class_a_recommended": bool(excess > 0.0),
+                     "load_case": a.load_case})
+        if load_n:
+            # loading instant: per-channel share widens to -10log10(load_n);
+            # the near and far must both fit their request inside the share
+            ld_far_req = ul_far_at_bda + g_rec
+            ld_near_req = (ul_near_at_bda - pad_db) + g_rec
+            pair.update({"loading_active_channels": load_n,
+                         "loading_out_cap_per_channel_dbm": round(out_cap_loading, 2),
+                         "loading_far_request_pass": bool(ld_far_req <= out_cap_loading),
+                         "loading_near_request_pass": bool(ld_near_req <= out_cap_loading)})
+            if not (pair["loading_far_request_pass"] and pair["loading_near_request_pass"]):
+                pair["class_a_recommended"] = True
         rows.append({
             "band": bid, "freq_mhz": f,
             "delivered_far_dl_dbm": round(fd, 2),
@@ -189,6 +237,9 @@ def main():
             "noise_margin_db": round(noise_limit - noise_at_site, 2),
             "squelch_threshold_dbm": round(squelch_in, 2),
             "input_pad_recommendation_db": pad_db,
+            "ul_erp_donor_per_channel_dbm": round(ul_erp_donor, 2),
+            "ul_erp_donor_cap_dbm": UL_ERP_DONOR_CAP,
+            "ul_erp_donor_pass": erp_ok,
             "ul_out_cap_composite_dbm": hw["ul_out_cap_dbm"],
             "ul_out_cap_per_channel_dbm": round(out_cap_ch, 2),
             "ul_out_cap_binds": bool(cap_binds),
@@ -208,6 +259,10 @@ def main():
            "channels": a.channels,
            "port_composite_dbm": port_composite,
            "port_per_channel_dbm": round(port_composite - 10.0 * math.log10(a.channels), 2),
+           "profile": a.profile or "ifc_default",
+           "profile_provenance": PWHERE,
+           "load_case": a.load_case,
+           "load_channels": a.load_channels if a.load_case == "loading" else None,
            "oem": hw["label"], "site_nf_db": a.site_nf, "site_floor_dbm": round(site_floor, 2),
            "trunk_loss_at_k_db": round(loss, 2), "bands": rows}
     out = a.out or "sugarhouse-26-01038/ps_ul_results.json"

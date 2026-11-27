@@ -1,0 +1,67 @@
+{
+ "basis": "PIM test gate checklist for converged cellular + ERCES plates (grade E planning artifact): IM3 screen hits plus the field procedure. PIM limits are project inputs; the practice defaults cited come from IEC 62037-style field testing.",
+ "tx_bands": "B12_700,B5_850,B2_1900,B66_2100,N71_600,N41_2500,N77_CBAND",
+ "im3_hits": [
+  {
+   "product_mhz": 387.5,
+   "label": "2xN71_600-B5_850",
+   "band_pair": [
+    "B5_850",
+    "N71_600"
+   ],
+   "lands_in": "UHF"
+  },
+  {
+   "product_mhz": 450.0,
+   "label": "2xB66_2100-N77_CBAND",
+   "band_pair": [
+    "B66_2100",
+    "N77_CBAND"
+   ],
+   "lands_in": "UHF"
+  }
+ ],
+ "pim_test_level_dbm": 43.0,
+ "pim_pass_dbm": -100.0,
+ "ps_band": "700/800/VHF/UHF as ordered",
+ "checklist": [
+  {
+   "step": 1,
+   "when": "order + pre-install",
+   "item": "CONVERGED PLATE: the IM3 screen found 2 products landing in the PS passbands (2xN71_600-B5_850=387.5 MHz -> UHF; 2xB66_2100-N77_CBAND=450.0 MHz -> UHF). The channel-specific PS filters MUST be order lines (owner direction 2026-11-26).",
+   "source": "ps_imd.py run"
+  },
+  {
+   "step": 2,
+   "when": "pre-activation on the plate",
+   "item": "PIM test every shared trunk and tap plate before the cellular carrier activation with 2x43 dBm tones; pass is at or below -100 dBm IM3 unless the project spec says otherwise (IEC 62037 field practice: values are band  dependent).",
+   "source": "AHJ trigger: intermod studies required when other systems share the building (DC OUC 2.2.3); PIM testing may be required on the results"
+  },
+  {
+   "step": 3,
+   "when": "donor and head end",
+   "item": "PIM test the donor antenna, its jumpers and connectors, and the BDA/head-end ports; donor-side PIM is the loudest path into the PS receive window."
+  },
+  {
+   "step": 4,
+   "when": "hunt procedure",
+   "item": "On a failing line: half-split the trunk (the divide-and-conquer tap isolation), test each half, and repeat to the section; standard PIM hunting practice."
+  },
+  {
+   "step": 5,
+   "when": "hardware and workmanship",
+   "item": "PIM-rated jumpers and connectors only on shared lines; torque to the connector spec, no dissimilar metals, no ferrous hardware near the 700/800 lines; re-torque after any flex. The residential-ceiling congestion and PIM note in the MCF design spec applies."
+  },
+  {
+   "step": 6,
+   "when": "after cellular activation",
+   "item": "Re-run the ERCES coverage check (grid cells) for 700/800/VHF/UHF as ordered with the cellular carriers active; verify the PS SINR does not collapse at the instrument and record the before/after.",
+   "source": "the converged-plate risk: cellular activation can raise the noise and PIM into the PS receive path"
+  },
+  {
+   "step": 7,
+   "when": "acceptance",
+   "item": "Record tone level, IM3 limit, per-line results, and the corrective actions in the acceptance package; re-test fails after the fixes and before the AHJ witness."
+  }
+ ]
+}

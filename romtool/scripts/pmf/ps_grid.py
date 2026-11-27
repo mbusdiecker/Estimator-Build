@@ -71,8 +71,10 @@ def main():
     a.add_argument("--ports", type=int, default=1)
     a.add_argument("--cov", type=float, default=95.0)
     a.add_argument("--thr", type=float, default=-95.0)
-    a.add_argument("--sinr-threshold", type=float, default=18.0)
+    a.add_argument("--sinr-threshold", type=float, default=None)
     a.add_argument("--nf-portable", type=float, default=8.0)
+    a.add_argument("--profile", default=None,
+                   help="per-AHJ profile; the CLI args override")
     a.add_argument("--noise-rule", default="la")
     a.add_argument("--site-erp", type=float, required=True,
                    help="host site ERP dBm (AHJ input per site)")
@@ -88,10 +90,20 @@ def main():
                    help="recommended UL gain dB (from ps_ul); default recomputed")
     a.add_argument("--caps-area-sqft", type=float, default=None,
                    help="antenna square footage cap (design gate; None = off)")
+    a.add_argument("--caps-remote-sqft", type=float, default=None,
+                   help="max building sq ft per remote/BDA (industry practice "
+                        "about 250,000); report-only gate")
     a.add_argument("--caps-k", type=int, default=None,
                    help="floors-per-port cap; None = off")
     a.add_argument("--out", default="sugarhouse-26-01038/ps_grid_results.json")
     args = a.parse_args()
+    sys.path.insert(0, ".")  # -I mode: the script dir is not on the path
+    from ps_profiles import resolve as resolve_profile
+    RESOLVED, PWHERE, PROF = resolve_profile(args.profile, {
+        "sinr_threshold": ("sinr_threshold_db", "sinr_threshold_db", args.sinr_threshold),
+        "noise_rule": ("noise_rule", "noise_rule", args.noise_rule),
+    })
+    args.sinr_threshold = RESOLVED["sinr_threshold"]
 
     cfg = load_config()
     cfg["wall_materials"]["drywall"]["loss_db"] = -1  # iBwave drywall via ibwloss
@@ -314,6 +326,11 @@ def main():
             "k_cap": args.caps_k,
             "would_require_min_antennas": (math.ceil(sqft / args.caps_area_sqft)
                                            if args.caps_area_sqft else None),
+            "remote_sqft_cap": args.caps_remote_sqft,
+            "total_building_sqft_at_cap": (round(sqft * args.nfloors, 0)
+                                           if args.caps_remote_sqft else None),
+            "would_require_remotes_at_cap": (math.ceil(sqft * args.nfloors / args.caps_remote_sqft)
+                                             if args.caps_remote_sqft else None),
             "would_require_min_ports": (math.ceil(args.nfloors / args.caps_k)
                                         if args.caps_k else None),
             "note": ("gate is ON for this run: the 'would_require_min_*' "
@@ -343,6 +360,7 @@ def main():
                       "n": args.design_n, "k": args.k,
                       "ul_gain_db": round(args.ul_gain, 1), "sites": len(ants),
                       "placement": placement,
+                      "ahj_profile": args.profile or "ifc_default",
                       "ul_gain_trunk_model_db": round(max(0.0, target_arr
                                                           - ((eirp_ue - loss_at_k)
                                                              + args.g_donor

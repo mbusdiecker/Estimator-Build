@@ -49,6 +49,10 @@
     "remote_sqft_cap": 250000.0,
     "applied": false,
     "min_remotes_required": 2
+   },
+   "bom_rebalance": {
+    "remotes": 1,
+    "note": "single remote: no rebalance needed"
    }
   },
   {
@@ -78,6 +82,10 @@
     "remote_sqft_cap": 250000.0,
     "applied": false,
     "min_remotes_required": 2
+   },
+   "bom_rebalance": {
+    "remotes": 1,
+    "note": "single remote: no rebalance needed"
    }
   },
   {
@@ -107,6 +115,10 @@
     "remote_sqft_cap": 250000.0,
     "applied": false,
     "min_remotes_required": 2
+   },
+   "bom_rebalance": {
+    "remotes": 1,
+    "note": "single remote: no rebalance needed"
    }
   },
   {
@@ -136,6 +148,22 @@
     "remote_sqft_cap": 250000.0,
     "applied": false,
     "min_remotes_required": 2
+   },
+   "bom_rebalance": {
+    "remotes": 2,
+    "antennas_per_remote": [
+     90,
+     90
+    ],
+    "floors_per_remote": [
+     23,
+     22
+    ],
+    "splitters_per_remote": [
+     89,
+     89
+    ],
+    "note": "antennas, tap plates, splitters and riser coax balanced equally per remote in the emitted BOM; day 3 may re-run the antennas needed by splitting the square footage and floors equally per remote to reduce the count; this balances the current design"
    }
   },
   {
@@ -165,6 +193,10 @@
     "remote_sqft_cap": 250000.0,
     "applied": false,
     "min_remotes_required": 2
+   },
+   "bom_rebalance": {
+    "remotes": 1,
+    "note": "single remote: no rebalance needed"
    }
   },
   {
@@ -194,6 +226,10 @@
     "remote_sqft_cap": 250000.0,
     "applied": false,
     "min_remotes_required": 2
+   },
+   "bom_rebalance": {
+    "remotes": 1,
+    "note": "single remote: no rebalance needed"
    }
   },
   {
@@ -223,6 +259,10 @@
     "remote_sqft_cap": 250000.0,
     "applied": false,
     "min_remotes_required": 2
+   },
+   "bom_rebalance": {
+    "remotes": 1,
+    "note": "single remote: no rebalance needed"
    }
   },
   {
@@ -252,6 +292,10 @@
     "remote_sqft_cap": 250000.0,
     "applied": false,
     "min_remotes_required": 2
+   },
+   "bom_rebalance": {
+    "remotes": 1,
+    "note": "single remote: no rebalance needed"
    }
   },
   {
@@ -281,6 +325,10 @@
     "remote_sqft_cap": 250000.0,
     "applied": false,
     "min_remotes_required": 2
+   },
+   "bom_rebalance": {
+    "remotes": 1,
+    "note": "single remote: no rebalance needed"
    }
   }
  ],
@@ -289,6 +337,17 @@
   "channels": 32,
   "port_composite_dbm": 33.0,
   "port_per_channel_dbm": 17.95,
+  "profile": "ifc_default",
+  "profile_provenance": {
+   "arrival_margin": "profile ifc_default",
+   "noise_rule": "profile ifc_default",
+   "near_op_margin": "profile ifc_default",
+   "near_dmg_margin": "profile ifc_default",
+   "squelch_offset": "profile ifc_default",
+   "ul_erp_donor_cap": "profile ifc_default"
+  },
+  "load_case": "pair",
+  "load_channels": null,
   "oem": "ADRF FiRe-78-8-U1 (ADXV-R-3378P-U2 remotes)",
   "site_nf_db": 6.0,
   "site_floor_dbm": -127.03,
@@ -311,6 +370,9 @@
     "noise_margin_db": 86.89,
     "squelch_threshold_dbm": -125.03,
     "input_pad_recommendation_db": 11.1,
+    "ul_erp_donor_per_channel_dbm": 25.97,
+    "ul_erp_donor_cap_dbm": 24,
+    "ul_erp_donor_pass": false,
     "ul_out_cap_composite_dbm": 30.0,
     "ul_out_cap_per_channel_dbm": 14.95,
     "ul_out_cap_binds": false,
@@ -325,7 +387,8 @@
      "classB_far_arrival_dbm": -109.03,
      "classB_agc_gain_reduction_db": 0.0,
      "classB_far_pass": true,
-     "class_a_recommended": false
+     "class_a_recommended": false,
+     "load_case": "pair"
     },
     "passes": false
    },
@@ -346,6 +409,9 @@
     "noise_margin_db": 86.89,
     "squelch_threshold_dbm": -125.03,
     "input_pad_recommendation_db": 10.1,
+    "ul_erp_donor_per_channel_dbm": 25.97,
+    "ul_erp_donor_cap_dbm": 24,
+    "ul_erp_donor_pass": false,
     "ul_out_cap_composite_dbm": 30.0,
     "ul_out_cap_per_channel_dbm": 14.95,
     "ul_out_cap_binds": false,
@@ -360,7 +426,8 @@
      "classB_far_arrival_dbm": -109.03,
      "classB_agc_gain_reduction_db": 0.0,
      "classB_far_pass": true,
-     "class_a_recommended": false
+     "class_a_recommended": false,
+     "load_case": "pair"
     },
     "passes": false
    }
@@ -388,6 +455,7 @@
     "forced": false,
     "note": "planner would not place the full design plate; grid uses the pruned placement"
    },
+   "ahj_profile": "ifc_default",
    "ul_gain_trunk_model_db": 11.8
   },
   "uplink": {
@@ -909,6 +977,9 @@
    "area_cap_sqft": null,
    "k_cap": null,
    "would_require_min_antennas": null,
+   "remote_sqft_cap": 250000.0,
+   "total_building_sqft_at_cap": 487403.0,
+   "would_require_remotes_at_cap": 2,
    "would_require_min_ports": null,
    "note": "caps are off (the owner default): pass --caps-area-sqft or --caps-k to see what they would require; the runs themselves never change until the owner makes them the build rule"
   }
@@ -918,12 +989,17 @@
    "basis": "FCC 90.219 and delay compliance plate (grade E); the carrier count per band is a job input and not assumed here",
    "oem": "adrf_fire",
    "erp_per_channel": {
-    "dl_port_dbm": 33.0,
+    "port_composite_dbm": 33.0,
+    "channels": 32,
+    "port_per_channel_dbm": 17.95,
     "ant_gain_dbi": 5.0,
-    "erp_dbm": 38.0,
+    "erp_per_channel_dbm": 22.9,
     "cap_dbm": 37.0,
     "cap_w": 5.0,
-    "pass": false
+    "pass": true,
+    "composite_cap_profile_dbm": 37,
+    "composite_port_pass_profile": true,
+    "note": "FCC 90.219(d)(3)(i): 5 W ERP per retransmitted channel; the profile may add a composite cap (SF 9.5.4.1 +37 dBm) and uplink donor ERP +24 dBm per channel (9.5.3.1)"
    },
    "noise_figure": {
     "vendor_nf_db": 4.5,
@@ -937,15 +1013,15 @@
     "note": "satisfied by the squelch design in the quiescent state; verify at the no-harm acceptance test (Collier method)"
    },
    "delay": {
-    "filter_khz": 12.5,
-    "filter_delay_us": 80.0,
+    "filter_khz": 75.0,
+    "filter_delay_us": 13.3,
     "fiber_us": 0.3,
     "coax_us": 0.0,
-    "total_us": 80.3,
-    "limit_us": 15.0,
-    "pass": false,
-    "filter_wide_enough_khz": 75.0,
-    "wide_filter_total_us": 13.6,
+    "total_us": 13.6,
+    "limit_us": 20,
+    "pass": true,
+    "filter_wide_enough_khz": null,
+    "wide_filter_total_us": null,
     "note": "NTIA TR-11-480: a 12.5 kHz filter alone is at least 80 us; 25/75/200 kHz bring the floor to 40/13.3/5 us. Collier recommends 25 or 75 kHz."
    },
    "cross_building_isolation": {
@@ -966,9 +1042,9 @@
     "cap_dbm": 37.0,
     "cap_w": 5.0,
     "pass": true,
-    "composite_cap_sf_dbm": 37.0,
-    "composite_port_pass_sf": true,
-    "note": "FCC 90.219(d)(3)(i): 5 W ERP per retransmitted channel; the SF ERRCS requirements also cap the peak DL composite at +37 dBm (9.5.4.1) and the UL ERP at the donor at +24 dBm per channel (9.5.3.1)"
+    "composite_cap_profile_dbm": 37.0,
+    "composite_port_pass_profile": true,
+    "note": "FCC 90.219(d)(3)(i): 5 W ERP per retransmitted channel; the profile may add a composite cap (SF 9.5.4.1 +37 dBm) and uplink donor ERP +24 dBm per channel (9.5.3.1)"
    },
    "noise_figure": {
     "vendor_nf_db": 5.0,
@@ -987,7 +1063,7 @@
     "fiber_us": 0.3,
     "coax_us": 0.0,
     "total_us": 80.3,
-    "limit_us": 15.0,
+    "limit_us": 32,
     "pass": false,
     "filter_wide_enough_khz": 75.0,
     "wide_filter_total_us": 13.6,
@@ -1011,9 +1087,9 @@
     "cap_dbm": 37.0,
     "cap_w": 5.0,
     "pass": true,
-    "composite_cap_sf_dbm": 37.0,
-    "composite_port_pass_sf": true,
-    "note": "FCC 90.219(d)(3)(i): 5 W ERP per retransmitted channel; the SF ERRCS requirements also cap the peak DL composite at +37 dBm (9.5.4.1) and the UL ERP at the donor at +24 dBm per channel (9.5.3.1)"
+    "composite_cap_profile_dbm": 37,
+    "composite_port_pass_profile": true,
+    "note": "FCC 90.219(d)(3)(i): 5 W ERP per retransmitted channel; the profile may add a composite cap (SF 9.5.4.1 +37 dBm) and uplink donor ERP +24 dBm per channel (9.5.3.1)"
    },
    "noise_figure": {
     "vendor_nf_db": 7.0,
@@ -1032,7 +1108,7 @@
     "fiber_us": 0.3,
     "coax_us": 0.0,
     "total_us": 80.3,
-    "limit_us": 15.0,
+    "limit_us": 15,
     "pass": false,
     "filter_wide_enough_khz": 75.0,
     "wide_filter_total_us": 13.6,
@@ -1048,12 +1124,17 @@
    "basis": "FCC 90.219 and delay compliance plate (grade E); the carrier count per band is a job input and not assumed here",
    "oem": "adrf_vu",
    "erp_per_channel": {
-    "dl_port_dbm": 33.0,
+    "port_composite_dbm": 33.0,
+    "channels": 32,
+    "port_per_channel_dbm": 17.95,
     "ant_gain_dbi": 5.0,
-    "erp_dbm": 38.0,
+    "erp_per_channel_dbm": 22.9,
     "cap_dbm": 37.0,
     "cap_w": 5.0,
-    "pass": false
+    "pass": true,
+    "composite_cap_profile_dbm": 37,
+    "composite_port_pass_profile": true,
+    "note": "FCC 90.219(d)(3)(i): 5 W ERP per retransmitted channel; the profile may add a composite cap (SF 9.5.4.1 +37 dBm) and uplink donor ERP +24 dBm per channel (9.5.3.1)"
    },
    "noise_figure": {
     "vendor_nf_db": 3.5,
@@ -1067,15 +1148,15 @@
     "note": "satisfied by the squelch design in the quiescent state; verify at the no-harm acceptance test (Collier method)"
    },
    "delay": {
-    "filter_khz": 12.5,
-    "filter_delay_us": 80.0,
+    "filter_khz": 75.0,
+    "filter_delay_us": 13.3,
     "fiber_us": 0.3,
     "coax_us": 0.0,
-    "total_us": 80.3,
-    "limit_us": 32.0,
-    "pass": false,
-    "filter_wide_enough_khz": 75.0,
-    "wide_filter_total_us": 13.6,
+    "total_us": 13.6,
+    "limit_us": 15,
+    "pass": true,
+    "filter_wide_enough_khz": null,
+    "wide_filter_total_us": null,
     "note": "NTIA TR-11-480: a 12.5 kHz filter alone is at least 80 us; 25/75/200 kHz bring the floor to 40/13.3/5 us. Collier recommends 25 or 75 kHz."
    },
    "cross_building_isolation": {

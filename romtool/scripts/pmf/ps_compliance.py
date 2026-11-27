@@ -18,6 +18,7 @@ group delay is about 5 ns per metre. This budget reports all three limits.
 import argparse
 import json
 import math
+import sys
 
 COAX_NS_PER_M = 5.0
 FIBER_US_PER_KM = 5.0
@@ -35,16 +36,27 @@ def main():
     ps.add_argument("--channels", type=int, required=True,
                     help="channels in the passband; explicitly entered every run "
                          "(the ERP check is per retransmitted channel per 90.219)")
+    ps.add_argument("--profile", default=None,
+                    help="per-AHJ profile; the CLI args override")
     ps.add_argument("--ant-gain", type=float, default=5.0, help="service antenna gain dBi")
     ps.add_argument("--filter-khz", type=float, default=12.5, help="Class A channel filter bandwidth")
     ps.add_argument("--fiber-m", type=float, default=60.0, help="total optical path length m")
     ps.add_argument("--coax-m", type=float, default=0.0, help="longest donor coax run m")
-    ps.add_argument("--delay-limit-us", type=float, default=15.0,
-                    help="AHJ delay cap (SBC 15, Collier 32)")
+    ps.add_argument("--delay-limit-us", type=float, default=None,
+                    help="AHJ delay cap (SBC 15, Collier 32; profile default)")
     ps.add_argument("--cross-building", action="store_true",
                     help="flag that a nearby ERRCS within 300 ft needs the test")
     ps.add_argument("--out")
     a = ps.parse_args()
+    sys.path.insert(0, ".")  # -I mode: the script dir is not on the path
+    from ps_profiles import resolve as resolve_profile
+    RESOLVED, PWHERE, PROF = resolve_profile(a.profile, {
+        "delay_limit_us": ("delay_limit_us", "delay_limit_us", a.delay_limit_us),
+        "composite_cap": ("composite_cap_dbm", "composite_cap_dbm", None),
+    })
+    delay_cap = RESOLVED["delay_limit_us"]
+    a.delay_limit_us = delay_cap
+    composite_cap = RESOLVED["composite_cap"]
 
     erp_dbm = a.port + a.ant_gain
     port_ch = a.port - 10.0 * math.log10(a.channels)
@@ -73,14 +85,13 @@ def main():
                                "erp_per_channel_dbm": round(erp_ch_dbm, 1),
                                "cap_dbm": 37.0, "cap_w": 5.0,
                                "pass": bool(erp_ch_dbm <= 37.0),
-                               "composite_cap_sf_dbm": 37.0,
-                               "composite_port_pass_sf": bool(a.port <= 37.0),
+                               "composite_cap_profile_dbm": composite_cap,
+                               "composite_port_pass_profile": bool(a.port <= composite_cap),
                                "note": "FCC 90.219(d)(3)(i): 5 W ERP per "
-                                       "retransmitted channel; the SF ERRCS "
-                                       "requirements also cap the peak DL "
-                                       "composite at +37 dBm (9.5.4.1) and the "
-                                       "UL ERP at the donor at +24 dBm per "
-                                       "channel (9.5.3.1)"},
+                                       "retransmitted channel; the profile "
+                                       "may add a composite cap (SF 9.5.4.1 "
+                                       "+37 dBm) and uplink donor ERP +24 dBm "
+                                       "per channel (9.5.3.1)"},
            "noise_figure": {"vendor_nf_db": nf_vendor, "source": VENDOR_NF_SRC[a.oem],
                             "limit_db": nf_limit,
                             "pass": bool(nf_vendor <= nf_limit)},
@@ -114,9 +125,12 @@ def main():
     out = a.out
     if out:
         json.dump(doc, open(out, "w"), indent=1)
-    print("ERP/ch %.1f dBm (cap 37) %s | NF %.1f dB (limit 9) %s | delay %.1f us "
+    print("ERP/ch %.1f dBm (cap 37) %s | composite %.1f (profile cap %s) "
+          "%s | NF %.1f dB (limit 9) %s | delay %.1f us "
           "(limit %.0f) %s%s" % (
-              erp_dbm, "PASS" if erp_dbm <= 37.0 else "FAIL",
+              erp_ch_dbm, "PASS" if erp_ch_dbm <= 37.0 else "FAIL",
+              a.port, ("%g" % composite_cap) if composite_cap else "none",
+              "PASS" if a.port <= composite_cap else "FAIL",
               nf_vendor, "PASS" if nf_vendor <= 9.0 else "FAIL",
               delay_us, a.delay_limit_us,
               "PASS" if delay_us <= a.delay_limit_us else "FAIL",

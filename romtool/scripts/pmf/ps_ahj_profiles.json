@@ -1,0 +1,66 @@
+{
+ "_note": "Per-AHJ threshold profiles. The explicit CLI arguments always override a profile. Values are the published AHJ requirements; add a profile per jurisdiction as engagements need them. Owner rule (2026-11-26): the -95 dBm portable threshold stands in every profile regardless of DAQ wording; SINR rides alongside.",
+ "profiles": {
+  "ifc_default": {
+   "arrival_margin_db": 18,
+   "noise_rule": "la",
+   "near_operating_margin_db": 5,
+   "near_damage_margin_db": 10,
+   "sinr_threshold_db": 18,
+   "delay_limit_us": 15,
+   "composite_cap_dbm": 37,
+   "ul_erp_donor_cap_dbm": 24,
+   "squelch_offset_db": 5,
+   "source": "generic SBC/ERCES-standard-style defaults; not a jurisdiction"
+  },
+  "dc_ouc": {
+   "arrival_margin_db": 18,
+   "noise_rule": "dc",
+   "near_operating_margin_db": 5,
+   "near_damage_margin_db": 10,
+   "sinr_threshold_db": 18,
+   "delay_limit_us": 15,
+   "composite_cap_dbm": 37,
+   "ul_erp_donor_cap_dbm": null,
+   "squelch_offset_db": 5,
+   "source": "DC OUC v7.1: BDA noise 15 dB below the site noise floor, squelch at the distribution noise +5 dB, near test at -5 dB operating / -10 dB damaging, coverage maps with 10 channels assumed simultaneous"
+  },
+  "la_county": {
+   "arrival_margin_db": 18,
+   "noise_rule": "la",
+   "near_operating_margin_db": 5,
+   "near_damage_margin_db": 10,
+   "sinr_threshold_db": 20,
+   "delay_limit_us": 15,
+   "composite_cap_dbm": null,
+   "ul_erp_donor_cap_dbm": null,
+   "squelch_offset_db": 5,
+   "source": "LA County v7-C3-S21: idle-state noise -150 dBm at the donor site, SINR 20 dB on instrumented P25 decode, calculated uplink per grid cell"
+  },
+  "sf": {
+   "arrival_margin_db": 18,
+   "noise_rule": "la",
+   "near_operating_margin_db": 5,
+   "near_damage_margin_db": 10,
+   "sinr_threshold_db": 18,
+   "delay_limit_us": 20,
+   "composite_cap_dbm": 37,
+   "ul_erp_donor_cap_dbm": 24,
+   "squelch_offset_db": 5,
+   "squelch_fixed_dbm": -75,
+   "source": "SF ERRCS Technical Requirements v2.0: peak downlink composite +37 dBm, uplink ERP at the donor +24 dBm per channel, squelch fixed at -75 dBm, all filters 75 kHz with 20 us group delay, equal-power derating at full loading"
+  },
+  "collier": {
+   "arrival_margin_db": 18,
+   "noise_rule": "dc",
+   "near_operating_margin_db": 5,
+   "near_damage_margin_db": 10,
+   "sinr_threshold_db": 18,
+   "delay_limit_us": 32,
+   "composite_cap_dbm": null,
+   "ul_erp_donor_cap_dbm": null,
+   "squelch_offset_db": 5,
+   "source": "Collier County P25 ERCES guidelines: 32 us propagation cap, SINR 18 dB / BER 2.5 percent, no-harm test with the county's managed services provider"
+  }
+ }
+}

@@ -10,9 +10,9 @@
   "cap_dbm": 37.0,
   "cap_w": 5.0,
   "pass": true,
-  "composite_cap_sf_dbm": 37.0,
-  "composite_port_pass_sf": true,
-  "note": "FCC 90.219(d)(3)(i): 5 W ERP per retransmitted channel; the SF ERRCS requirements also cap the peak DL composite at +37 dBm (9.5.4.1) and the UL ERP at the donor at +24 dBm per channel (9.5.3.1)"
+  "composite_cap_profile_dbm": 37,
+  "composite_port_pass_profile": true,
+  "note": "FCC 90.219(d)(3)(i): 5 W ERP per retransmitted channel; the profile may add a composite cap (SF 9.5.4.1 +37 dBm) and uplink donor ERP +24 dBm per channel (9.5.3.1)"
  },
  "noise_figure": {
   "vendor_nf_db": 7.0,
@@ -31,7 +31,7 @@
   "fiber_us": 0.3,
   "coax_us": 0.0,
   "total_us": 80.3,
-  "limit_us": 15.0,
+  "limit_us": 15,
   "pass": false,
   "filter_wide_enough_khz": 75.0,
   "wide_filter_total_us": 13.6,

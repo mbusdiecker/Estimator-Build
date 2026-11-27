@@ -20,6 +20,7 @@
    "forced": false,
    "note": "planner would not place the full design plate; grid uses the pruned placement"
   },
+  "ahj_profile": "ifc_default",
   "ul_gain_trunk_model_db": 11.8
  },
  "uplink": {
@@ -541,6 +542,9 @@
   "area_cap_sqft": null,
   "k_cap": null,
   "would_require_min_antennas": null,
+  "remote_sqft_cap": 250000.0,
+  "total_building_sqft_at_cap": 487403.0,
+  "would_require_remotes_at_cap": 2,
   "would_require_min_ports": null,
   "note": "caps are off (the owner default): pass --caps-area-sqft or --caps-k to see what they would require; the runs themselves never change until the owner makes them the build rule"
  }

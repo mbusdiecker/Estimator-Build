@@ -183,3 +183,32 @@ Vendor draws applied: ADXV-R-3378P-U2 102 W per remote; Comba V3 2 W Class A
 100 W. The 2-remote kit battery sized on them: 2x 120 Ah at 12 h, 4x at 24 h.
 Tool force (the fixed placement): NOT built; the design plates stay the
 right-sizing input per the owner.
+
+## Session 3 (2026-11-26 evening): load-case option, AHJ profiles, PIM field gate, BOM rebalance
+
+- ps_ul --load-case pair|loading: the pair (farthest point + directly under an
+  antenna, the default) and the loading instant (DC OUC style, 10 channels
+  active, per-channel caps widen to -10log10(10)). Both report the Class B
+  shared-AGC effect on the far channel and flag Class A when it fails.
+- ps_ahj_profiles.json + ps_profiles.py: per-AHJ threshold profiles
+  (ifc_default, dc_ouc, la_county, sf, collier) driving the arrival margin,
+  the noise rule, the near-test margins, the SINR threshold, the delay cap,
+  the composite cap, the UL donor ERP cap, and the squelch offset. The CLI
+  arguments always override; minus 95 dBm stands in every profile (owner
+  rule).
+- UL ERP at the donor per retransmitted channel checked in ps_ul against the
+  profile cap (+24 dBm per channel in the SF profile).
+- ps_pim_checklist.py: the field procedure for converged plates: the IM3
+  screen hits carried into a 7-step field gate (order filters, plate PIM at
+  2x43 dBm tones against the project limit, the donor and head end, the
+  half-split hunt, the hardware and torque rules, the post-activation ERCES
+  re-check, the acceptance record).
+- BOM rebalance in ps_rom: equal per remote at emission (the owner example:
+  21 antennas over 2 remotes -> 11 and 10; the splitters and riser coax split
+  the same way). Day 3 owner note: re-running the count with the floors split
+  into equal zones per remote may reduce the total; the first run balances
+  the design as-is.
+- Verified artifacts at 32 channels: the VHF row rebalance 90/90 over 2
+  remotes, the 250k gate reports a 2-remote minimum at 487,403 sq ft, the SF
+  profile passes the 75 kHz filter at 13.6 us, the Collier profile flags the
+  12.5 kHz filter and recommends 75 kHz at both the 32 us line.
