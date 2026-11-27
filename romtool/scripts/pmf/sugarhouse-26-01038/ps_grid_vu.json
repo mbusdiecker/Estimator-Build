@@ -8,10 +8,12 @@
   "dimension_rule_ok": true
  },
  "design": {
-  "port_dbm": 37.0,
-  "n": 3,
+  "port_composite_dbm": 28.0,
+  "port_per_channel_dbm": 12.95,
+  "channels": 32,
+  "n": 4,
   "k": 48,
-  "ul_gain_db": 25.5,
+  "ul_gain_db": 40.5,
   "sites": 1,
   "placement": {
    "returned": 1,
@@ -31,15 +33,15 @@
   "noise_rule": "la"
  },
  "bands": {
-  "UHF_450": {
+  "VHF_150": {
    "cells": [
     {
      "cell": 1,
      "x_m": 5.8,
      "y_m": 2.2,
-     "dl_dbm": -7.6,
+     "dl_dbm": -23.4,
      "dl_pass": true,
-     "sinr_db_est": 117.4,
+     "sinr_db_est": 101.6,
      "sinr_pass": true,
      "calc_ul_site_dbm": -108.9,
      "ul_pass": true
@@ -48,42 +50,42 @@
      "cell": 2,
      "x_m": 17.2,
      "y_m": 2.2,
-     "dl_dbm": -5.5,
+     "dl_dbm": -20.7,
      "dl_pass": true,
-     "sinr_db_est": 119.6,
+     "sinr_db_est": 104.3,
      "sinr_pass": true,
-     "calc_ul_site_dbm": -106.7,
+     "calc_ul_site_dbm": -106.1,
      "ul_pass": true
     },
     {
      "cell": 3,
      "x_m": 28.8,
      "y_m": 2.2,
-     "dl_dbm": -0.8,
+     "dl_dbm": -15.7,
      "dl_pass": true,
-     "sinr_db_est": 124.3,
+     "sinr_db_est": 109.3,
      "sinr_pass": true,
-     "calc_ul_site_dbm": -102.0,
+     "calc_ul_site_dbm": -101.2,
      "ul_pass": true
     },
     {
      "cell": 4,
      "x_m": 40.2,
      "y_m": 2.2,
-     "dl_dbm": -5.4,
+     "dl_dbm": -20.7,
      "dl_pass": true,
-     "sinr_db_est": 119.6,
+     "sinr_db_est": 104.3,
      "sinr_pass": true,
-     "calc_ul_site_dbm": -106.6,
+     "calc_ul_site_dbm": -106.2,
      "ul_pass": true
     },
     {
      "cell": 5,
      "x_m": 51.8,
      "y_m": 2.2,
-     "dl_dbm": -7.8,
+     "dl_dbm": -23.6,
      "dl_pass": true,
-     "sinr_db_est": 117.2,
+     "sinr_db_est": 101.5,
      "sinr_pass": true,
      "calc_ul_site_dbm": -109.0,
      "ul_pass": true
@@ -92,9 +94,9 @@
      "cell": 6,
      "x_m": 5.8,
      "y_m": 6.6,
-     "dl_dbm": -7.2,
+     "dl_dbm": -23.0,
      "dl_pass": true,
-     "sinr_db_est": 117.9,
+     "sinr_db_est": 102.0,
      "sinr_pass": true,
      "calc_ul_site_dbm": -108.4,
      "ul_pass": true
@@ -103,42 +105,42 @@
      "cell": 7,
      "x_m": 17.2,
      "y_m": 6.6,
-     "dl_dbm": -4.5,
+     "dl_dbm": -19.7,
      "dl_pass": true,
-     "sinr_db_est": 120.5,
+     "sinr_db_est": 105.3,
      "sinr_pass": true,
-     "calc_ul_site_dbm": -105.7,
+     "calc_ul_site_dbm": -105.2,
      "ul_pass": true
     },
     {
      "cell": 8,
      "x_m": 28.8,
      "y_m": 6.6,
-     "dl_dbm": 8.4,
+     "dl_dbm": -6.4,
      "dl_pass": true,
-     "sinr_db_est": 133.4,
+     "sinr_db_est": 118.6,
      "sinr_pass": true,
-     "calc_ul_site_dbm": -92.9,
+     "calc_ul_site_dbm": -91.9,
      "ul_pass": true
     },
     {
      "cell": 9,
      "x_m": 40.2,
      "y_m": 6.6,
-     "dl_dbm": -4.7,
+     "dl_dbm": -19.9,
      "dl_pass": true,
-     "sinr_db_est": 120.3,
+     "sinr_db_est": 105.1,
      "sinr_pass": true,
-     "calc_ul_site_dbm": -105.9,
+     "calc_ul_site_dbm": -105.4,
      "ul_pass": true
     },
     {
      "cell": 10,
      "x_m": 51.8,
      "y_m": 6.6,
-     "dl_dbm": -7.4,
+     "dl_dbm": -23.2,
      "dl_pass": true,
-     "sinr_db_est": 117.7,
+     "sinr_db_est": 101.9,
      "sinr_pass": true,
      "calc_ul_site_dbm": -108.6,
      "ul_pass": true
@@ -147,9 +149,9 @@
      "cell": 11,
      "x_m": 5.8,
      "y_m": 10.9,
-     "dl_dbm": -7.4,
+     "dl_dbm": -23.1,
      "dl_pass": true,
-     "sinr_db_est": 117.7,
+     "sinr_db_est": 101.9,
      "sinr_pass": true,
      "calc_ul_site_dbm": -108.6,
      "ul_pass": true
@@ -158,42 +160,42 @@
      "cell": 12,
      "x_m": 17.2,
      "y_m": 10.9,
-     "dl_dbm": -4.6,
+     "dl_dbm": -19.8,
      "dl_pass": true,
-     "sinr_db_est": 120.5,
+     "sinr_db_est": 105.2,
      "sinr_pass": true,
-     "calc_ul_site_dbm": -105.8,
+     "calc_ul_site_dbm": -105.2,
      "ul_pass": true
     },
     {
      "cell": 13,
      "x_m": 28.8,
      "y_m": 10.9,
-     "dl_dbm": 6.5,
+     "dl_dbm": -8.3,
      "dl_pass": true,
-     "sinr_db_est": 131.5,
+     "sinr_db_est": 116.7,
      "sinr_pass": true,
-     "calc_ul_site_dbm": -94.7,
+     "calc_ul_site_dbm": -93.7,
      "ul_pass": true
     },
     {
      "cell": 14,
      "x_m": 40.2,
      "y_m": 10.9,
-     "dl_dbm": -4.7,
+     "dl_dbm": -20.0,
      "dl_pass": true,
-     "sinr_db_est": 120.3,
+     "sinr_db_est": 105.1,
      "sinr_pass": true,
-     "calc_ul_site_dbm": -105.9,
+     "calc_ul_site_dbm": -105.4,
      "ul_pass": true
     },
     {
      "cell": 15,
      "x_m": 51.8,
      "y_m": 10.9,
-     "dl_dbm": -7.4,
+     "dl_dbm": -23.2,
      "dl_pass": true,
-     "sinr_db_est": 117.6,
+     "sinr_db_est": 101.8,
      "sinr_pass": true,
      "calc_ul_site_dbm": -108.7,
      "ul_pass": true
@@ -202,9 +204,9 @@
      "cell": 16,
      "x_m": 5.8,
      "y_m": 15.3,
-     "dl_dbm": -7.8,
+     "dl_dbm": -23.6,
      "dl_pass": true,
-     "sinr_db_est": 117.2,
+     "sinr_db_est": 101.5,
      "sinr_pass": true,
      "calc_ul_site_dbm": -109.0,
      "ul_pass": true
@@ -213,42 +215,42 @@
      "cell": 17,
      "x_m": 17.2,
      "y_m": 15.3,
-     "dl_dbm": -5.3,
+     "dl_dbm": -20.6,
      "dl_pass": true,
-     "sinr_db_est": 119.7,
+     "sinr_db_est": 104.4,
      "sinr_pass": true,
-     "calc_ul_site_dbm": -106.6,
+     "calc_ul_site_dbm": -106.1,
      "ul_pass": true
     },
     {
      "cell": 18,
      "x_m": 28.8,
      "y_m": 15.3,
-     "dl_dbm": -1.3,
+     "dl_dbm": -16.3,
      "dl_pass": true,
-     "sinr_db_est": 123.8,
+     "sinr_db_est": 108.8,
      "sinr_pass": true,
-     "calc_ul_site_dbm": -102.5,
+     "calc_ul_site_dbm": -101.7,
      "ul_pass": true
     },
     {
      "cell": 19,
      "x_m": 40.2,
      "y_m": 15.3,
-     "dl_dbm": -5.3,
+     "dl_dbm": -20.6,
      "dl_pass": true,
-     "sinr_db_est": 119.8,
+     "sinr_db_est": 104.4,
      "sinr_pass": true,
-     "calc_ul_site_dbm": -106.5,
+     "calc_ul_site_dbm": -106.1,
      "ul_pass": true
     },
     {
      "cell": 20,
      "x_m": 51.8,
      "y_m": 15.3,
-     "dl_dbm": -7.8,
+     "dl_dbm": -23.5,
      "dl_pass": true,
-     "sinr_db_est": 117.3,
+     "sinr_db_est": 101.5,
      "sinr_pass": true,
      "calc_ul_site_dbm": -109.0,
      "ul_pass": true
@@ -264,10 +266,259 @@
    },
    "retest_zone": false,
    "spread": {
-    "min_dbm": -8.6,
-    "p5_dbm": -8.0,
-    "p95_dbm": 2.2,
-    "max_dbm": 16.8,
+    "min_dbm": -24.6,
+    "p5_dbm": -23.9,
+    "p95_dbm": -12.7,
+    "max_dbm": 2.1,
+    "spread_db": 26.7
+   },
+   "near_ring": [
+    {
+     "antenna": "L04_auto_auto_a1",
+     "x_m": 28.5,
+     "y_m": 8.5,
+     "near_ring_dl_dbm": -4.2,
+     "near_input_bda_dbm": 12.6
+    }
+   ]
+  },
+  "UHF_450": {
+   "cells": [
+    {
+     "cell": 1,
+     "x_m": 5.8,
+     "y_m": 2.2,
+     "dl_dbm": -31.7,
+     "dl_pass": true,
+     "sinr_db_est": 93.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 2,
+     "x_m": 17.2,
+     "y_m": 2.2,
+     "dl_dbm": -29.5,
+     "dl_pass": true,
+     "sinr_db_est": 95.5,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.7,
+     "ul_pass": true
+    },
+    {
+     "cell": 3,
+     "x_m": 28.8,
+     "y_m": 2.2,
+     "dl_dbm": -24.8,
+     "dl_pass": true,
+     "sinr_db_est": 100.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -102.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 4,
+     "x_m": 40.2,
+     "y_m": 2.2,
+     "dl_dbm": -29.5,
+     "dl_pass": true,
+     "sinr_db_est": 95.6,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 5,
+     "x_m": 51.8,
+     "y_m": 2.2,
+     "dl_dbm": -31.9,
+     "dl_pass": true,
+     "sinr_db_est": 93.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -109.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 6,
+     "x_m": 5.8,
+     "y_m": 6.6,
+     "dl_dbm": -31.2,
+     "dl_pass": true,
+     "sinr_db_est": 93.8,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.4,
+     "ul_pass": true
+    },
+    {
+     "cell": 7,
+     "x_m": 17.2,
+     "y_m": 6.6,
+     "dl_dbm": -28.6,
+     "dl_pass": true,
+     "sinr_db_est": 96.5,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -105.7,
+     "ul_pass": true
+    },
+    {
+     "cell": 8,
+     "x_m": 28.8,
+     "y_m": 6.6,
+     "dl_dbm": -15.7,
+     "dl_pass": true,
+     "sinr_db_est": 109.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -92.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 9,
+     "x_m": 40.2,
+     "y_m": 6.6,
+     "dl_dbm": -28.7,
+     "dl_pass": true,
+     "sinr_db_est": 96.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -105.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 10,
+     "x_m": 51.8,
+     "y_m": 6.6,
+     "dl_dbm": -31.4,
+     "dl_pass": true,
+     "sinr_db_est": 93.6,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 11,
+     "x_m": 5.8,
+     "y_m": 10.9,
+     "dl_dbm": -31.4,
+     "dl_pass": true,
+     "sinr_db_est": 93.6,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 12,
+     "x_m": 17.2,
+     "y_m": 10.9,
+     "dl_dbm": -28.6,
+     "dl_pass": true,
+     "sinr_db_est": 96.4,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -105.8,
+     "ul_pass": true
+    },
+    {
+     "cell": 13,
+     "x_m": 28.8,
+     "y_m": 10.9,
+     "dl_dbm": -17.5,
+     "dl_pass": true,
+     "sinr_db_est": 107.5,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -94.7,
+     "ul_pass": true
+    },
+    {
+     "cell": 14,
+     "x_m": 40.2,
+     "y_m": 10.9,
+     "dl_dbm": -28.8,
+     "dl_pass": true,
+     "sinr_db_est": 96.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -105.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 15,
+     "x_m": 51.8,
+     "y_m": 10.9,
+     "dl_dbm": -31.5,
+     "dl_pass": true,
+     "sinr_db_est": 93.6,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.7,
+     "ul_pass": true
+    },
+    {
+     "cell": 16,
+     "x_m": 5.8,
+     "y_m": 15.3,
+     "dl_dbm": -31.8,
+     "dl_pass": true,
+     "sinr_db_est": 93.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -109.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 17,
+     "x_m": 17.2,
+     "y_m": 15.3,
+     "dl_dbm": -29.4,
+     "dl_pass": true,
+     "sinr_db_est": 95.6,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 18,
+     "x_m": 28.8,
+     "y_m": 15.3,
+     "dl_dbm": -25.3,
+     "dl_pass": true,
+     "sinr_db_est": 99.7,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -102.5,
+     "ul_pass": true
+    },
+    {
+     "cell": 19,
+     "x_m": 40.2,
+     "y_m": 15.3,
+     "dl_dbm": -29.3,
+     "dl_pass": true,
+     "sinr_db_est": 95.7,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.5,
+     "ul_pass": true
+    },
+    {
+     "cell": 20,
+     "x_m": 51.8,
+     "y_m": 15.3,
+     "dl_dbm": -31.8,
+     "dl_pass": true,
+     "sinr_db_est": 93.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -109.0,
+     "ul_pass": true
+    }
+   ],
+   "n_cells": 20,
+   "n_fail": 0,
+   "floor_pass": true,
+   "fail_breakdown": {
+    "dl": 0,
+    "sinr": 0,
+    "calc_ul": 0
+   },
+   "retest_zone": false,
+   "spread": {
+    "min_dbm": -32.7,
+    "p5_dbm": -32.1,
+    "p95_dbm": -21.8,
+    "max_dbm": -7.2,
     "spread_db": 25.5
    },
    "near_ring": [
@@ -275,7 +526,7 @@
      "antenna": "L04_auto_auto_a1",
      "x_m": 28.5,
      "y_m": 8.5,
-     "near_ring_dl_dbm": 10.5,
+     "near_ring_dl_dbm": -13.5,
      "near_input_bda_dbm": 3.3
     }
    ]
@@ -290,6 +541,6 @@
   "k_cap": null,
   "would_require_min_antennas": null,
   "would_require_min_ports": null,
-  "note": "caps are design gates reported only; the runs themselves are unchanged until the owner turns them on"
+  "note": "caps are off (the owner default): pass --caps-area-sqft or --caps-k to see what they would require; the runs themselves never change until the owner makes them the build rule"
  }
 }

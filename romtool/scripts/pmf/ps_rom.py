@@ -36,6 +36,9 @@ def main():
     ap.add_argument("--dir", default="sugarhouse-26-01038")
     ap.add_argument("--floors", type=int, default=45)
     ap.add_argument("--ant-gain", type=float, default=5.0)
+    ap.add_argument("--channels", type=int, required=True,
+                    help="channels in each passband: the composite port splits "
+                         "by 10log10(channels); explicitly entered every run")
     ap.add_argument("--caps-area-sqft", type=float, default=None)
     ap.add_argument("--caps-k", type=int, default=None)
     ap.add_argument("--caps-on", action="store_true",
@@ -57,7 +60,12 @@ def main():
         ant_n = dr["ant_bldg"]
         remotes = dr["remotes_bldg"]
         k = dr["k_fit"]
-        plate = {"port_dbm": port, "design_N": dN, "p_min_dbm": dr["P_min"],
+        # per-channel plate: the composite splits by the channel count, and the
+        # coverage runs (pmf_ps_*) were executed AT the per-channel port
+        port_ch = round(port - 10.0 * math.log10(args.channels), 2)
+        plate = {"port_composite_dbm": port, "channels": args.channels,
+                 "port_per_channel_dbm": port_ch,
+                 "design_N": dN, "p_min_dbm": dr["P_min"],
                  "headroom_db": dr["headroom_db"], "k": k,
                  "cov_pct": dr["cov_confirmed"], "antennas_per_floor": dN,
                  "antennas_bldg": ant_n, "remotes_bldg": remotes,
@@ -76,8 +84,8 @@ def main():
             gate["area_note"] = "the antenna-area gate evaluates per floor in " \
                                 "the grid module (caps_report): pass the same " \
                                 "value there"
-        # the ERP per channel plate: port + antenna gain vs the 37 dBm cap
-        erp = round(port + args.ant_gain, 1)
+        # the ERP plate per retransmitted channel (90.219)
+        erp = round(port_ch + args.ant_gain, 1)
         plate["erp_per_channel_dbm"] = erp
         plate["erp_pass_5w"] = bool(erp <= 37.0)
         if not plate["erp_pass_5w"]:
@@ -117,12 +125,62 @@ def main():
                 "them to the reported design numbers. Per-antenna area and "
                 "floors-per-port as built live in the grid block and the "
                 "plates."},
+    # SBC architecture guidance (owner message 2026-11-26)
+    floor_sqft = None
+    if grid:
+        floor_sqft = (grid.get("caps_report") or {}).get("floor_area_sqft")
+    total = (floor_sqft * args.floors) if floor_sqft else None
+    if total is not None:
+        passive_fav = total < 500000.0
+        fiber_backbone = total > 250000.0
+        arch = {
+            "floor_area_sqft": floor_sqft, "floors": args.floors,
+            "total_building_sqft": round(total, 0),
+            "passive_vs_active": {
+                "sbc_guidance": "passive favored generally under about "
+                                "500,000 sq ft; active common for 500,000 to "
+                                "1,000,000+ sq ft or dense/steel-heavy "
+                                "buildings",
+                "verdict": ("passive-simple side of the boundary" if passive_fav
+                            else "active DAS territory"),
+                "this_building": ("about %.0f sq ft: under the 500K passive "
+                                  "boundary, but a 45-floor dense/steel "
+                                  "high-rise is the active case the guidance "
+                                  "names" % total)
+                               if passive_fav else
+                               ("about %.0f sq ft: active DAS territory" % total)},
+            "fiber_vs_coax": {
+                "sbc_guidance": "fiber optic backbones recommended over coax "
+                                "for buildings over 250,000 sq ft or campus "
+                                "layouts (lower signal loss)",
+                "verdict": "fiber backbone recommended" if fiber_backbone
+                           else "coax backbone permissible",
+                "this_building": ("about %.0f sq ft is over the 250,000 sq ft "
+                                  "line: the SBC recommends the fiber "
+                                  "backbone, which favors the fiber-star "
+                                  "architectures (ADRF FiRe remotes, the "
+                                  "Westell V2 fiber DAS kit, the Comba MU+RU "
+                                  "fiber DAS) over the pure coax trunk "
+                                  "standalone BDAs" % total)
+                                 if fiber_backbone else "coax acceptable"}}
+    else:
+        arch = {"note": "floor area unknown: run ps_grid first to get "
+                        "floor_area_sqft"}
+    converged_note = {
+        "requirement": "CONVERGED SYSTEMS: the order MUST include the "
+                       "channel-specific (Class A channelized) filters for "
+                       "every PS channel, on every shared plate and every "
+                       "BDA carrying PS bands (owner direction 2026-11-26; "
+                       "SBC practice)",
+        "applies_to": "any kit combining cellular and ERCES on shared coax, "
+                      "tap plates, or donor-side hardware"}
     doc = {"basis": "PS ROM per OEM and frequency: the DL plate from the pmf "
                     "runs, the uplink from the ps_ul noise-coordination "
                     "engine, the grid-method self-check from the floor model, "
                     "the 90.219 and delay plates, and the converged-plate "
                     "intermod screen. Config estimates (grade E). No prices.",
            "floors": args.floors, "ant_gain_dbi": args.ant_gain,
+           "architecture_sbc": arch, "converged_order_requirement": converged_note,
            "rom": rows, "uplink": ul, "grid": grid, "compliance": comp,
            "intermod": imd, "caps": caps_block}
     out = f"{d}/ps_rom_results.json"
@@ -130,9 +188,10 @@ def main():
     print("wrote", out, "| rows:", len(rows))
     for r in rows:
         p = r["plate"]
-        print("%-22s %-10s port %4.1f  N=%d  k=%d  rem=%d  ant=%d  ERP %s" % (
-            r["model"], r["freq"], p["port_dbm"], p["design_N"], p["k"],
-            p["remotes_bldg"], p["antennas_bldg"],
+        print("%-22s %-10s comp %4.1f %-2dch -> %5.2f ch  N=%d  k=%d  rem=%d  ERP %s" % (
+            r["model"], r["freq"], p["port_composite_dbm"], p["channels"],
+            p["port_per_channel_dbm"], p["design_N"], p["k"],
+            p["remotes_bldg"],
             "%.1f dBm %s" % (p["erp_per_channel_dbm"],
                              "PASS" if p["erp_pass_5w"] else
                              "FAIL pad %.1f" % p.get("erp_pad_db", 0))))

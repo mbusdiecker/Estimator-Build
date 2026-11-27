@@ -1,0 +1,110 @@
+{
+ "pmf_ps_fire700": {
+  "band": "PS700",
+  "port_ch": 17.95,
+  "design_N": 4,
+  "k": 47,
+  "cov": 97.3,
+  "p_min": -12.99,
+  "headroom": 30.94,
+  "loss_db": 30.47,
+  "rem": 1,
+  "ant_bldg": 180
+ },
+ "pmf_ps_fire800": {
+  "band": "PS800",
+  "port_ch": 17.95,
+  "design_N": 4,
+  "k": 47,
+  "cov": 97.3,
+  "p_min": -12.99,
+  "headroom": 30.94,
+  "loss_db": 30.47,
+  "rem": 1,
+  "ant_bldg": 180
+ },
+ "pmf_ps_fire_b14": {
+  "band": "B14_FIRSTNET",
+  "port_ch": 14.95,
+  "design_N": 4,
+  "k": 40,
+  "cov": 95.2,
+  "p_min": -13.17,
+  "headroom": 28.12,
+  "loss_db": 28.04,
+  "rem": 1,
+  "ant_bldg": 180
+ },
+ "pmf_ps_comba700": {
+  "band": "PS700",
+  "port_ch": 17.95,
+  "design_N": 4,
+  "k": 47,
+  "cov": 97.3,
+  "p_min": -12.99,
+  "headroom": 30.94,
+  "loss_db": 30.47,
+  "rem": 1,
+  "ant_bldg": 180
+ },
+ "pmf_ps_comba800": {
+  "band": "PS800",
+  "port_ch": 17.95,
+  "design_N": 4,
+  "k": 47,
+  "cov": 97.3,
+  "p_min": -12.99,
+  "headroom": 30.94,
+  "loss_db": 30.47,
+  "rem": 1,
+  "ant_bldg": 180
+ },
+ "pmf_ps_westell700": {
+  "band": "PS700",
+  "port_ch": 18.95,
+  "design_N": 4,
+  "k": 48,
+  "cov": 97.7,
+  "p_min": -13.16,
+  "headroom": 32.11,
+  "loss_db": 31.14,
+  "rem": 1,
+  "ant_bldg": 180
+ },
+ "pmf_ps_westell800": {
+  "band": "PS800",
+  "port_ch": 18.95,
+  "design_N": 4,
+  "k": 48,
+  "cov": 97.7,
+  "p_min": -13.16,
+  "headroom": 32.11,
+  "loss_db": 31.14,
+  "rem": 1,
+  "ant_bldg": 180
+ },
+ "pmf_ps_vu_vhf": {
+  "band": "VHF_150",
+  "port_ch": 12.95,
+  "design_N": 4,
+  "k": 35,
+  "cov": 96.7,
+  "p_min": -13.07,
+  "headroom": 26.02,
+  "loss_db": 25.73,
+  "rem": 2,
+  "ant_bldg": 180
+ },
+ "pmf_ps_vu_uhf": {
+  "band": "UHF_450",
+  "port_ch": 21.95,
+  "design_N": 3,
+  "k": 48,
+  "cov": 98.8,
+  "p_min": -11.57,
+  "headroom": 33.52,
+  "loss_db": 31.14,
+  "rem": 1,
+  "ant_bldg": 135
+ }
+}

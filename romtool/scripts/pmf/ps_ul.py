@@ -72,6 +72,10 @@ def main():
     ap.add_argument("--oem", default="adrf_fire", choices=sorted(OEM_HW))
     ap.add_argument("--k", type=int, default=48, help="design floors per port (loss basis)")
     ap.add_argument("--nfloors", type=int, default=45)
+    ap.add_argument("--channels", type=int, required=True,
+                    help="channels in the passband: the composite port is split "
+                         "by 10log10(channels) per the industry convention; "
+                         "explicitly entered on every run by owner direction")
     # AHJ / host site inputs (overridable; documented assumptions)
     ap.add_argument("--site-erp", type=float, default=50.0, help="host site ERP dBm (AHJ input)")
     ap.add_argument("--site-nf", type=float, default=6.0, help="host site receiver NF dB (AHJ input)")
@@ -95,12 +99,14 @@ def main():
         from romtool.config import load_config
         cfg = load_config()
         fh = float(cfg["autoplace"]["floor_height_m"])
+        riser = float(cfg["cables"]["coax_1_2in"]["loss_db_per_100m_ghz"]["2.0"]) / 100.0
     except Exception:
         fh = 4.0
+        riser = 0.144
 
     # trunk tap loss at the design k: same formula as pmf.loss_db
     def loss_db(k):
-        return ((10 * math.log10(k) + 0.5) if k > 1 else 0.0) + (k // 2) * fh * 0.22
+        return ((10 * math.log10(k) + 0.5) if k > 1 else 0.0) + (k // 2) * fh * riser
     loss = a.loss_coeff if a.loss_coeff is not None else loss_db(a.k)
 
     hw = OEM_HW[a.oem]
@@ -113,6 +119,9 @@ def main():
     site_floor = KTB_12K5 + a.site_nf
     target_arrival = site_floor + a.arrival_margin
     noise_limit = -150.0 if a.noise_rule == "la" else site_floor - 15.0
+    # per-channel DL port: the composite splits by the channel count
+    port_composite = a.port
+    a.port = a.port - 10.0 * math.log10(a.channels)
     # far user: deepest plate point delivered = port - loss; ul_port = eirp - port + delivered
     eirp_ue = a.ue_tx - a.body_loss
     rows = []
@@ -139,6 +148,9 @@ def main():
         near_ok = ul_near_at_bda <= hw["max_input_dbm"] - 5.0
         near_dmg = ul_near_at_bda <= hw["damaging_dbm"] - 10.0
         pad_db = max(0.0, round(ul_near_at_bda - (hw["max_input_dbm"] - 5.0), 1))
+        # UL output cap per channel: the composite cap also splits by channels
+        out_cap_ch = hw["ul_out_cap_dbm"] - 10.0 * math.log10(a.channels)
+        cap_binds = (ul_far_at_bda + g_rec) > out_cap_ch
         rows.append({
             "band": bid, "freq_mhz": f,
             "delivered_far_dl_dbm": round(fd, 2),
@@ -155,10 +167,13 @@ def main():
             "noise_margin_db": round(noise_limit - noise_at_site, 2),
             "squelch_threshold_dbm": round(squelch_in, 2),
             "input_pad_recommendation_db": pad_db,
+            "ul_out_cap_composite_dbm": hw["ul_out_cap_dbm"],
+            "ul_out_cap_per_channel_dbm": round(out_cap_ch, 2),
+            "ul_out_cap_binds": bool(cap_binds),
             "near_test_operating_pass": bool(near_ok),
             "near_test_damage_pass": bool(near_dmg),
             "passes": bool(arrival >= target_arrival and noise_at_site <= noise_limit
-                           and near_ok and near_dmg)})
+                           and near_ok and near_dmg and not cap_binds)})
     doc = {"basis": "PS uplink engine (grade E): band-reciprocal chain at the "
                     "design k, AHJ site inputs parameterized. Assumptions: 3 W "
                     "portable, 5 dB hip-height body loss, distribution net UL "
@@ -166,6 +181,9 @@ def main():
                     "are AHJ placeholders until the site sheet arrives; the "
                     "squelch floor uses a 3 dB distribution noise figure "
                     "estimate (grade D)." + " Vendor notes: " + hw["spec_note"],
+           "channels": a.channels,
+           "port_composite_dbm": port_composite,
+           "port_per_channel_dbm": round(port_composite - 10.0 * math.log10(a.channels), 2),
            "oem": hw["label"], "site_nf_db": a.site_nf, "site_floor_dbm": round(site_floor, 2),
            "trunk_loss_at_k_db": round(loss, 2), "bands": rows}
     out = a.out or "sugarhouse-26-01038/ps_ul_results.json"
@@ -178,6 +196,5 @@ def main():
                   r["ul_gain_recommended_db"], r["squelch_threshold_dbm"],
                   "PASS" if r["passes"] else "FAIL",
                   "" if r["passes"] else "  <- see bands for the failing constraint"))
-
 if __name__ == "__main__":
     main()

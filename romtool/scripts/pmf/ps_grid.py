@@ -59,7 +59,12 @@ def main():
     a = argparse.ArgumentParser()
     a.add_argument("floor")
     a.add_argument("--bands", default="PS700,PS800")
-    a.add_argument("--port", type=float, required=True)
+    a.add_argument("--port", type=float, required=True,
+                   help="COMPOSITE DL port dBm from the vendor sheet (B14: the "
+                        "passband is one channel, Class B)")
+    a.add_argument("--channels", type=int, required=True,
+                   help="channels in the passband: the composite port splits by "
+                        "10log10(channels); explicitly entered every run")
     a.add_argument("--design-n", type=int, required=True)
     a.add_argument("--k", type=int, default=48)
     a.add_argument("--nfloors", type=int, default=45)
@@ -105,10 +110,14 @@ def main():
     for b in bmap.values():
         b.dv_at, b.dv_min, b.dv_max = dv_fn, dv_lo, dv_hi
 
-    # the design the pmf run chose: place antennas once at the design N
+    # the design the pmf run chose: place antennas once at the design N.
+    # The composite port splits by the channel count before the planner runs;
+    # the uplink budget below keeps the composite-port form (the coupling
+    # invariant delivered-minus-port is unchanged by the split).
+    port_ch = args.port - 10.0 * math.log10(args.channels)
     req = {"bands": bands, "threshold_dbm": args.thr, "coverage_target_pct": args.cov,
            "rsrp_offset_db": 0.0, "step_px": 2, "max_antennas": args.design_n,
-           "remotes": {"count": 1, "max_dl_out_dbm": args.port, "dl_gain_db": 60.0,
+           "remotes": {"count": 1, "max_dl_out_dbm": port_ch, "dl_gain_db": 60.0,
                        "operators": 1}}
     try:
         r = autoplace_floor(model, cfg, floor["id"], req)
@@ -236,7 +245,7 @@ def main():
         for j in range(0, len(ring_pts), 4):
             seg = linr[bid][j:j + 4]
             lvl = 10.0 * math.log10(max(seg)) if max(seg) > 0 else -200.0
-            near_in = eirp_ue - args.port + lvl
+            near_in = eirp_ue - port_ch + lvl
             per_ant.append({"antenna": ants[j // 4][0],
                             "x_m": round(ants[j // 4][1] / ppm, 1),
                             "y_m": round(ants[j // 4][2] / ppm, 1),
@@ -295,6 +304,7 @@ def main():
     sqft = w_px * h_px / ppm ** 2 * 10.7639
     area_per_ant = sqft / max(len(ants), 1)
     caps = {"enabled": bool(args.caps_area_sqft or args.caps_k),
+            "floor_area_sqft": round(sqft, 0),
             "area_sqft_per_antenna_now": round(area_per_ant, 1),
             "floors_per_port_now": args.k,
             "area_cap_sqft": args.caps_area_sqft,
@@ -324,7 +334,10 @@ def main():
                                          site_floor, args.arrival_margin),
            "grid": {"rows": rows_n, "cols": cols_n, "worst_cell_dim_m": worst_dim,
                     "max_dim_rule_m": 24.4, "dimension_rule_ok": fits},
-           "design": {"port_dbm": args.port, "n": args.design_n, "k": args.k,
+           "design": {"port_composite_dbm": args.port,
+                      "port_per_channel_dbm": round(port_ch, 2),
+                      "channels": args.channels,
+                      "n": args.design_n, "k": args.k,
                       "ul_gain_db": round(args.ul_gain, 1), "sites": len(ants),
                       "placement": placement,
                       "ul_gain_trunk_model_db": round(max(0.0, target_arr

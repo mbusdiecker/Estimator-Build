@@ -1339,7 +1339,10 @@
    "notes": [
     "UL 2524 listing is required on the ERCES components (NFPA 1225 18.12.1.3); the price list family ADXV-R-3378P-U2 / ADXV-R-25VU-U2 and the NEMA 4 head end ADXV-H-NMS-AC-N4 are the listed precedents. The Melville inputs carried 12 h battery, wall mount donor, no EPO and no PSR-ANN-U2; the annunciator line here is the code default, and the AHJ input decides."
    ],
-   "public_safety": true
+   "public_safety": true,
+   "order_requirements": [
+    "ORDER REQUIREMENT (owner 2026-11-26): include the channel-specific Class A channelized filters for EVERY PS channel in the band on this order; a converged cellular+PS order must list the PS filters as order lines, not assume reuse of the cellular filter set"
+   ]
   },
   "westell_cs45_ps": {
    "label": "Westell ProtectLink CS45 PS BDA (700/800, Class A/B, fiber DAS ready)",
@@ -1475,7 +1478,10 @@
     "The remote annunciator (CS40-ANNUNC class) is optional on the sheets and required by the AHJ where an annunciation point is demanded (IFC 510.4.2.5, NFPA 1225 18.14.2).",
     "Coverage acceptance: 95 percent per floor on the 20-grid (40-grid alternative) test per IFC 510.5.4 verbatim text captured 2026-11-26."
    ],
-   "public_safety": true
+   "public_safety": true,
+   "order_requirements": [
+    "ORDER REQUIREMENT (owner 2026-11-26): include the channel-specific Class A channelized filters for EVERY PS channel in the band on this order; a converged cellular+PS order must list the PS filters as order lines, not assume reuse of the cellular filter set"
+   ]
   },
   "comba_ps_v3": {
    "label": "Comba ComFlex NG V3 PS BDA / fiber DAS (700/800, P25, Band 14 option)",
@@ -1635,7 +1641,10 @@
     "Band coverage: this package covers 700/800 and the Band 14 option. VHF and UHF ride the ADRF package (PSR-VU-9537 with the BPF-V-1 and BPF-U-1 filters, sheets on disk) or the UHF firmware option.",
     "The MU/FOU/RU line: 4 FOU and 32 remotes per Master per section 1.9; battery options 30, 60, 100 Ah LiFePO4 designed for the 12 h or 24 h standard runtime requirements."
    ],
-   "public_safety": true
+   "public_safety": true,
+   "order_requirements": [
+    "ORDER REQUIREMENT (owner 2026-11-26): include the channel-specific Class A channelized filters for EVERY PS channel in the band on this order; a converged cellular+PS order must list the PS filters as order lines, not assume reuse of the cellular filter set"
+   ]
   },
   "adrf_psr_vu": {
    "label": "ADRF PSR-VU-9537 (VHF/UHF channelized digital repeater, UL 2524 second edition)",
@@ -1800,7 +1809,10 @@
    "notes": [
     "The PSR-VU power draw (UHF 214 W max, VHF 210 W max) drives the battery sizing; the BBx series carries 12, 24 and 48 V options per its data sheet, so the ROM step picks the voltage. The per-band load when only one band is active is the published single-band figure."
    ],
-   "limits_battery_placeholder": null
+   "limits_battery_placeholder": null,
+   "order_requirements": [
+    "ORDER REQUIREMENT (owner 2026-11-26): include the channel-specific Class A channelized filters for EVERY PS channel in the band on this order; a converged cellular+PS order must list the PS filters as order lines, not assume reuse of the cellular filter set"
+   ]
   },
   "adrf_firstnet_b14": {
    "label": "ADRF FirstNet Band 14 add-on (BSF-14 + PSR-78-9533-U1-27 into ADXV-H-POI-7U)",
@@ -1947,7 +1959,10 @@
     "The FirstNet Authority B14 consent form (47 CFR 90.219 context) is a job step separate from the AT&T commercial consent, per the Fort Worth add-on work.",
     "The B14 band plan rides the ADX V PS HPR modules (the HPR-437F class) in the Fort Worth add-on; the per-remote coverage scales with the PS design the same way the ERCES remotes do."
    ],
-   "limits_battery_placeholder": null
+   "limits_battery_placeholder": null,
+   "order_requirements": [
+    "ORDER REQUIREMENT (owner 2026-11-26): include the channel-specific Class A channelized filters for EVERY PS channel in the band on this order; a converged cellular+PS order must list the PS filters as order lines, not assume reuse of the cellular filter set"
+   ]
   }
  }
 }

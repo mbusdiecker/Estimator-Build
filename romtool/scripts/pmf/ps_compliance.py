@@ -31,7 +31,10 @@ VENDOR_NF_SRC = {"adrf_fire": "FiRe-78 SS (UL NF at max gain)",
 def main():
     ps = argparse.ArgumentParser()
     ps.add_argument("--oem", default="adrf_fire", choices=sorted(VENDOR_NF))
-    ps.add_argument("--port", type=float, default=33.0, help="DL port dBm per band")
+    ps.add_argument("--port", type=float, default=33.0, help="COMPOSITE DL port dBm")
+    ps.add_argument("--channels", type=int, required=True,
+                    help="channels in the passband; explicitly entered every run "
+                         "(the ERP check is per retransmitted channel per 90.219)")
     ps.add_argument("--ant-gain", type=float, default=5.0, help="service antenna gain dBi")
     ps.add_argument("--filter-khz", type=float, default=12.5, help="Class A channel filter bandwidth")
     ps.add_argument("--fiber-m", type=float, default=60.0, help="total optical path length m")
@@ -44,6 +47,8 @@ def main():
     a = ps.parse_args()
 
     erp_dbm = a.port + a.ant_gain
+    port_ch = a.port - 10.0 * math.log10(a.channels)
+    erp_ch_dbm = port_ch + a.ant_gain
     nf_limit = 9.0
     nf_vendor = VENDOR_NF[a.oem]
     filt_us = 1.0e6 / (a.filter_khz * 1e3)
@@ -61,10 +66,21 @@ def main():
     doc = {"basis": "FCC 90.219 and delay compliance plate (grade E); the "
                     "carrier count per band is a job input and not assumed here",
            "oem": a.oem,
-           "erp_per_channel": {"dl_port_dbm": a.port, "ant_gain_dbi": a.ant_gain,
-                               "erp_dbm": round(erp_dbm, 1),
+           "erp_per_channel": {"port_composite_dbm": a.port,
+                               "channels": a.channels,
+                               "port_per_channel_dbm": round(port_ch, 2),
+                               "ant_gain_dbi": a.ant_gain,
+                               "erp_per_channel_dbm": round(erp_ch_dbm, 1),
                                "cap_dbm": 37.0, "cap_w": 5.0,
-                               "pass": bool(erp_dbm <= 37.0)},
+                               "pass": bool(erp_ch_dbm <= 37.0),
+                               "composite_cap_sf_dbm": 37.0,
+                               "composite_port_pass_sf": bool(a.port <= 37.0),
+                               "note": "FCC 90.219(d)(3)(i): 5 W ERP per "
+                                       "retransmitted channel; the SF ERRCS "
+                                       "requirements also cap the peak DL "
+                                       "composite at +37 dBm (9.5.4.1) and the "
+                                       "UL ERP at the donor at +24 dBm per "
+                                       "channel (9.5.3.1)"},
            "noise_figure": {"vendor_nf_db": nf_vendor, "source": VENDOR_NF_SRC[a.oem],
                             "limit_db": nf_limit,
                             "pass": bool(nf_vendor <= nf_limit)},

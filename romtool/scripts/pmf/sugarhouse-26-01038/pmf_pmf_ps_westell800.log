@@ -1,0 +1,7 @@
+{"N": 3, "cov_at_port": 100.0, "cov_by_band": {"B12_700": 100.0, "B5_850": 100.0, "B2_1900": 100.0, "B66_2100": 100.0}, "P_min": -11.75, "P_min_mw": 0.07, "headroom_db": 30.7, "headroom_mw": 78.46, "sqft_per_ant": 3610, "area_ok": true, "gain_vs_prev": null, "five_pct_ok": true, "k_fit": 47, "loss_db": 30.47, "delivered_dbm": -11.52, "cov_confirmed": 95.8, "confirmed": true, "cov_next_floor": 94.1, "floors_per_remote": 47, "remotes_bldg": 1, "ant_bldg": 135}
+{"N": 4, "cov_at_port": 100.0, "cov_by_band": {"B12_700": 100.0, "B5_850": 100.0, "B2_1900": 100.0, "B66_2100": 100.0}, "P_min": -13.16, "P_min_mw": 0.05, "headroom_db": 32.11, "headroom_mw": 78.48, "sqft_per_ant": 2708, "area_ok": true, "gain_vs_prev": 0.0, "five_pct_ok": false, "k_fit": 48, "loss_db": 31.14, "delivered_dbm": -12.19, "cov_confirmed": 97.7, "confirmed": true, "cov_next_floor": 97.7, "floors_per_remote": 48, "remotes_bldg": 1, "ant_bldg": 180}
+
+summary:         N     P_min   head_dB   head_mW      area      5pct     k_fit  cov_conf  cov_next     f/rem  rem_bldg  ant_bldg
+        3    -11.75      30.7     78.46      True      True        47      95.8      94.1        47         1       135
+        4    -13.16     32.11     78.48      True     False        48      97.7      97.7        48         1       180
+design_N: N=4 k_fit=48 cov_confirmed=97.7 floors_per_remote=48 remotes_bldg=1 ant_bldg=180

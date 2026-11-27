@@ -123,3 +123,27 @@ survivability) enforced by the tool rather than remembered.
    draft in the job folder), the UL 2524 edition question (3rd edition listed
    packages in the price list), per-jurisdiction AHJ adoption, and the shared
    commercial + PS DAS question (NFPA 1225 18.6.3 + the FCC DAS carve-out).
+
+## Channel-count convention (2026-11-26)
+
+Owner rule: the channel count is an EXPLICIT entry on every PS run; there is
+no default in ps_ul, ps_grid, ps_compliance, or ps_rom. The composite port
+splits by 10log10(channels) for every DL and ERP calc. Today's saved runs
+assume 32 channels in each passband.
+
+Consequences recorded in the artifacts: the antenna plate advances to N=4 per
+floor (180 antennas) on the 700/800 rows, the B14 trunk shrinks to k=40 at its
+32-channel assumption, the VHF row needs 2 repeaters at 32 channels, and every
+ERP-per-channel plate passes (17.9-26.9 dBm against the 37 dBm cap), which
+reverses the earlier composite-as-channel finding. Caveats carried: the B14
+passband is technically one LTE block (Class B registration; 32 channels is
+the owner's working assumption, not the passband reality), and 32 channels in
+VHF is likewise the owner assumption. The FiRe-78 UL composite output figure
+used by the out-cap check (-21 dBm) is a grade D read of the SS composite
+table; at 32 channels it makes the per-channel UL out-cap bind, so the figure
+needs vendor confirmation (the ps_ul rows carry ul_out_cap_binds). The SBC
+architecture verdicts (from the owner's message): about 487,395 sq ft total
+puts the building on the active-DAS / dense-high-rise side of the passive
+boundary and over the 250,000 sq ft fiber-backbone line, favoring the fiber
+architectures. Converged orders must list the PS channel-specific filters as
+order lines (recorded on all five PS packages and in the ROM output).

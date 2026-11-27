@@ -2,12 +2,17 @@
  "basis": "FCC 90.219 and delay compliance plate (grade E); the carrier count per band is a job input and not assumed here",
  "oem": "westell",
  "erp_per_channel": {
-  "dl_port_dbm": 33.0,
+  "port_composite_dbm": 33.0,
+  "channels": 32,
+  "port_per_channel_dbm": 17.95,
   "ant_gain_dbi": 5.0,
-  "erp_dbm": 38.0,
+  "erp_per_channel_dbm": 22.9,
   "cap_dbm": 37.0,
   "cap_w": 5.0,
-  "pass": false
+  "pass": true,
+  "composite_cap_sf_dbm": 37.0,
+  "composite_port_pass_sf": true,
+  "note": "FCC 90.219(d)(3)(i): 5 W ERP per retransmitted channel; the SF ERRCS requirements also cap the peak DL composite at +37 dBm (9.5.4.1) and the UL ERP at the donor at +24 dBm per channel (9.5.3.1)"
  },
  "noise_figure": {
   "vendor_nf_db": 7.0,
