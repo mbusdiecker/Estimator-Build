@@ -285,3 +285,27 @@ head_end_check.py comparison builder stays as the comparison artifact; the estim
 now the tool's own expansion. Open items travel with the kits in oem_specs.json (POI-7L/POI-C exact P/Ns,
 TAPOI-AWSE-F-4 replacement). Day 2: the public safety ROM phase and the pricing phase (fresh ask) remain
 held.
+
+## Public safety ROM per OEM and frequency (2026-11-26)
+
+Runs in sugarhouse-26-01038: pmf_ps_*.json (nine runs), ps_rom_results.json (the table), superseding
+ps_ul_results.json (its chain math was wrong; the DL side of the ROMs is what the ROM table carries).
+
+Basis: the same pmf machinery as the cellular comparison; the coverage preset is the code one
+(95 percent floor area / 99 percent critical area at -95 dBm at the portable, IFC 510.4.1 /
+NFPA 1225 18.8-18.9 per PS_CODE_TABLE). Port powers are sheet-verified per OEM: FiRe-78 33 dBm
+per remote DL (30 dBm for the Band 14 composite run), Westell CS45 34 dBm per band, Comba V3
+33 dBm per band, PSR-VU-9537 28 dBm VHF / 37 dBm UHF. N = 3 antennas per floor by the advance rule.
+
+Findings: every OEM and frequency covers the whole 45-floor building from one port (P_min about
+-11.5 to -11.8 dBm per floor, k = 48 taps, 100 percent coverage confirmed); the LMR -95 dBm
+threshold is far easier than the LTE RSRP basis, so the ROMs are head-end-bound, not port-bound.
+The first span-20 pass (k = 21) had bisect clipping; superseded by the span-60 reruns recorded
+in the provenance note.
+
+Open (grade E and sheet gaps): the -95 dBm figure is the IFC 2015/2021 wording used as the
+design input (the 2024 IFC and NFPA 1225 say DAQ 3.0 without a number); the critical-area tier
+applies where the fire code official designates it; the uplink side needs the AHJ site criteria
+(510.4.2.2) and is outside these DL numbers; the PSR-VU 9537-X gain is range-only in the ds
+(85-95 dB) so the 38 dBm DL port row is the UHF composite top of range; per-remote PSU draws
+for the ADXV-R and the Comba V3 remote remain the 45 W placeholders.
