@@ -1,0 +1,2 @@
+VHF_150        arrival -109.03 (target -109.0) noise -242.63 (limit -142.0) G=6.4 sq=-125.0 near=FAIL  <- see bands for the failing constraint
+UHF_450        arrival -109.03 (target -109.0) noise -242.63 (limit -142.0) G=6.4 sq=-125.0 near=FAIL  <- see bands for the failing constraint

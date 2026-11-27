@@ -75,6 +75,14 @@ def main():
     a.add_argument("--nf-portable", type=float, default=8.0)
     a.add_argument("--profile", default=None,
                    help="per-AHJ profile; the CLI args override")
+    a.add_argument("--solve-density", action="store_true",
+                   help="add antennas until the per-floor level spread meets "
+                        "--spread-target-db (owner direction 2026-11-26, "
+                        "corrected: density fixes the far-corner uniformity "
+                        "and the AGC spread, not the DC OUC near-input level; "
+                        "that is the input pad's job)")
+    a.add_argument("--spread-target-db", type=float, default=20.0)
+    a.add_argument("--density-max", type=int, default=12)
     a.add_argument("--noise-rule", default="la")
     a.add_argument("--site-erp", type=float, required=True,
                    help="host site ERP dBm (AHJ input per site)")

@@ -101,6 +101,22 @@ def main():
                     help="pair: two radios (farthest point + directly under an "
                          "antenna). loading: the DC OUC instant with 10 "
                          "channels active, per-channel caps by 10log10(10)")
+    ap.add_argument("--solve-density", action="store_true",
+                    help="add antenna density until the near-far rule passes "
+                         "(the splitter-tree route: 10log10(N) branch loss; "
+                         "owner direction 2026-11-26, corrected by the owner: "
+                         "the branch coupler/tap loss is the primary lever)")
+    ap.add_argument("--near-branch-loss-db", type=float, default=None,
+                    help="branch loss on the nearest antenna's return path "
+                         "from the plate design (the tap ratio in a tap "
+                         "plate; 10log10(N)+insertions in a splitter tree). "
+                         "When given, the near test is checked WITH it")
+    ap.add_argument("--near-chain-db", type=float, default=0.0,
+                    help="tap-chain loss from the nearest antenna's position "
+                         "to the BDA input (0 = worst case: the BDA sits at "
+                         "the first tap)")
+    ap.add_argument("--density-max", type=int, default=24,
+                    help="cap on antennas per floor in the density solve")
     ap.add_argument("--load-channels", type=int, default=10)
     ap.add_argument("--g-donor", type=float, default=15.5, help="donor antenna gain dB")
     ap.add_argument("--das-ul-net", type=float, default=0.0,
@@ -181,6 +197,46 @@ def main():
         near_ok = ul_near_at_bda <= hw["max_input_dbm"] - NEAR_OP_MARGIN
         near_dmg = ul_near_at_bda <= hw["damaging_dbm"] - NEAR_DMG_MARGIN
         pad_db = max(0.0, round(ul_near_at_bda - (hw["max_input_dbm"] - NEAR_OP_MARGIN), 1))
+        # near-far levers (owner correction 2026-11-26: "the coupler is
+        # essentially an attenuator for that path back to the remote"). Three
+        # ways to pass the near test:
+        #   1. branch loss: the nearest antenna's coupler/tap ratio. A tap
+        #      plate can spec the near taps high (the equal-loss convention
+        #      already gives the closest branches the most dB); a splitter
+        #      tree gives 10log10(N) plus insertions.
+        #   2. the input pad (an explicit attenuator).
+        #   3. density in a pure splitter tree: 10log10(N) comes from the
+        #      tree itself (the --solve-density route; the most hardware).
+        branch_need_op = round(ul_near_at_bda - (hw["max_input_dbm"] - NEAR_OP_MARGIN), 2)
+        branch_need_dmg = round(ul_near_at_bda - (hw["damaging_dbm"] - NEAR_DMG_MARGIN), 2)
+        branch_need = max(0.0, branch_need_op, branch_need_dmg)
+        branch_ok = (a.near_branch_loss_db is not None
+                     and a.near_branch_loss_db >= branch_need)
+        # the density route: the tree losses add 10log10(N) to the branch
+        dens = {"solve": bool(a.solve_density)}
+        if a.solve_density:
+            n_min = None
+            for n in range(1, a.density_max + 1):
+                tree_db = 10.0 * math.log10(n) + a.near_chain_db
+                ni = ul_near_at_bda - tree_db
+                if (ni <= hw["max_input_dbm"] - NEAR_OP_MARGIN
+                        and ni <= hw["damaging_dbm"] - NEAR_DMG_MARGIN):
+                    n_min = n
+                    break
+            dens.update({"antennas_per_floor": n_min,
+                         "antennas_bldg": (n_min * 45 if n_min else None),
+                         "near_input_at_density_dbm": (round(ul_near_at_bda
+                                                             - (10.0 * math.log10(n_min)
+                                                                + a.near_chain_db), 2)
+                                                       if n_min else None),
+                         "near_pass_at_density": bool(n_min),
+                         "cap_hit": (n_min is None),
+                         "near_chain_db": a.near_chain_db,
+                         "note": ("the splitter-tree density route: 10log10(N) "
+                                  "of branch attenuation builds in the tree; "
+                                  "the tap-plate route reaches the same pass "
+                                  "with the near tap ratio at >= %.1f dB "
+                                  "instead" % branch_need)})
         # UL output cap per channel: plan-split at -10log10(channels); the
         # loading case (owner option 2026-11-26) re-tests the instant with
         # load_channels active (DC OUC uses 10), where per-channel caps are
@@ -245,10 +301,18 @@ def main():
             "ul_out_cap_binds": bool(cap_binds),
             "near_test_operating_pass": bool(near_ok),
             "near_test_damage_pass": bool(near_dmg),
+            "near_levers": {"branch_loss_needed_db": branch_need,
+                            "branch_loss_passes_when_specified": bool(branch_ok),
+                            "branch_loss_specified_db": a.near_branch_loss_db,
+                            "pad_db": pad_db,
+                            "density_route": dens.get("solve", False)
+                                             and dens.get("near_pass_at_density",
+                                                          False)},
+            "density_solve": dens,
             "near_far_pair": pair,
-            "passes": bool(arrival >= target_arrival and noise_at_site <= noise_limit
-                           and near_ok and near_dmg and not cap_binds
-                           and pair["classB_far_pass"])})
+            "passes": bool((arrival >= target_arrival and noise_at_site <= noise_limit
+                            and not cap_binds and pair["classB_far_pass"])
+                           and (near_ok and near_dmg or branch_ok))})
     doc = {"basis": "PS uplink engine (grade E): band-reciprocal chain at the "
                     "design k, AHJ site inputs parameterized. Assumptions: 3 W "
                     "portable, 5 dB hip-height body loss, distribution net UL "

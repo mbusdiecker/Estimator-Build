@@ -49,6 +49,10 @@ def main():
     ap.add_argument("--caps-remote-sqft", type=float, default=None,
                     help="max building sq ft per remote/BDA (industry "
                          "practice about 250,000); report-only gate")
+    ap.add_argument("--caps-near-density", action="store_true",
+                    help="apply the near-test density from the ps_ul solve "
+                         "(the DC OUC margins when that profile ran): the "
+                         "plate takes max(coverage N, density N)")
     ap.add_argument("--caps-on", action="store_true",
                     help="apply the gates to the reported design numbers "
                          "(default: report-only)")
@@ -66,7 +70,7 @@ def main():
         floor_total_sqft = floor_sqft * args.floors
     rows = []
     area_sqft = None
-    for prefix, oem, model, freq, port, _ in SPECS:
+    for prefix, oem, model, freq, port, meta in SPECS:
         try:
             run = json.load(open(f"{d}/pmf_{prefix}.json"))
         except FileNotFoundError:
@@ -109,6 +113,34 @@ def main():
             gate["area_note"] = "the antenna-area gate evaluates per floor in " \
                                 "the grid module (caps_report): pass the same " \
                                 "value there"
+        # the near-density gate (owner 2026-11-26: 'add density until the
+        # near-far rule passes, as well as the DC OUC'): when on, the plate
+        # takes max(coverage N, the density N from the ps_ul solve)
+        if args.caps_near_density:
+            ul_art = {"adrf_fire": f"{d}/ps_ul_results.json",
+                      "westell": f"{d}/ps_ul_westell.json",
+                      "comba": f"{d}/ps_ul_comba.json",
+                      "adrf_vu": f"{d}/ps_ul_vu.json"}.get(meta.get("oem"))
+            dens_n = None
+            if ul_art:
+                try:
+                    uj = json.load(open(ul_art))
+                    vals = [b.get("density_solve", {}).get("antennas_per_floor")
+                            for b in uj.get("bands", [])]
+                    vals = [v for v in vals if v]
+                    dens_n = max(vals) if vals else None
+                except (FileNotFoundError, json.JSONDecodeError):
+                    dens_n = None
+            if dens_n and dens_n > plate["design_N"]:
+                plate["near_density_gate"] = {
+                    "coverage_n": plate["design_N"], "near_density_n": dens_n,
+                    "design_N": dens_n,
+                    "note": "plate raised to the near-test density (the DC "
+                            "OUC margins); the pad alternative is reported in "
+                            "the UL artifact"}
+                plate["design_N"] = dens_n
+                plate["antennas_per_floor"] = dens_n
+                plate["antennas_bldg"] = dens_n * args.floors
         # BOM rebalance (owner 2026-11-26): equal per remote at BOM emission.
         # Example: the design says 21 antennas over 2 remotes -> 11 + 10, with
         # the splitters and coax split the same way. Day 3 note: re-running

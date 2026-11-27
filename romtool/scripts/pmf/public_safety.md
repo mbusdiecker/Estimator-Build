@@ -212,3 +212,25 @@ right-sizing input per the owner.
   remotes, the 250k gate reports a 2-remote minimum at 487,403 sq ft, the SF
   profile passes the 75 kHz filter at 13.6 us, the Collier profile flags the
   12.5 kHz filter and recommends 75 kHz at both the 32 us line.
+
+## Near-far levers finalized (2026-11-26, session 4)
+
+Owner correction drove the model: "the coupler is essentially an attenuator
+for that path back to the remote." The branch loss on the nearest antenna's
+return path is the primary near-test lever, and it comes from the plate
+design itself: a tap plate specs the near taps high (the equal-loss
+convention already gives the closest branches the most dB); a pure splitter
+tree embeds 10log10(N) plus insertions. Three levers now reported per band in
+ps_ul (near_levers): the branch loss needed, the input pad, and the
+density route.
+
+At the DC OUC margins (-5 dB operating / -10 dB damaging) with a 12 dB near
+branch spec and a 3 dB near-chain: 700 PS needs 11.1 dB branch (PASS with the
+12 dB spec), 800 PS 10.1 (PASS), UHF 15.7 (the spec must say 16+), VHF 25.1
+(beyond standard taps; the 25 dB pad is the honest verdict there, and the
+density route is off the table: it exceeds the 24/floor cap). The density
+route numbers: 7 antennas per floor for 700 PS, 6 for 800, 19 for UHF - all
+impractical, which is why the branch/coupler and pad levers lead.
+
+ps_rom --caps-near-density applies max(coverage N, density N) when the owner
+asks; report-only. The ps_ul --near-branch-loss-db feeds the tap spec check.
