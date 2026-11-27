@@ -142,3 +142,91 @@ of the OUC PDF and the Lexico page are under AppData/Local/hermes/cache/web/.
 Sources kept on disk: this note plus the web cache copies noted at the top. The SBC ERCES
 Standard PDF link (d16k74nzx9emoe.cloudfront.net, 2026-10-20 version) and the NTIA report are
 the two most quotable references for future AHJ conversations.
+
+
+## Follow-up research (2026-11-26, same day): per-channel versus composite power, and the trunk-count standards
+
+### The definitive answer on output power
+
+FCC 47 CFR 90.219(d)(3)(i): the radiated power limit of 5 W ERP applies "of
+each retransmitted channel", forward and reverse. 90.219(e)(1): the device must
+be designed so radiated power does not exceed 5 W ERP for EACH retransmitted
+channel. The cap is per channel, never per band.
+
+The rated output of the device is COMPOSITE and the industry convention splits
+it by the channel count (dBm per channel = composite dBm - 10log10(N)):
+- The Jack Daniel in-building primer (the long-standing industry reference):
+  a 10 W Class B amplifier with 10 equal-level channels delivers 1 W per
+  channel; 30 dBm/ch at 1 carrier, 27 at 2, 24 at 4, 20 at 8, 18.5 at 16,
+  14 at 32, 10 at 50. Every doubling of channels costs 3 dB per channel, and
+  the design should assume future channels inside the passband.
+- The Comba commissioning guide names the AGC/ALC modes explicitly: Mode 1
+  shares the total power by the number of ACTIVE channels; Modes 2 and 3 share
+  it by the number of PROGRAMMED channels.
+- NTIA TR-11-480 models the same effect: adding channels under AGC reduces
+  gain and per-channel output; a clean system can absorb about 114 channels
+  before starving, but 7 channels with one strong interferer can do it.
+
+The AHJs codify the split:
+- San Francisco ERRCS Technical Requirements v2.0 (2024): the BDA must be set
+  to a derating mode that equalizes power per filter at full loading (6.7);
+  the manual derates for their plan: minus 12.5 dB per channel in the 800 PS
+  band and minus 8 dB per channel in the 700 PS band (6.8); all filters at
+  75 kHz (6.2) with at most 20 us group delay (4.1.8); gains at most 80 dB
+  (6.4); squelch fixed at -75 dBm (6.5); the peak downlink COMPOSITE capped at
+  +37 dBm (9.5.4.1) - stricter than the FCC per-channel cap - and the uplink
+  ERP at the donor at most +24 dBm per channel (9.5.3.1).
+- Durham NC BDA permit requirements: the commissioning math states max output
+  power per channel = the BDA output power minus 10*log10(24); uplink gain
+  capped 65 dB; the tower must receive the uplink between -95 and -80 dBm and
+  the uplink noise below -153 dBm.
+- DC OUC: the downlink coverage maps must be produced for one frequency while
+  assuming 10 frequencies transmitting simultaneously in each band, and the
+  uplink assuming simultaneous channels.
+- DC Sheriff ERCES guidelines: "RF composite power (the effect of combining
+  multiple channels) making proper BDA selection [depends on the] maximum
+  number of RF channels"; uplink gain at most 65 dB; per-channel levels at the
+  donor site between -100 and -80 dBm.
+
+Consequence for the tool: the ROM plates treated the sheet port power as if it
+were per-channel. Under the composite convention the per-channel available
+power = the sheet composite minus 10log10(channels). Worked example at the 33
+dBm FiRe port: 10 channels leaves 23 dBm/ch, 16 leaves 21 dBm/ch; the ERP per
+channel lands at 26-28 dBm (PASS against the 37 dBm cap, reversing the "ERP
+FAIL" plate), and the coverage must be re-run at the per-channel power, with
+the remote-count answer following from the loss budget at that power.
+
+### The trunk and remote count standards
+
+No standard or AHJ document caps floors-per-BDA directly. What the standards
+do set, in the order that matters:
+1. Pathway survivability: NFPA 1225 treats the BACKBONE (riser/trunk) cable as
+   the protected pathway while the individual antenna distribution runs are
+   not the same requirement (A.18.2.1(9) pathway survivability design; the
+   NFPA 1225-2027 fire-rated cable clarification article is explicit that
+   backbone survivability and distribution antenna cabling are separate
+   requirements). For a 45-floor trunk this is the standard that pushes toward
+   more than one riser.
+2. Per-service-antenna link budgets are the AHJ norm: the DC Sheriff requires
+   the UL far-field, the UL near-field, the UL noise, and the DL down to each
+   service antenna in tabular form; the Durham rules require the near/far
+   budgets for the full system. A budget that only speaks at the port does not
+   meet the submittal practice.
+3. High-rise design practice: zone the building vertically (the design
+   references cite 5-10 floors per zone as the practical range) so that the
+   distribution loss stays inside the budget and the riser survivability can
+   be satisfied with separated pathways; dual BDAs and separate donor paths
+   are cited as the redundancy pattern where the AHJ allows.
+4. The BDA selection itself is sized by the composite power against the
+   channel count (the DC Sheriff and the SF sections above): more channels
+   means less per-channel power, which shortens the achievable trunk and
+   raises the remote count even though none of the documents say "N floors per
+   BDA" outright.
+
+So the industry-standard framing for the tool is: pick the channel list per
+the AHJ plan, split the composite by it, budget per service antenna, satisfy
+the per-channel ERP cap, and let the survivability/zoning practice (5-10
+floors per zone) set the remote count instead of a pure power fit. The owner
+gates (floors-per-port cap) are exactly the mechanism for that; the missing
+input is the channel count, which is an AHJ plan question, not a standards
+guess.
