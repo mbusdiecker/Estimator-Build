@@ -24,6 +24,7 @@ Run pattern:
 import argparse
 import json
 import math
+import os
 import sys
 
 sys.path.insert(0, "..")
@@ -115,10 +116,12 @@ def main():
                    help="ceiling-to-hip vertical offset m: the near radio "
                         "cannot stand closer to a ceiling antenna in 3D "
                         "than this, whatever the planar plan allows")
-    a.add_argument("--branch-baseline-db", type=float, default=0.0,
-                   help="branch loss already in the plate design before "
-                        "density (the equal-loss tap/pad balancing: the "
-                        "owner's coupler lever). 0 isolates the density-only "
+    a.add_argument("--branch-baseline-db", type=float, default=None,
+                   help="branch loss the plate design carries before density "
+                        "(the equal-loss tap/pad balancing: the owner's "
+                        "coupler lever). DEFAULT: auto from the ps_ul solve "
+                        "(near_levers.branch_loss_needed_db, the balanced "
+                        "model); an explicit 0 isolates the density-only "
                         "worst case; the balanced design carries about 10-15")
     a.add_argument("--noise-rule", default="la")
     a.add_argument("--site-erp", type=float, required=True,
@@ -399,6 +402,27 @@ def main():
     density_loop = None
     firsts = {}
     if args.solve_density:
+        # DEFAULT: the balanced model. The plate carries the branch loss the
+        # near-far solve said it needs (the tap/pad lever); density then only
+        # tops it up if the floor plan still fails. An explicit --branch-
+        # baseline-db 0 isolates the density-only worst case.
+        branch_base = args.branch_baseline_db
+        branch_src = "explicit"
+        if branch_base is None:
+            branch_base = 0.0
+            branch_src = "0 (no ps_ul artifact found)"
+            try:
+                base_dir = (os.path.dirname(os.path.abspath(args.out))
+                            or ".")
+                uj = json.load(open(os.path.join(base_dir, "ps_ul_results.json")))
+                vals = [b.get("near_levers", {}).get("branch_loss_needed_db")
+                        for b in uj.get("bands", [])]
+                vals = [v for v in vals if v is not None]
+                if vals:
+                    branch_base = max(vals)
+                    branch_src = "ps_ul solve (balanced model)"
+            except (FileNotFoundError, json.JSONDecodeError):
+                pass
         from ps_profiles import resolve as resolve_profile
         RM, PW2, _p2 = resolve_profile(args.profile, {
             "near_op": ("near_operating_margin_db", "near_operating_margin_db", None),
@@ -409,7 +433,6 @@ def main():
         dmg_in = args.near_damaging_db
         eirp_ue = args.ue_tx - args.body_loss
         curve = []
-        rec_n = None
         full = _Grid(floor, 2, outline, crit_polys)
         for n in range(1, args.density_max + 1):
             rows_n_d, cols_n_d = _factor_pair(n)
@@ -428,8 +451,9 @@ def main():
                                 for i in range(len(dpts))}
                           for bid in bands}
             ant_list = [("d%d" % i, x, y) for i, (x, y) in enumerate(dpts)]
-            share = 10.0 * math.log10(n)
-            firsts = {}
+            # the firsts dict lives outside this loop: the FIRST passing N is
+            # what we keep (a reset here made the recommendation read the last
+            # passing N, which is how the density answer inflated to 12)
             per_band_all = {}
             for bid in bands:
                 b = bmap[bid]
@@ -437,7 +461,7 @@ def main():
                 near_w = fp["near_worst"]
                 f = float((bands_cfg or {}).get(bid, {}).get("freq_mhz", 772.0))
                 near_in = (near_w["near_in_dbm"] - share
-                           - args.branch_baseline_db)
+                           - branch_base)
                 near_pass = (near_in <= max_in - near_op
                              and near_in <= dmg_in - near_dmg)
                 areas = [c["best_server_area_sqft"] for c in fp["best_server_cells"]]
@@ -458,6 +482,8 @@ def main():
                     firsts[bid] = n
             curve.append({"n": n, "bands": per_band_all})
         density_loop = {"solve": True, "spread_target_db": args.spread_target_db,
+                        "branch_baseline_db": branch_base,
+                        "branch_baseline_source": branch_src,
                         "recommended_n": (max(firsts.values()) if firsts else None),
                         "first_pass_by_band": firsts,
                         "equiv_branch_loss_db": (round(10.0 * math.log10(max(firsts.values())), 1)
