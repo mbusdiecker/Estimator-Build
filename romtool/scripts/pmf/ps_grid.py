@@ -115,6 +115,11 @@ def main():
                    help="ceiling-to-hip vertical offset m: the near radio "
                         "cannot stand closer to a ceiling antenna in 3D "
                         "than this, whatever the planar plan allows")
+    a.add_argument("--branch-baseline-db", type=float, default=0.0,
+                   help="branch loss already in the plate design before "
+                        "density (the equal-loss tap/pad balancing: the "
+                        "owner's coupler lever). 0 isolates the density-only "
+                        "worst case; the balanced design carries about 10-15")
     a.add_argument("--noise-rule", default="la")
     a.add_argument("--site-erp", type=float, required=True,
                    help="host site ERP dBm (AHJ input per site)")
@@ -431,7 +436,8 @@ def main():
                 fp = floor_plan_stats(bid, ant_list, dens_eirps, eirp_ue)
                 near_w = fp["near_worst"]
                 f = float((bands_cfg or {}).get(bid, {}).get("freq_mhz", 772.0))
-                near_in = near_w["near_in_dbm"] - share
+                near_in = (near_w["near_in_dbm"] - share
+                           - args.branch_baseline_db)
                 near_pass = (near_in <= max_in - near_op
                              and near_in <= dmg_in - near_dmg)
                 areas = [c["best_server_area_sqft"] for c in fp["best_server_cells"]]
@@ -448,7 +454,7 @@ def main():
                                      "near_input_at_bda_dbm": round(near_in, 2),
                                      "near_pass": bool(near_pass),
                                      "coverage_min_ok": cov_ok}
-                if near_pass and cov_ok:
+                if near_pass and cov_ok and bid not in firsts:
                     firsts[bid] = n
             curve.append({"n": n, "bands": per_band_all})
         density_loop = {"solve": True, "spread_target_db": args.spread_target_db,

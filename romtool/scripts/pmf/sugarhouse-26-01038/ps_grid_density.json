@@ -553,6 +553,7 @@
   "spread_target_db": 20.0,
   "recommended_n": 12,
   "first_pass_by_band": {
+   "PS700": 12,
    "PS800": 12
   },
   "equiv_branch_loss_db": 10.8,
@@ -568,8 +569,8 @@
       "cells_max_sqft": 11238.0,
       "near_walk_dist_m": 0.35,
       "near_3d_dist_m": 1.54,
-      "near_input_at_bda_dbm": -4.16,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -16.16,
+      "near_pass": true,
       "coverage_min_ok": true
      },
      "PS800": {
@@ -579,8 +580,8 @@
       "cells_max_sqft": 11238.0,
       "near_walk_dist_m": 0.35,
       "near_3d_dist_m": 1.54,
-      "near_input_at_bda_dbm": -5.1,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -17.1,
+      "near_pass": true,
       "coverage_min_ok": true
      }
     }
@@ -595,8 +596,8 @@
       "cells_max_sqft": 5619.0,
       "near_walk_dist_m": 0.28,
       "near_3d_dist_m": 1.53,
-      "near_input_at_bda_dbm": -7.08,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -19.08,
+      "near_pass": true,
       "coverage_min_ok": true
      },
      "PS800": {
@@ -606,8 +607,8 @@
       "cells_max_sqft": 5619.0,
       "near_walk_dist_m": 0.28,
       "near_3d_dist_m": 1.53,
-      "near_input_at_bda_dbm": -8.02,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -20.02,
+      "near_pass": true,
       "coverage_min_ok": true
      }
     }
@@ -622,8 +623,8 @@
       "cells_max_sqft": 3875.0,
       "near_walk_dist_m": 0.26,
       "near_3d_dist_m": 1.52,
-      "near_input_at_bda_dbm": -8.83,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -20.83,
+      "near_pass": true,
       "coverage_min_ok": true
      },
      "PS800": {
@@ -633,8 +634,8 @@
       "cells_max_sqft": 3875.0,
       "near_walk_dist_m": 0.26,
       "near_3d_dist_m": 1.52,
-      "near_input_at_bda_dbm": -9.76,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -21.76,
+      "near_pass": true,
       "coverage_min_ok": true
      }
     }
@@ -649,8 +650,8 @@
       "cells_max_sqft": 2895.0,
       "near_walk_dist_m": 0.18,
       "near_3d_dist_m": 1.51,
-      "near_input_at_bda_dbm": -10.0,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -22.0,
+      "near_pass": true,
       "coverage_min_ok": true
      },
      "PS800": {
@@ -660,8 +661,8 @@
       "cells_max_sqft": 2906.0,
       "near_walk_dist_m": 0.18,
       "near_3d_dist_m": 1.51,
-      "near_input_at_bda_dbm": -10.94,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -22.94,
+      "near_pass": true,
       "coverage_min_ok": true
      }
     }
@@ -676,8 +677,8 @@
       "cells_max_sqft": 2347.0,
       "near_walk_dist_m": 0.35,
       "near_3d_dist_m": 1.54,
-      "near_input_at_bda_dbm": -11.15,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -23.15,
+      "near_pass": true,
       "coverage_min_ok": true
      },
      "PS800": {
@@ -687,8 +688,8 @@
       "cells_max_sqft": 2347.0,
       "near_walk_dist_m": 0.35,
       "near_3d_dist_m": 1.54,
-      "near_input_at_bda_dbm": -12.09,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -24.09,
+      "near_pass": true,
       "coverage_min_ok": true
      }
     }
@@ -703,8 +704,8 @@
       "cells_max_sqft": 2002.0,
       "near_walk_dist_m": 0.15,
       "near_3d_dist_m": 1.51,
-      "near_input_at_bda_dbm": -11.75,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -23.75,
+      "near_pass": true,
       "coverage_min_ok": true
      },
      "PS800": {
@@ -714,8 +715,8 @@
       "cells_max_sqft": 2002.0,
       "near_walk_dist_m": 0.15,
       "near_3d_dist_m": 1.51,
-      "near_input_at_bda_dbm": -12.69,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -24.69,
+      "near_pass": true,
       "coverage_min_ok": true
      }
     }
@@ -730,8 +731,8 @@
       "cells_max_sqft": 1744.0,
       "near_walk_dist_m": 0.25,
       "near_3d_dist_m": 1.52,
-      "near_input_at_bda_dbm": -12.5,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -24.5,
+      "near_pass": true,
       "coverage_min_ok": true
      },
      "PS800": {
@@ -741,8 +742,8 @@
       "cells_max_sqft": 1744.0,
       "near_walk_dist_m": 0.25,
       "near_3d_dist_m": 1.52,
-      "near_input_at_bda_dbm": -13.43,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -25.43,
+      "near_pass": true,
       "coverage_min_ok": true
      }
     }
@@ -757,8 +758,8 @@
       "cells_max_sqft": 1475.0,
       "near_walk_dist_m": 0.14,
       "near_3d_dist_m": 1.51,
-      "near_input_at_bda_dbm": -12.99,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -24.99,
+      "near_pass": true,
       "coverage_min_ok": true
      },
      "PS800": {
@@ -768,8 +769,8 @@
       "cells_max_sqft": 1475.0,
       "near_walk_dist_m": 0.14,
       "near_3d_dist_m": 1.51,
-      "near_input_at_bda_dbm": -13.93,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -25.93,
+      "near_pass": true,
       "coverage_min_ok": true
      }
     }
@@ -784,8 +785,8 @@
       "cells_max_sqft": 1335.0,
       "near_walk_dist_m": 0.12,
       "near_3d_dist_m": 1.5,
-      "near_input_at_bda_dbm": -13.49,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -25.49,
+      "near_pass": true,
       "coverage_min_ok": true
      },
      "PS800": {
@@ -795,8 +796,8 @@
       "cells_max_sqft": 1345.0,
       "near_walk_dist_m": 0.12,
       "near_3d_dist_m": 1.5,
-      "near_input_at_bda_dbm": -14.43,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -26.43,
+      "near_pass": true,
       "coverage_min_ok": true
      }
     }
@@ -811,8 +812,8 @@
       "cells_max_sqft": 1173.0,
       "near_walk_dist_m": 0.28,
       "near_3d_dist_m": 1.53,
-      "near_input_at_bda_dbm": -14.07,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -26.07,
+      "near_pass": true,
       "coverage_min_ok": true
      },
      "PS800": {
@@ -822,7 +823,7 @@
       "cells_max_sqft": 1173.0,
       "near_walk_dist_m": 0.28,
       "near_3d_dist_m": 1.53,
-      "near_input_at_bda_dbm": -15.01,
+      "near_input_at_bda_dbm": -27.01,
       "near_pass": true,
       "coverage_min_ok": true
      }
@@ -838,8 +839,8 @@
       "cells_max_sqft": 1152.0,
       "near_walk_dist_m": 0.25,
       "near_3d_dist_m": 1.52,
-      "near_input_at_bda_dbm": -14.45,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -26.45,
+      "near_pass": true,
       "coverage_min_ok": true
      },
      "PS800": {
@@ -849,7 +850,7 @@
       "cells_max_sqft": 1152.0,
       "near_walk_dist_m": 0.25,
       "near_3d_dist_m": 1.52,
-      "near_input_at_bda_dbm": -15.39,
+      "near_input_at_bda_dbm": -27.39,
       "near_pass": true,
       "coverage_min_ok": true
      }
@@ -865,8 +866,8 @@
       "cells_max_sqft": 980.0,
       "near_walk_dist_m": 0.1,
       "near_3d_dist_m": 1.5,
-      "near_input_at_bda_dbm": -14.74,
-      "near_pass": false,
+      "near_input_at_bda_dbm": -26.74,
+      "near_pass": true,
       "coverage_min_ok": true
      },
      "PS800": {
@@ -876,7 +877,7 @@
       "cells_max_sqft": 980.0,
       "near_walk_dist_m": 0.1,
       "near_3d_dist_m": 1.5,
-      "near_input_at_bda_dbm": -15.67,
+      "near_input_at_bda_dbm": -27.67,
       "near_pass": true,
       "coverage_min_ok": true
      }
