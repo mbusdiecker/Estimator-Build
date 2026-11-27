@@ -234,3 +234,37 @@ impractical, which is why the branch/coupler and pad levers lead.
 
 ps_rom --caps-near-density applies max(coverage N, density N) when the owner
 asks; report-only. The ps_ul --near-branch-loss-db feeds the tap spec check.
+
+## The loss model and the density loop, straightened out (2026-11-26, session 5)
+
+Owner questions: why 7 antennas per floor, and isn't the design equal-loss?
+Answer recorded here so it stops drifting:
+
+1. Equal-loss principle: yes - every antenna radiates the same power and every
+   return path carries the same total loss. That per-antenna branch loss is a
+   DESIGN number set by the couplers/taps/attenuators, not a physics constant.
+2. The near-far input at the repeater = the portable EIRP - the under-antenna
+   air coupling (about 20 dB at VHF, 34 dB at 772 MHz, at 1.5 m) - the branch
+   loss. My first solve set branch loss to zero and let density supply all of
+   it through 10log10(N): that produced 7 antennas per floor, which is the
+   splitter-tree way of building 11 dB, not a design recommendation. The tap
+   or pad builds the same 11 dB for a fraction of the hardware.
+3. The tradeoff is real and bidirectional: branch loss is identical for DL and
+   UL, so every dB bought for the near test comes off each antenna's DL EIRP
+   and shortens the usable trunk (k drops, the remote count rises).
+4. The sequential loop the owner described is now implemented in ps_grid
+   (--solve-density --spread-target-db): minimal coverage plate, then add
+   antennas on the floor plan, reporting per N the real per-floor spread
+   (full-lattice prediction), the near input at the repeater, and the
+   coverage minimum. Measured curve (PS700, 32 channels, no branch credit):
+   the near input goes -3.9 dBm at 1 antenna to -14.7 dBm at 12; it crosses
+   the DC OUC line near 14-15 antennas per floor, which confirms density
+   alone is impractical and the tap/pad lever (about 11 dB) is the design.
+5. The near-chain input (--near-chain-db): the riser loss from the BDA
+   position to the nearest branch is a real design input (the BDA at the
+   basement puts several dB in front of the nearest antenna); entering it
+   makes the density route converge where the building allows.
+6. Open metric note: the floor-wide max-minus-min spread includes the
+   antenna-proximity hot spots and is non-monotonic with layout; the
+   per-cell spread (within each antenna's coverage cell) is the closer
+   near-far measure and is flagged for refinement.

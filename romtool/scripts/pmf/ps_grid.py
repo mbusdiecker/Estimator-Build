@@ -55,6 +55,28 @@ def cell_layout(w_px, h_px, ppm, max_dim_m):
     return rows, cols, round(worst_dim, 1), bool(worst_dim <= max_dim_m + 1e-9)
 
 
+def even_split(total, parts):
+    base = total // parts
+    rem = total % parts
+    return [base + 1] * rem + [base] * (parts - rem) if parts else []
+
+
+def _factor_pair(n):
+    """Rows x cols for n antennas: the factor pair with the smallest max
+    dimension (1=1x1, 2=1x2, 4=2x2, 6=2x3, 9=3x3, 12=3x4, ...)."""
+    best = (n, 1)
+    bd = None
+    for rows in range(1, n + 1):
+        if n % rows:
+            continue
+        cols = n // rows
+        d = max(rows, cols)
+        if bd is None or d < bd:
+            bd = d
+            best = (rows, cols)
+    return best
+
+
 def main():
     a = argparse.ArgumentParser()
     a.add_argument("floor")
@@ -76,13 +98,19 @@ def main():
     a.add_argument("--profile", default=None,
                    help="per-AHJ profile; the CLI args override")
     a.add_argument("--solve-density", action="store_true",
-                   help="add antennas until the per-floor level spread meets "
-                        "--spread-target-db (owner direction 2026-11-26, "
-                        "corrected: density fixes the far-corner uniformity "
-                        "and the AGC spread, not the DC OUC near-input level; "
-                        "that is the input pad's job)")
+                   help="the owner's sequential loop: minimal coverage plate "
+                        "first, then add antennas until the near-far check "
+                        "passes (the per-antenna coverage cell shrinks, the "
+                        "under-antenna coupling drops 10log10(N), and the "
+                        "spread tightens). Reports the whole curve so the "
+                        "tap/pad alternative stays visible")
     a.add_argument("--spread-target-db", type=float, default=20.0)
     a.add_argument("--density-max", type=int, default=12)
+    a.add_argument("--near-max-input-db", type=float, default=-10.0,
+                   help="BDA max operating input (vendor spec; placeholder "
+                        "where the sheets are silent: grade D)")
+    a.add_argument("--near-damaging-db", type=float, default=0.0,
+                   help="BDA damaging input threshold (vendor spec placeholder)")
     a.add_argument("--noise-rule", default="la")
     a.add_argument("--site-erp", type=float, required=True,
                    help="host site ERP dBm (AHJ input per site)")
@@ -115,6 +143,7 @@ def main():
 
     cfg = load_config()
     cfg["wall_materials"]["drywall"]["loss_db"] = -1  # iBwave drywall via ibwloss
+    bands_cfg = {b["id"]: b for b in cfg["bands"]}
     floor = json.load(open(args.floor))
     ppm = float(floor["ppm"])
     model = {"environment": "office", "building_type": "hotel_residential",
@@ -288,6 +317,80 @@ def main():
 
     # critical areas: the floor model's zones if it carries them
     crit = None
+    # the owner's sequential density loop (2026-11-26): minimal coverage plate
+    # first, then add antennas until the near-far check passes: the per-floor
+    # cell shrinks with each antenna (the under-antenna coupling drops
+    # 10log10(N) in the balanced tree) and the spread tightens. The curve
+    # reports every step so the tap/pad equivalent stays visible.
+    density_loop = None
+    firsts = {}
+    if args.solve_density:
+        from ps_profiles import resolve as resolve_profile
+        RM, PW2, _p2 = resolve_profile(args.profile, {
+            "near_op": ("near_operating_margin_db", "near_operating_margin_db", None),
+            "near_dmg": ("near_damage_margin_db", "near_damage_margin_db", None)})
+        near_op = RM["near_op"]
+        near_dmg = RM["near_dmg"]
+        max_in = args.near_max_input_db
+        dmg_in = args.near_damaging_db
+        eirp_ue = args.ue_tx - args.body_loss
+        curve = []
+        rec_n = None
+        full = _Grid(floor, 2, outline, crit_polys)
+        for n in range(1, args.density_max + 1):
+            rows_n_d, cols_n_d = _factor_pair(n)
+            cx = [((ci + 0.5) * w_px / cols_n_d) for ci in range(cols_n_d)]
+            cy = [((ri + 0.5) * h_px / rows_n_d) for ri in range(rows_n_d)]
+            if outline and len(outline) >= 3:
+                dpts = [(float(x), float(y)) for y in cy for x in cx
+                        if _inside(x, y, outline)]
+            else:
+                dpts = [(float(x), float(y)) for y in cy for x in cx]
+            dgrid = _Mini([p[0] for p in dpts], [p[1] for p in dpts])
+            share = 10.0 * math.log10(n)
+            dens_eirps = {bid: {"d%d" % i:
+                                (args.port - 10.0 * math.log10(args.channels)
+                                 - share, None, False)
+                                for i in range(len(dpts))}
+                          for bid in bands}
+            ant_list = [("d%d" % i, x, y) for i, (x, y) in enumerate(dpts)]
+            firsts = {}
+            per_band_all = {}
+            for bid in bands:
+                b = bmap[bid]
+                lv = _lin_from(full, {bid: b}, floor, [], {bid: dens_eirps[bid]},
+                               auto_ants=[(a0, x, y) for a0, x, y in ant_list])
+                vals = sorted(10.0 * math.log10(v) for v in lv[bid] if v > 0)
+                smin = vals[0] if vals else -200.0
+                smax = vals[-1] if vals else -200.0
+                f = float((bands_cfg or {}).get(bid, {}).get("freq_mhz", 772.0))
+                near_in = eirp_ue - fspl_db(f, 1.5) - share
+                spread = smax - smin
+                near_pass = (near_in <= max_in - near_op
+                             and near_in <= dmg_in - near_dmg)
+                cov_ok = bool(vals and smin >= args.thr)
+                per_band_all[bid] = {"min_dbm": round(smin, 1),
+                                     "max_dbm": round(smax, 1),
+                                     "spread_db": round(spread, 1),
+                                     "near_input_at_bda_dbm": round(near_in, 2),
+                                     "near_pass": bool(near_pass),
+                                     "coverage_min_ok": cov_ok}
+                if near_pass and cov_ok and spread <= args.spread_target_db:
+                    firsts[bid] = n
+            curve.append({"n": n, "bands": per_band_all})
+        density_loop = {"solve": True, "spread_target_db": args.spread_target_db,
+                        "recommended_n": (max(firsts.values()) if firsts else None),
+                        "first_pass_by_band": firsts,
+                        "equiv_branch_loss_db": (round(10.0 * math.log10(max(firsts.values())), 1)
+                                                 if firsts else None),
+                        "equivalence_note": "the density route builds the same "
+                                            "dB of branch loss the taps or pad "
+                                            "would; each doubling of antennas "
+                                            "is about 3 dB",
+                        "curve": curve}
+
+    # critical areas: the floor model's zones if it carries them
+    crit = None
     zones = floor.get("zones") or []
     if zones:
         crit = []
@@ -376,7 +479,8 @@ def main():
                                                              - args.site_erp)), 1)},
            "uplink": {"site_floor_dbm": round(site_floor, 2),
                       "target_arrival_dbm": round(target_arr, 2), **ahj},
-           "bands": band_out, "critical_areas": crit, "caps_report": caps}
+           "bands": band_out, "critical_areas": crit, "caps_report": caps,
+           "density_loop": density_loop}
     json.dump(doc, open(args.out, "w"), indent=1)
     for bid, bo in band_out.items():
         sp = bo["spread"]

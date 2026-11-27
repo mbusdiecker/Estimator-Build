@@ -1,0 +1,813 @@
+{
+ "basis": "IFC 510.5.4 grid-method self-check from the floor model (grade E): 20 cells honoring the 80 ft max grid dimension, cell-center predictions with the planner's propagation engine, AHJ thresholds (RSSI -95 dBm, SINR 18 dB), the calculated uplink per cell (LA County method) to the site target (floor -127.0 + 18 dB), critical-area discrete points when the floor carries zones, spread and near-ring metrics per band. Design estimate, not a substitute for the field walk.",
+ "grid": {
+  "rows": 4,
+  "cols": 5,
+  "worst_cell_dim_m": 11.5,
+  "max_dim_rule_m": 24.4,
+  "dimension_rule_ok": true
+ },
+ "design": {
+  "port_composite_dbm": 33.0,
+  "port_per_channel_dbm": 17.95,
+  "channels": 32,
+  "n": 4,
+  "k": 48,
+  "ul_gain_db": 45.5,
+  "sites": 1,
+  "placement": {
+   "returned": 1,
+   "forced": false,
+   "note": "planner would not place the full design plate; grid uses the pruned placement"
+  },
+  "ahj_profile": "dc_ouc",
+  "ul_gain_trunk_model_db": 11.8
+ },
+ "uplink": {
+  "site_floor_dbm": -127.03,
+  "target_arrival_dbm": -109.03,
+  "site_erp": 50.0,
+  "site_nf": 6.0,
+  "ambient": -85.0,
+  "g_donor": 15.5,
+  "arrival_margin": 18.0,
+  "noise_rule": "la"
+ },
+ "bands": {
+  "PS700": {
+   "cells": [
+    {
+     "cell": 1,
+     "x_m": 5.8,
+     "y_m": 2.2,
+     "dl_dbm": -30.8,
+     "dl_pass": true,
+     "sinr_db_est": 94.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 2,
+     "x_m": 17.2,
+     "y_m": 2.2,
+     "dl_dbm": -28.9,
+     "dl_pass": true,
+     "sinr_db_est": 96.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 3,
+     "x_m": 28.8,
+     "y_m": 2.2,
+     "dl_dbm": -24.3,
+     "dl_pass": true,
+     "sinr_db_est": 100.7,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -102.4,
+     "ul_pass": true
+    },
+    {
+     "cell": 4,
+     "x_m": 40.2,
+     "y_m": 2.2,
+     "dl_dbm": -28.8,
+     "dl_pass": true,
+     "sinr_db_est": 96.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 5,
+     "x_m": 51.8,
+     "y_m": 2.2,
+     "dl_dbm": -31.0,
+     "dl_pass": true,
+     "sinr_db_est": 94.1,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -109.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 6,
+     "x_m": 5.8,
+     "y_m": 6.6,
+     "dl_dbm": -30.3,
+     "dl_pass": true,
+     "sinr_db_est": 94.7,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.4,
+     "ul_pass": true
+    },
+    {
+     "cell": 7,
+     "x_m": 17.2,
+     "y_m": 6.6,
+     "dl_dbm": -28.0,
+     "dl_pass": true,
+     "sinr_db_est": 97.1,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 8,
+     "x_m": 28.8,
+     "y_m": 6.6,
+     "dl_dbm": -15.3,
+     "dl_pass": true,
+     "sinr_db_est": 109.7,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -93.4,
+     "ul_pass": true
+    },
+    {
+     "cell": 9,
+     "x_m": 40.2,
+     "y_m": 6.6,
+     "dl_dbm": -28.1,
+     "dl_pass": true,
+     "sinr_db_est": 96.9,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.2,
+     "ul_pass": true
+    },
+    {
+     "cell": 10,
+     "x_m": 51.8,
+     "y_m": 6.6,
+     "dl_dbm": -30.5,
+     "dl_pass": true,
+     "sinr_db_est": 94.5,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 11,
+     "x_m": 5.8,
+     "y_m": 10.9,
+     "dl_dbm": -30.5,
+     "dl_pass": true,
+     "sinr_db_est": 94.5,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 12,
+     "x_m": 17.2,
+     "y_m": 10.9,
+     "dl_dbm": -28.0,
+     "dl_pass": true,
+     "sinr_db_est": 97.0,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.1,
+     "ul_pass": true
+    },
+    {
+     "cell": 13,
+     "x_m": 28.8,
+     "y_m": 10.9,
+     "dl_dbm": -17.1,
+     "dl_pass": true,
+     "sinr_db_est": 107.9,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -95.2,
+     "ul_pass": true
+    },
+    {
+     "cell": 14,
+     "x_m": 40.2,
+     "y_m": 10.9,
+     "dl_dbm": -28.1,
+     "dl_pass": true,
+     "sinr_db_est": 96.9,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.2,
+     "ul_pass": true
+    },
+    {
+     "cell": 15,
+     "x_m": 51.8,
+     "y_m": 10.9,
+     "dl_dbm": -30.6,
+     "dl_pass": true,
+     "sinr_db_est": 94.5,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 16,
+     "x_m": 5.8,
+     "y_m": 15.3,
+     "dl_dbm": -31.0,
+     "dl_pass": true,
+     "sinr_db_est": 94.1,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -109.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 17,
+     "x_m": 17.2,
+     "y_m": 15.3,
+     "dl_dbm": -28.7,
+     "dl_pass": true,
+     "sinr_db_est": 96.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.8,
+     "ul_pass": true
+    },
+    {
+     "cell": 18,
+     "x_m": 28.8,
+     "y_m": 15.3,
+     "dl_dbm": -24.8,
+     "dl_pass": true,
+     "sinr_db_est": 100.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -102.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 19,
+     "x_m": 40.2,
+     "y_m": 15.3,
+     "dl_dbm": -28.6,
+     "dl_pass": true,
+     "sinr_db_est": 96.4,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.7,
+     "ul_pass": true
+    },
+    {
+     "cell": 20,
+     "x_m": 51.8,
+     "y_m": 15.3,
+     "dl_dbm": -30.9,
+     "dl_pass": true,
+     "sinr_db_est": 94.1,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -109.0,
+     "ul_pass": true
+    }
+   ],
+   "n_cells": 20,
+   "n_fail": 0,
+   "floor_pass": true,
+   "fail_breakdown": {
+    "dl": 0,
+    "sinr": 0,
+    "calc_ul": 0
+   },
+   "retest_zone": false,
+   "spread": {
+    "min_dbm": -31.7,
+    "p5_dbm": -31.1,
+    "p95_dbm": -21.4,
+    "max_dbm": -6.8,
+    "spread_db": 24.9
+   },
+   "near_ring": [
+    {
+     "antenna": "L04_auto_auto_a1",
+     "x_m": 28.5,
+     "y_m": 8.5,
+     "near_ring_dl_dbm": -13.1,
+     "near_input_bda_dbm": -1.3
+    }
+   ]
+  },
+  "PS800": {
+   "cells": [
+    {
+     "cell": 1,
+     "x_m": 5.8,
+     "y_m": 2.2,
+     "dl_dbm": -31.6,
+     "dl_pass": true,
+     "sinr_db_est": 93.4,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 2,
+     "x_m": 17.2,
+     "y_m": 2.2,
+     "dl_dbm": -29.8,
+     "dl_pass": true,
+     "sinr_db_est": 95.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -107.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 3,
+     "x_m": 28.8,
+     "y_m": 2.2,
+     "dl_dbm": -25.2,
+     "dl_pass": true,
+     "sinr_db_est": 99.8,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -102.5,
+     "ul_pass": true
+    },
+    {
+     "cell": 4,
+     "x_m": 40.2,
+     "y_m": 2.2,
+     "dl_dbm": -29.7,
+     "dl_pass": true,
+     "sinr_db_est": 95.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 5,
+     "x_m": 51.8,
+     "y_m": 2.2,
+     "dl_dbm": -31.8,
+     "dl_pass": true,
+     "sinr_db_est": 93.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -109.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 6,
+     "x_m": 5.8,
+     "y_m": 6.6,
+     "dl_dbm": -31.2,
+     "dl_pass": true,
+     "sinr_db_est": 93.9,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.4,
+     "ul_pass": true
+    },
+    {
+     "cell": 7,
+     "x_m": 17.2,
+     "y_m": 6.6,
+     "dl_dbm": -28.8,
+     "dl_pass": true,
+     "sinr_db_est": 96.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.1,
+     "ul_pass": true
+    },
+    {
+     "cell": 8,
+     "x_m": 28.8,
+     "y_m": 6.6,
+     "dl_dbm": -16.2,
+     "dl_pass": true,
+     "sinr_db_est": 108.8,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -93.5,
+     "ul_pass": true
+    },
+    {
+     "cell": 9,
+     "x_m": 40.2,
+     "y_m": 6.6,
+     "dl_dbm": -29.0,
+     "dl_pass": true,
+     "sinr_db_est": 96.0,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.2,
+     "ul_pass": true
+    },
+    {
+     "cell": 10,
+     "x_m": 51.8,
+     "y_m": 6.6,
+     "dl_dbm": -31.3,
+     "dl_pass": true,
+     "sinr_db_est": 93.7,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 11,
+     "x_m": 5.8,
+     "y_m": 10.9,
+     "dl_dbm": -31.4,
+     "dl_pass": true,
+     "sinr_db_est": 93.7,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 12,
+     "x_m": 17.2,
+     "y_m": 10.9,
+     "dl_dbm": -28.9,
+     "dl_pass": true,
+     "sinr_db_est": 96.1,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.1,
+     "ul_pass": true
+    },
+    {
+     "cell": 13,
+     "x_m": 28.8,
+     "y_m": 10.9,
+     "dl_dbm": -18.1,
+     "dl_pass": true,
+     "sinr_db_est": 107.0,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -95.3,
+     "ul_pass": true
+    },
+    {
+     "cell": 14,
+     "x_m": 40.2,
+     "y_m": 10.9,
+     "dl_dbm": -29.0,
+     "dl_pass": true,
+     "sinr_db_est": 96.0,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.2,
+     "ul_pass": true
+    },
+    {
+     "cell": 15,
+     "x_m": 51.8,
+     "y_m": 10.9,
+     "dl_dbm": -31.4,
+     "dl_pass": true,
+     "sinr_db_est": 93.6,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -108.6,
+     "ul_pass": true
+    },
+    {
+     "cell": 16,
+     "x_m": 5.8,
+     "y_m": 15.3,
+     "dl_dbm": -31.8,
+     "dl_pass": true,
+     "sinr_db_est": 93.2,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -109.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 17,
+     "x_m": 17.2,
+     "y_m": 15.3,
+     "dl_dbm": -29.6,
+     "dl_pass": true,
+     "sinr_db_est": 95.4,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.9,
+     "ul_pass": true
+    },
+    {
+     "cell": 18,
+     "x_m": 28.8,
+     "y_m": 15.3,
+     "dl_dbm": -25.7,
+     "dl_pass": true,
+     "sinr_db_est": 99.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -103.0,
+     "ul_pass": true
+    },
+    {
+     "cell": 19,
+     "x_m": 40.2,
+     "y_m": 15.3,
+     "dl_dbm": -29.5,
+     "dl_pass": true,
+     "sinr_db_est": 95.5,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -106.7,
+     "ul_pass": true
+    },
+    {
+     "cell": 20,
+     "x_m": 51.8,
+     "y_m": 15.3,
+     "dl_dbm": -31.7,
+     "dl_pass": true,
+     "sinr_db_est": 93.3,
+     "sinr_pass": true,
+     "calc_ul_site_dbm": -109.0,
+     "ul_pass": true
+    }
+   ],
+   "n_cells": 20,
+   "n_fail": 0,
+   "floor_pass": true,
+   "fail_breakdown": {
+    "dl": 0,
+    "sinr": 0,
+    "calc_ul": 0
+   },
+   "retest_zone": false,
+   "spread": {
+    "min_dbm": -32.5,
+    "p5_dbm": -31.9,
+    "p95_dbm": -22.3,
+    "max_dbm": -7.8,
+    "spread_db": 24.7
+   },
+   "near_ring": [
+    {
+     "antenna": "L04_auto_auto_a1",
+     "x_m": 28.5,
+     "y_m": 8.5,
+     "near_ring_dl_dbm": -14.1,
+     "near_input_bda_dbm": -2.2
+    }
+   ]
+  }
+ },
+ "critical_areas": null,
+ "caps_report": {
+  "enabled": false,
+  "floor_area_sqft": 10831.0,
+  "area_sqft_per_antenna_now": 10831.2,
+  "floors_per_port_now": 48,
+  "area_cap_sqft": null,
+  "k_cap": null,
+  "would_require_min_antennas": null,
+  "remote_sqft_cap": null,
+  "total_building_sqft_at_cap": null,
+  "would_require_remotes_at_cap": null,
+  "would_require_min_ports": null,
+  "note": "caps are off (the owner default): pass --caps-area-sqft or --caps-k to see what they would require; the runs themselves never change until the owner makes them the build rule"
+ },
+ "density_loop": {
+  "solve": true,
+  "spread_target_db": 20.0,
+  "recommended_n": null,
+  "first_pass_by_band": {},
+  "equiv_branch_loss_db": null,
+  "equivalence_note": "the density route builds the same dB of branch loss the taps or pad would; each doubling of antennas is about 3 dB",
+  "curve": [
+   {
+    "n": 1,
+    "bands": {
+     "PS700": {
+      "min_dbm": -33.4,
+      "max_dbm": -2.7,
+      "spread_db": 30.8,
+      "near_input_at_bda_dbm": -3.92,
+      "near_pass": false,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "min_dbm": -34.2,
+      "max_dbm": -3.6,
+      "spread_db": 30.6,
+      "near_input_at_bda_dbm": -4.86,
+      "near_pass": false,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 2,
+    "bands": {
+     "PS700": {
+      "min_dbm": -32.4,
+      "max_dbm": -3.7,
+      "spread_db": 28.8,
+      "near_input_at_bda_dbm": -6.93,
+      "near_pass": false,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "min_dbm": -33.3,
+      "max_dbm": -4.6,
+      "spread_db": 28.7,
+      "near_input_at_bda_dbm": -7.87,
+      "near_pass": false,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 3,
+    "bands": {
+     "PS700": {
+      "min_dbm": -32.1,
+      "max_dbm": -4.9,
+      "spread_db": 27.2,
+      "near_input_at_bda_dbm": -8.7,
+      "near_pass": false,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "min_dbm": -32.9,
+      "max_dbm": -5.8,
+      "spread_db": 27.1,
+      "near_input_at_bda_dbm": -9.63,
+      "near_pass": false,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 4,
+    "bands": {
+     "PS700": {
+      "min_dbm": -32.5,
+      "max_dbm": -2.7,
+      "spread_db": 29.8,
+      "near_input_at_bda_dbm": -9.94,
+      "near_pass": false,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "min_dbm": -33.3,
+      "max_dbm": -3.7,
+      "spread_db": 29.7,
+      "near_input_at_bda_dbm": -10.88,
+      "near_pass": false,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 5,
+    "bands": {
+     "PS700": {
+      "min_dbm": -31.9,
+      "max_dbm": -9.6,
+      "spread_db": 22.3,
+      "near_input_at_bda_dbm": -10.91,
+      "near_pass": false,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "min_dbm": -32.7,
+      "max_dbm": -10.5,
+      "spread_db": 22.2,
+      "near_input_at_bda_dbm": -11.85,
+      "near_pass": false,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 6,
+    "bands": {
+     "PS700": {
+      "min_dbm": -32.1,
+      "max_dbm": -3.1,
+      "spread_db": 29.0,
+      "near_input_at_bda_dbm": -11.71,
+      "near_pass": false,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "min_dbm": -32.9,
+      "max_dbm": -4.0,
+      "spread_db": 28.9,
+      "near_input_at_bda_dbm": -12.64,
+      "near_pass": false,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 7,
+    "bands": {
+     "PS700": {
+      "min_dbm": -31.9,
+      "max_dbm": -8.2,
+      "spread_db": 23.7,
+      "near_input_at_bda_dbm": -12.38,
+      "near_pass": false,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "min_dbm": -32.7,
+      "max_dbm": -9.1,
+      "spread_db": 23.6,
+      "near_input_at_bda_dbm": -13.31,
+      "near_pass": false,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 8,
+    "bands": {
+     "PS700": {
+      "min_dbm": -31.9,
+      "max_dbm": -3.7,
+      "spread_db": 28.2,
+      "near_input_at_bda_dbm": -12.96,
+      "near_pass": false,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "min_dbm": -32.7,
+      "max_dbm": -4.6,
+      "spread_db": 28.1,
+      "near_input_at_bda_dbm": -13.89,
+      "near_pass": false,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 9,
+    "bands": {
+     "PS700": {
+      "min_dbm": -32.0,
+      "max_dbm": -2.7,
+      "spread_db": 29.3,
+      "near_input_at_bda_dbm": -13.47,
+      "near_pass": false,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "min_dbm": -32.9,
+      "max_dbm": -3.7,
+      "spread_db": 29.2,
+      "near_input_at_bda_dbm": -14.4,
+      "near_pass": false,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 10,
+    "bands": {
+     "PS700": {
+      "min_dbm": -31.7,
+      "max_dbm": -10.6,
+      "spread_db": 21.1,
+      "near_input_at_bda_dbm": -13.92,
+      "near_pass": false,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "min_dbm": -32.5,
+      "max_dbm": -11.5,
+      "spread_db": 21.0,
+      "near_input_at_bda_dbm": -14.86,
+      "near_pass": false,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 11,
+    "bands": {
+     "PS700": {
+      "min_dbm": -31.9,
+      "max_dbm": -10.1,
+      "spread_db": 21.8,
+      "near_input_at_bda_dbm": -14.34,
+      "near_pass": false,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "min_dbm": -32.7,
+      "max_dbm": -11.0,
+      "spread_db": 21.7,
+      "near_input_at_bda_dbm": -15.28,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   },
+   {
+    "n": 12,
+    "bands": {
+     "PS700": {
+      "min_dbm": -31.8,
+      "max_dbm": -2.9,
+      "spread_db": 28.9,
+      "near_input_at_bda_dbm": -14.72,
+      "near_pass": false,
+      "coverage_min_ok": true
+     },
+     "PS800": {
+      "min_dbm": -32.7,
+      "max_dbm": -3.8,
+      "spread_db": 28.8,
+      "near_input_at_bda_dbm": -15.65,
+      "near_pass": true,
+      "coverage_min_ok": true
+     }
+    }
+   }
+  ]
+ }
+}
