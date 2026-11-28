@@ -57,9 +57,11 @@ OEM_HW = {
     "adrf_vu": {"label": "ADRF PSR-VU-9537-X",
                 "ul_gain_max": 95.0, "ul_nf": 3.5, "ul_out_cap_dbm": 0.0,
                 "max_input_dbm": -10.0, "damaging_dbm": 0.0,
-                "spec_note": "gain 85-95 dB range (top used), NF under 3.5 dB "
-                             "without duplexing per the PSR-VU DS; UL output "
-                             "cap and input limits placeholders grade D"},
+                "gain_floor_db": 45.0,
+                "spec_note": "gain range bottom 45 dB OWNER-PROVIDED "
+                             "(2026-11-28); NF under 3.5 dB without duplexing "
+                             "per the PSR-VU DS; UL output cap and input "
+                             "limits placeholders grade D"},
 }
 # FSPL in dB at 1.5 m (the near ring) per band frequency
 def fspl_150(f_mhz):
@@ -140,6 +142,24 @@ def main():
     a.noise_rule = RESOLVED["noise_rule"]
     NEAR_OP_MARGIN = RESOLVED["near_op_margin"]
     NEAR_DMG_MARGIN = RESOLVED["near_dmg_margin"]
+
+    # Owner formula (2026-11-28): the AGC input ceiling is the UL composite
+    # output minus the lowest effective gain the unit can settle at
+    # (max input = Pout - G_min, or Pout - (G - Att_min) with the front
+    # attenuator folded in). It computes the operating (AGC clamp) line, not the
+    # damage line; and the floor must be the minimum gain the design can run
+    # (the ceiling tightens to Pout - G_required when the link budget needs
+    # more gain than the spec floor). Applied per OEM only when BOTH the UL
+    # composite output cap and the minimum available gain are published.
+    for _hw in OEM_HW.values():
+        _cap = _hw.get("ul_out_cap_dbm") or 0.0
+        _floor = _hw.get("gain_floor_db")
+        if _cap > 0 and _floor:
+            _computed = round(_cap - max(_floor, 0.0), 1)
+            _hw["max_input_dbm"] = _computed
+            _hw["max_input_source"] = ("owner formula: UL composite output "
+                                       "%.1f dBm - gain floor %.0f dB"
+                                       % (_cap, _floor))
     SQUELCH_OFFSET_DB = RESOLVED["squelch_offset"]
     UL_ERP_DONOR_CAP = RESOLVED["ul_erp_donor_cap"]
     cfg_path = None
@@ -297,6 +317,9 @@ def main():
             "ul_erp_donor_cap_dbm": UL_ERP_DONOR_CAP,
             "ul_erp_donor_pass": erp_ok,
             "ul_out_cap_composite_dbm": hw["ul_out_cap_dbm"],
+            "max_input_dbm": hw["max_input_dbm"],
+            "max_input_source": hw.get("max_input_source",
+                                       "unpublished placeholder, grade D"),
             "ul_out_cap_per_channel_dbm": round(out_cap_ch, 2),
             "ul_out_cap_binds": bool(cap_binds),
             "near_test_operating_pass": bool(near_ok),

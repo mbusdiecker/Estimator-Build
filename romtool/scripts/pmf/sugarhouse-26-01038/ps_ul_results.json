@@ -17,52 +17,47 @@
  "oem": "ADRF FiRe-78-8-U1 (ADXV-R-3378P-U2 remotes)",
  "site_nf_db": 6.0,
  "site_floor_dbm": -127.03,
- "trunk_loss_at_k_db": 30.47,
+ "trunk_loss_at_k_db": 31.14,
  "bands": [
   {
    "band": "PS700",
    "freq_mhz": 772.0,
-   "delivered_far_dl_dbm": -12.52,
-   "ul_port_far_dbm": -0.67,
+   "delivered_far_dl_dbm": -13.19,
+   "ul_port_far_dbm": -1.34,
    "near_ring_dl_dbm": -15.78,
    "near_input_bda_dbm": -3.92,
-   "ul_gain_recommended_db": 11.1,
-   "ul_gain_far_min_db": 11.1,
+   "ul_gain_recommended_db": 11.8,
+   "ul_gain_far_min_db": 11.8,
    "ul_gain_noise_max_db": 106.0,
    "site_arrival_far_dbm": -109.03,
    "site_arrival_target_dbm": -109.03,
-   "site_noise_active_dbm": -236.89,
+   "site_noise_active_dbm": -236.23,
    "site_noise_limit_dbm": -142.03,
-   "noise_margin_db": 94.86,
+   "noise_margin_db": 94.19,
    "squelch_threshold_dbm": -125.03,
    "input_pad_recommendation_db": 11.1,
    "ul_erp_donor_per_channel_dbm": 25.97,
    "ul_erp_donor_cap_dbm": 24.0,
    "ul_erp_donor_pass": false,
    "ul_out_cap_composite_dbm": 30.0,
+   "max_input_dbm": -10.0,
+   "max_input_source": "unpublished placeholder, grade D",
    "ul_out_cap_per_channel_dbm": 14.95,
    "ul_out_cap_binds": false,
    "near_test_operating_pass": false,
    "near_test_damage_pass": false,
    "near_levers": {
     "branch_loss_needed_db": 11.08,
-    "branch_loss_passes_when_specified": true,
-    "branch_loss_specified_db": 12.0,
+    "branch_loss_passes_when_specified": false,
+    "branch_loss_specified_db": null,
     "pad_db": 11.1,
-    "density_route": true
+    "density_route": false
    },
    "density_solve": {
-    "solve": true,
-    "antennas_per_floor": 7,
-    "antennas_bldg": 315,
-    "near_input_at_density_dbm": -15.38,
-    "near_pass_at_density": true,
-    "cap_hit": false,
-    "near_chain_db": 3.0,
-    "note": "the splitter-tree density route: 10log10(N) of branch attenuation builds in the tree; the tap-plate route reaches the same pass with the near tap ratio at >= 11.1 dB instead"
+    "solve": false
    },
    "near_far_pair": {
-    "far_in_at_bda_dbm": -0.67,
+    "far_in_at_bda_dbm": -1.34,
     "near_in_pre_pad_dbm": -3.92,
     "pad_applied_db": 11.1,
     "near_in_post_pad_dbm": -15.02,
@@ -73,52 +68,47 @@
     "class_a_recommended": false,
     "load_case": "pair"
    },
-   "passes": true
+   "passes": false
   },
   {
    "band": "PS800",
    "freq_mhz": 860.0,
-   "delivered_far_dl_dbm": -12.52,
-   "ul_port_far_dbm": -0.67,
+   "delivered_far_dl_dbm": -13.19,
+   "ul_port_far_dbm": -1.34,
    "near_ring_dl_dbm": -16.71,
    "near_input_bda_dbm": -4.86,
-   "ul_gain_recommended_db": 11.1,
-   "ul_gain_far_min_db": 11.1,
+   "ul_gain_recommended_db": 11.8,
+   "ul_gain_far_min_db": 11.8,
    "ul_gain_noise_max_db": 106.0,
    "site_arrival_far_dbm": -109.03,
    "site_arrival_target_dbm": -109.03,
-   "site_noise_active_dbm": -236.89,
+   "site_noise_active_dbm": -236.23,
    "site_noise_limit_dbm": -142.03,
-   "noise_margin_db": 94.86,
+   "noise_margin_db": 94.19,
    "squelch_threshold_dbm": -125.03,
    "input_pad_recommendation_db": 10.1,
    "ul_erp_donor_per_channel_dbm": 25.97,
    "ul_erp_donor_cap_dbm": 24.0,
    "ul_erp_donor_pass": false,
    "ul_out_cap_composite_dbm": 30.0,
+   "max_input_dbm": -10.0,
+   "max_input_source": "unpublished placeholder, grade D",
    "ul_out_cap_per_channel_dbm": 14.95,
    "ul_out_cap_binds": false,
    "near_test_operating_pass": false,
    "near_test_damage_pass": false,
    "near_levers": {
     "branch_loss_needed_db": 10.14,
-    "branch_loss_passes_when_specified": true,
-    "branch_loss_specified_db": 12.0,
+    "branch_loss_passes_when_specified": false,
+    "branch_loss_specified_db": null,
     "pad_db": 10.1,
-    "density_route": true
+    "density_route": false
    },
    "density_solve": {
-    "solve": true,
-    "antennas_per_floor": 6,
-    "antennas_bldg": 270,
-    "near_input_at_density_dbm": -15.64,
-    "near_pass_at_density": true,
-    "cap_hit": false,
-    "near_chain_db": 3.0,
-    "note": "the splitter-tree density route: 10log10(N) of branch attenuation builds in the tree; the tap-plate route reaches the same pass with the near tap ratio at >= 10.1 dB instead"
+    "solve": false
    },
    "near_far_pair": {
-    "far_in_at_bda_dbm": -0.67,
+    "far_in_at_bda_dbm": -1.34,
     "near_in_pre_pad_dbm": -4.86,
     "pad_applied_db": 10.1,
     "near_in_post_pad_dbm": -14.96,
@@ -129,7 +119,7 @@
     "class_a_recommended": false,
     "load_case": "pair"
    },
-   "passes": true
+   "passes": false
   }
  ]
 }

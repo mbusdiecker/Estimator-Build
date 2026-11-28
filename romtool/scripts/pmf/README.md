@@ -396,9 +396,13 @@ these groups and then hands off to the budget workbook.
 
 Vendor spec list still missing (grade D placeholders in the tool until they
 land):
-- All four units: maximum operating input power and damaging threshold (the
-  near-test line is -10/-0 placeholders); the AGC behavior mode (the active
-  vs programmed channel sharing).
+- All four units: UL composite output cap AND minimum available gain
+  (gain-floor) per unit. The max operating input follows from the owner
+  formula (2026-11-28): max input = UL composite output - gain floor (the
+  AGC clamp model; the operating line, not damage). The PSR already has the
+  floor (45 dB, owner-provided); its ceiling computes the moment its UL
+  output cap lands. The AGC behavior mode (the active vs programmed channel
+  sharing) still asked.
 - ADRF FiRe-78-8-U1: UL gain range per band, UL composite output confirmation
   at other gains, the squelch capability and threshold range.
 - ADRF ADXV-R-3378P-U2: per-band UL gain, per-band PSU draw split (102 W total
